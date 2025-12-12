@@ -1,0 +1,2129 @@
+
+/ app\features\credit-card\view\supplementary-card\view\supplementary-card-holderdetails\index.tsx
+Index.tsx
+```
+/**
+Author: Haseeb Muhsin
+Date Created: 7/10/2025
+* Screen for displaying the supplementary card holder details and
+validating it for create journey
+*/
+import React, {useMemo} from 'react';
+import {
+ CARD_HOLDER_RELATION,
+ SupplementaryCardHolderDetailsProps,
+} from './types';
+import {ScrollView, TouchableOpacity, View} from 'react-native';
+import {useNewTheme} from 'react-core';
+import {getStyles} from './styles';
+import {Header} from 'app/components/header';
+import {LeftContentType} from 'app/components/header/left-content/types';
+import {RightContentType} from 'app/components/header/rightcontent/types';
+import {
+ CustomCheckbox,
+ CustomRadioButton,
+ Divider,
+ Dropdown,
+ Input,
+ Label,
+ SubmitButton,
+} from 'app/components';
+import {variants} from 'app/components/label/types';
+import DynamicBottomSheet from 'app/components/dynamic-bottom-sheet';
+import {RightContent} from 'app/components/header/right-content';
+import {useCreateSupplementaryCard} from '../../hooks/use-createsupplementary-card';
+import {Object} from 'app/features/onboarding/hooks';
+import {Tick02} from 'app/assets/svg';
+import {
+ COUNTRY_CODE_SA_DISPLAY,
+ KeyboardTypes,
+ MinimumInputLength,
+ PhoneNumberLength9,
+} from 'app/constants';
+import Animated, {
+ Extrapolation,
+ interpolate,
+ LinearTransition,
+ useAnimatedStyle,
+} from 'react-native-reanimated';
+import useKeyboardVisible from 'app/hooks/useKeyboardVisible';
+export const SupplementaryCardHolderDetails: React.FC<
+ SupplementaryCardHolderDetailsProps
+> = props => {
+ const {navigation} = props;
+ const theme = useNewTheme();
+ const styleProps = {theme};
+ const style = getStyles(styleProps);
+ const {
+ showRelationshipDropdown,
+ setShowRelationshipDropdown,
+ relationshipTypes,
+ selectedRelationship,
+ setSelectedRelationShip,
+ cardHolderDetails,
+ supplementaryCardHolderDetailsValidation,
+ initiateScreeningCheck,
+ dependentInfoValidated,
+ translate,
+ dependentName,
+ termsChecked,
+ setTermsChecked,
+ userDetail,
+ } = useCreateSupplementaryCard();
+ const bottomSheet = () => (
+ <DynamicBottomSheet visible={showRelationshipDropdown}>
+ <View style={style.dropDownRoot}>
+ <View style={style.dropDownHeader}>
+ <Label
+ id=""
+ text={translate(
+ 'CreateSupplementaryCardHolderDetailsDdRelationship',
+ )}
+ style={style.dropDownTitle}
+ variant={variants.titleS}></Label>
+ <View>
+ <RightContent
+ type={RightContentType.CLOSE_CANCEL}
+ onCloseCancelClick={() => {
+ setShowRelationshipDropdown(false);
+ }}></RightContent>
+ </View>
+ </View>
+ <View>
+ {relationshipTypes?.map((item: Object, index: number) => (
+ <>
+ <TouchableOpacity
+ onPress={() => {
+ setSelectedRelationShip(item);
+ setShowRelationshipDropdown(false);
+ supplementaryCardHolderDetailsValidation.validateField(
+ 'idNumber',
+ );
+ }}
+ style={style.dropDownItemRoot}>
+ <Label
+ id=""
+ text={item.value}
+ style={style.dropDownTitle}></Label>
+ <CustomRadioButton
+ id=""
+ isChecked={selectedRelationship?.code === item.code}
+ errorText=""
+ icon={<Tick02 />}
+ onPress={() => {
+ setSelectedRelationShip(item);
+ setShowRelationshipDropdown(false);
+ }}></CustomRadioButton>
+ </TouchableOpacity>
+ {relationshipTypes?.length - 1 !== index &&
+<Divider></Divider>}
+ </>
+ ))}
+ </View>
+ </View>
+ </DynamicBottomSheet>
+ );
+ const {keyboardOffset, keyboardHeight} = useKeyboardVisible();
+ const paddingStyle = useAnimatedStyle(() => {
+ const paddingBottom = interpolate(
+ keyboardOffset.value,
+ [0, keyboardHeight, 0],
+ [24, keyboardHeight, 24],
+ Extrapolation.CLAMP,
+ );
+ return {
+ paddingBottom,
+ };
+ });
+ const isSubmitButtonDisabled = useMemo(() => {
+ return (
+ (selectedRelationship?.code === CARD_HOLDER_RELATION.FAMILY_MEMBER
+&&
+ dependentInfoValidated === false) ||
+ selectedRelationship?.code === undefined ||
+ (selectedRelationship?.code === CARD_HOLDER_RELATION.FAMILY_MEMBER
+&&
+ !supplementaryCardHolderDetailsValidation?.isValid) ||
+ !termsChecked
+ );
+ }, [
+ supplementaryCardHolderDetailsValidation?.isValid,
+ termsChecked,
+ selectedRelationship?.code,
+ dependentInfoValidated,
+ ]);
+ return (
+ <View style={style.container}>
+ <Header
+ showCenterContent={false}
+ leftContentType={LeftContentType.BACK}
+ onLeftContentClick={() => {
+ navigation.goBack();
+ }}
+ onRightContentClick={() => {
+ navigation.pop(3);
+ }}
+ rightContentType={RightContentType.CLOSE_CANCEL}></Header>
+ <View style={style.mainContainer}>
+ <ScrollView
+ style={style.scroll}
+ showsVerticalScrollIndicator={false}
+ keyboardShouldPersistTaps
+ contentContainerStyle={style.contentContainer}>
+ <View style={style.titleContainer}>
+ <Label
+ id="idCreateSupplementaryCardHolderDetailsTitle"
+
+text={translate('CreateSupplementaryCardHolderDetailsLblTitle')}
+ variant={variants.titleXL}
+ style={style.title}></Label>
+ <Label
+ id="idCreateSupplementaryCardHolderDetailsDescription"
+ text={translate(
+ 'CreateSupplementaryCardHolderDetailsLblDescription',
+ )}
+ variant={variants.bodyRegularM}
+ style={style.description}></Label>
+ </View>
+ <View style={style.inputContainer}>
+ <Dropdown
+ id="idCreateSupplementaryCardHolderDetailsRelationship"
+ placeholder={translate(
+ 'CreateSupplementaryCardHolderDetailsDdRelationship',
+ )}
+ inputText={selectedRelationship?.value}
+ onPress={() =>
+ setShowRelationshipDropdown(!showRelationshipDropdown)
+ }
+ BottomSheet={bottomSheet()}
+ />
+ {selectedRelationship?.code === CARD_HOLDER_RELATION.MYSELF ?
+(
+ <View style={style.hiddenInputContainer}>
+ <Input
+ id="idCreateSupplementaryCardHolderDetailsIdNumberSelf"
+ placeholder={translate(
+ 'CreateSupplementaryCardHolderDetailsTxtIdNumber',
+ )}
+ value={cardHolderDetails?.idNumber}
+ disabled></Input>
+ <Input
+ id="idCreateSupplementaryCardHolderDetailsNameSelf"
+ placeholder={translate(
+ 'CreateSupplementaryCardHolderDetailsTxtName',
+ )}
+ value={cardHolderDetails?.name}
+ disabled></Input>
+ <Input
+
+id="idCreateSupplementaryCardHolderDetailsMobileNumberSelf"
+ placeholder={translate(
+ 'CreateSupplementaryCardHolderDetailsTxtMobileNumber',
+ )}
+ value={userDetail?.phone?.slice(-9)}
+ prefix={COUNTRY_CODE_SA_DISPLAY}
+ disabled></Input>
+ </View>
+ ) : selectedRelationship?.code ===
+ CARD_HOLDER_RELATION.FAMILY_MEMBER ? (
+ <View style={style.hiddenInputContainer}>
+ <Input
+
+id="idCreateSupplementaryCardHolderDetailsIdNumberFamily"
+ placeholder={translate(
+ 'CreateSupplementaryCardHolderDetailsTxtIdNumber',
+ )}
+ value={
+
+supplementaryCardHolderDetailsValidation.values.idNumber
+ }
+
+setValue={supplementaryCardHolderDetailsValidation.handleChange(
+ 'idNumber',
+ )}
+
+onFormikBlur={supplementaryCardHolderDetailsValidation.handleBlur(
+ 'idNumber',
+ )}
+ customKeyboardType={KeyboardTypes.NumberPad}
+ maximumLength={MinimumInputLength}
+ specialCharactersAllowed={false}
+ errorTextStyle={style.errorIdStyle}
+ errorText={
+
+supplementaryCardHolderDetailsValidation.touched.idNumber &&
+
+supplementaryCardHolderDetailsValidation.errors.idNumber
+ ?
+supplementaryCardHolderDetailsValidation.errors.idNumber
+ : undefined
+ }></Input>
+ {dependentInfoValidated && (
+ <>
+ <Input
+
+id="idCreateSupplementaryCardHolderDetailsNameFamily"
+ placeholder={translate(
+ 'CreateSupplementaryCardHolderDetailsTxtName',
+ )}
+value={dependentName}
+ disabled></Input>
+ <Input
+
+id="idCreateSupplementaryCardHolderDetailsMobileNumberFamily"
+ placeholder={translate(
+
+'CreateSupplementaryCardHolderDetailsTxtMobileNumber',
+ )}
+ value={
+ supplementaryCardHolderDetailsValidation.values
+ .mobileNumber
+ }
+
+setValue={supplementaryCardHolderDetailsValidation.handleChange(
+ 'mobileNumber',
+ )}
+onFormikBlur={supplementaryCardHolderDetailsValidation.handleBlur(
+ 'mobileNumber',
+ )}
+prefix={COUNTRY_CODE_SA_DISPLAY}
+ maximumLength={PhoneNumberLength9}
+ specialCharactersAllowed={false}
+customKeyboardType={KeyboardTypes.NumberPad}
+ errorText={
+ supplementaryCardHolderDetailsValidation.touched
+ .mobileNumber &&
+ supplementaryCardHolderDetailsValidation.errors
+ .mobileNumber
+?
+supplementaryCardHolderDetailsValidation.errors
+ .mobileNumber
+ : undefined
+ }></Input>
+ </>
+ )}
+ </View>
+ ) : null}
+ </View>
+ </ScrollView>
+ <Animated.View
+ style={[style.stickyBarContainer, paddingStyle]}
+ layout={LinearTransition}>
+ <View style={style.checkContainer}>
+ <CustomCheckbox
+ id="idCreateSupplementaryCardHolderDetailsCheckbox"
+ isChecked={termsChecked}
+ onPress={() => {
+ setTermsChecked(!termsChecked);
+ }}></CustomCheckbox>
+ <Label
+ style={style.checkText}
+ id="idCreateSupplementaryCardHolderDetailsCheckbox text"
+ text={translate(
+ 'CreateSupplementaryCardTermsLblCheckbox',
+ )}></Label>
+ </View>
+ <SubmitButton
+ id="idCreateSupplementaryCardHolderDetailsSubmit"
+ label={translate('CreateSupplementaryCardBtnNext')}
+ disabled={isSubmitButtonDisabled}
+ onPress={() => {
+ initiateScreeningCheck();
+ }}></SubmitButton>
+ </Animated.View>
+ </View>
+ </View>
+ );
+};
+```
+// styles.ts
+// app\features\credit-card\view\supplementary-card\view\supplementary-card-holderdetails\styles.ts
+```
+/**
+Author: Haseeb Muhsin
+Date Created: 7/10/2025
+* Stylesheet for maintaining screen and component styles for create
+supplementary card holder details screen
+*/
+import {ScaledSheet} from 'react-native-size-matters';
+import {SupplementaryCardHolderDetailsStyleProps} from './types';
+import useNavigationBarHeight from 'app/hooks/useNavigationBarHeight';
+export const getStyles = (props: SupplementaryCardHolderDetailsStyleProps)
+=> {
+ const {theme} = props;
+ const {navBarHeight} = useNavigationBarHeight();
+ return ScaledSheet.create({
+ container: {
+ flex: 1,
+ backgroundColor: theme.colors['background-01'],
+ paddingBottom: navBarHeight,
+ },
+ mainContainer: {
+ flex: 1,
+ },
+ scroll: {
+ flexGrow: 1,
+ },
+ contentContainer: {
+ gap: 24,
+ },
+ stickyBarContainer: {
+ paddingTop: 24,
+ gap: 24,
+ },
+ titleContainer: {
+ gap: 8,
+ paddingHorizontal: 16,
+ },
+ title: {
+ color: theme.colors['content-primary'],
+ },
+ description: {
+ color: theme.colors['content-secondary'],
+ },
+ inputContainer: {
+ paddingHorizontal: 16,
+ gap: 16,
+ },
+ hiddenInputContainer: {
+ gap: 16,
+ },
+ dropDownRoot: {
+ paddingHorizontal: 16,
+ gap: 16,
+ },
+ dropDownHeader: {
+ flexDirection: 'row',
+ },
+ dropDownTitle: {
+ flex: 1,
+ color: theme.colors['content-primary'],
+ },
+ dropDownItemRoot: {
+ paddingVertical: 16,
+ flexDirection: 'row',
+ },
+ checkContainer: {
+ flexDirection: 'row',
+ gap: 8,
+ paddingHorizontal: 16,
+ },
+ acceptButtonContainer: {
+ flexDirection: 'row',
+ gap: 8,
+ },
+ checkText: {
+ flex: 1,
+ },
+ errorIdStyle: {
+ left: 16,
+ },
+ });
+};
+```
+// app\features\credit-card\view\supplementary-card\view\supplementary-card-holderdetails\types.ts
+// types.ts
+```
+/**
+Author: Haseeb Muhsin
+Date Created: 7/10/2025
+* Properties for configuring the create supplementary card holder screen
+and styles
+*/
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {CreditCardRootStackParamList} from 'app/navigator/credit-cardsection';
+import {Theme} from 'react-core';
+export type SupplementaryCardHolderDetailsProps = {
+ navigation: NativeStackNavigationProp<CreditCardRootStackParamList>;
+};
+export type SupplementaryCardHolderDetailsStyleProps = {
+ theme: Theme;
+};
+export type CardHolderDetails = {
+ idNumber?: string;
+ name?: string;
+ mobileNumber?: string;
+ monthlyCreditLimit?: string;
+ currency?: string;
+};
+export enum CARD_HOLDER_RELATION {
+ MYSELF = '1',
+ FAMILY_MEMBER = '2',
+}
+```
+
+Woking Example:
+// app\features\credit-card\utils\formatter.ts
+import {ReferenceData} from 'app/services/app-global';
+const convertReferenceData = (referenceData: ReferenceData[]) => {
+ if (referenceData) {
+ const menu = referenceData.map((listItem: ReferenceData, index:
+number) => {
+ return {
+ id: (index + 1).toString(),
+ value: isArabic ? listItem.ValueAr : listItem.valueEn,
+ code: listItem?.code,
+ };
+ });
+ return menu;
+ } else {
+ return [];
+ }
+};
+// app\services\app-global\gobal-slice.ts
+export type ReferenceData = {
+ referenceDataGroup: string;
+ referenceDataType: string;
+ code: string;
+ valueEn: string;
+ ValueAr: string;
+ calculationValue: string;
+ sortorder: 1;
+};
+
+Woking Example:
+// app\features\authentication\view\credentials-disabled\types.ts
+export type CredentialsDisabledProps = {
+ navigation: NativeStackNavigationProp<RootStackParamList>;
+};
+// app\navigator\auth-section.tsx
+export type RootStackParamList = {
+CredentialsDisabled: undefined;
+AuthenticationMenu: undefined;
+ CredentialDisableInfo: undefined;
+CredentialsDisable: undefined;
+};
+
+###FilePath: ui-code-guide/hooks/use-create-supplementary-card.ts
+
+/**
+Author: Haseeb Muhsin
+Date Created:  7/10/2025
+ * Hook for handling all the usecases in create supplementary card journey.
+ * API calls and redux persistance and fetching logics are added.
+ */
+
+import {
+  AuthRoutes,
+  CreditCardRoutes,
+  Errors,
+  isArabic,
+  PhoneNumberLength9,
+  TransferRoutes,
+} from 'app/constants';
+import {useHeaders} from 'app/features/authentication/hooks';
+import {Object} from 'app/features/onboarding/hooks';
+import {EntityTypes} from 'app/features/onboarding/hooks/types';
+import {usePostLoginHandler} from 'app/hooks/post-login-handler';
+import {useAppDispatch, useAppSelector} from 'app/redux/hooks';
+import {
+  AuthServices,
+  CreditCardsManagementApi,
+  SharedServicesApi,
+  useRetrieveLookupMutation,
+} from 'app/redux/toolkit-store';
+import {setDependentDetails, setSupplementaryCardDetails} from 'app/services';
+import {
+  ReferenceData,
+  setLookupRetriveData,
+  UserDetails,
+} from 'app/services/app-global';
+import {
+  CreditCardType,
+  SupplementaryCardDetail,
+} from 'app/services/credit-cards/types';
+import {format, NavigationService} from 'app/utils';
+import {useEffect, useState} from 'react';
+import {
+  CARD_HOLDER_RELATION,
+  CardHolderDetails,
+} from '../view/supplementary-card-holder-details/types';
+import {useFormik} from 'formik';
+import {
+  SupplementaryCardHolderDetailsSchema,
+  SupplementaryCardHolderDetailsSchemaInitialValues,
+} from '../schemas/supplementary-card-holder-details-schema';
+import {
+  SupplementaryCardLimitSchema,
+  SupplementaryCardLimitSchemaInitialValues,
+} from '../schemas/supplementary-card-limit-schema';
+import {Keyboard} from 'react-native';
+import {useToast} from 'app/components';
+import {ToastTypeProps} from 'app/components/toast/types';
+import {translation} from 'react-core';
+import {MonthlyCardLimit} from '../view/supplementary-card-limit/types';
+import {generateSha1} from 'app/utils/generate-sha';
+import {AccountStatusTypes} from 'app/components/account-status/types';
+import {AccountsListDetails} from 'app/services/accounts/types';
+import {CustomStatusScreenProps} from 'app/features/common/custom-status-screen/types';
+import {
+  APPLY_CARD_TRANSACTION_NAME,
+  DEPENDENT_RELATIONSHIP_SELF,
+  SUPPLEMENTARY_LIMIT_FIXED_AMOUNT,
+} from '../constants';
+import {
+  ReferenceDataGroup,
+  ReferenceDataType,
+} from 'app/constants/reference-data-values';
+import {useAllCards} from 'app/features/home/components/home-dashboard-cards/hooks/use-all-cards';
+import {BFFErrorCode} from 'app/features/authentication/utils';
+
+export const useCreateSupplementaryCard = (selectedCard?: string) => {
+  const {getHeaders} = useHeaders();
+  const dispatch = useAppDispatch();
+  const {t: translate} = translation.useTranslation();
+  const [termsChecked, setTermsChecked] = useState(false);
+  const [showRelationshipDropdown, setShowRelationshipDropdown] =
+    useState(false);
+  const [relationshipTypes, setRelationshipTypes] = useState<Object[]>([]);
+  const [cardLimitTypes, setCardLimitTypes] = useState<Object[]>([]);
+  const [showMonthlyCardLimitDropdown, setShowMonthlyCardLimitDropdown] =
+    useState(false);
+  const [selectedRelationship, setSelectedRelationShip] = useState<
+    Object | undefined
+  >(undefined);
+  const [cardHolderDetails, setCardHolderDetails] = useState<CardHolderDetails>(
+    {},
+  );
+  const [enableOtp, setEnableOtp] = useState(false);
+  const [otpError, setOtpError] = useState<string | undefined>();
+  const [referenceNumber, setReferenceNumber] = useState<string | undefined>();
+  const [maskedMobileNumber, setMaskedMobileNumber] = useState<
+    string | undefined
+  >();
+  const [selectedCardLimitType, setSelectedCardLimitType] = useState<
+    Object | undefined
+  >(undefined);
+  const {showToast} = useToast();
+  const [dependentInfoValidated, setDependentInfoValidated] = useState(false);
+  const [dependentName, setDependentName] = useState('');
+  const {retrieveCreditCards} = useAllCards();
+  const {
+    action: retrieveLookupAction,
+    data: retrieveLookupResponse,
+    error: retrieveLookupError,
+  } = usePostLoginHandler(useRetrieveLookupMutation);
+
+  const {
+    action: initiateScreeningCheckAction,
+    data: initiateScreeningCheckResponse,
+    error: initiateScreeningCheckError,
+  } = usePostLoginHandler(
+    CreditCardsManagementApi.useInitiateScreeningCheckMutation,
+  );
+
+  const {
+    action: validateDependentDetailsAction,
+    data: validateDependentDetailsResponse,
+    error: validateDependentDetailsError,
+  } = usePostLoginHandler(
+    SharedServicesApi.useValidateDependentDetailsMutation,
+  );
+
+  const {
+    action: triggerOtpAction,
+    data: triggerOtpResponse,
+    error: triggerOtpError,
+  } = usePostLoginHandler(AuthServices.usePreLoginOtpMutation);
+
+  const {
+    action: applyCreditCardAction,
+    data: applyCreditCardResponse,
+    error: applyCreditCardError,
+  } = usePostLoginHandler(CreditCardsManagementApi.useApplyCreditCardMutation);
+
+  const getSupplementaryRelationshipTypes = () => {
+    const params = {
+      entityKey: [EntityTypes.DRI],
+    };
+    retrieveLookupAction(params);
+  };
+
+  useEffect(() => {
+    if (retrieveLookupResponse) {
+      dispatch(setLookupRetriveData(retrieveLookupResponse));
+      const supplementaryCardDetails: SupplementaryCardDetail = {
+        selectedCardNumber: selectedCard ?? '',
+      };
+      dispatch(setSupplementaryCardDetails(supplementaryCardDetails));
+      NavigationService.navigate(
+        CreditCardRoutes.SupplementaryCardHolderDetails,
+      );
+    }
+  }, [retrieveLookupResponse, retrieveLookupError]);
+
+  const supplementaryCardDetails = useAppSelector(
+    state => state.creditCards.supplementaryCard,
+  ) as SupplementaryCardDetail;
+  const supplementaryRelationShipTypes = useAppSelector(
+    state => state.global.lookupRetriveData,
+  )?.find((item: any) => item.entityKey === EntityTypes.DRI)
+    ?.objects as Object[];
+  const cardDetail = useAppSelector(
+    state => state.creditCards.creditCardsData,
+  )?.find(
+    (item: any) =>
+      item.creditCardNumber === supplementaryCardDetails?.selectedCardNumber,
+  ) as CreditCardType;
+  const userDetail = useAppSelector(
+    state => state.global.userDetails,
+  ) as UserDetails;
+  const onePackAccount = useAppSelector(
+    state => state.accounts.accountsList,
+  )?.find(
+    (item: any) =>
+      item.isOnepackAccount === true &&
+      item.accountStatus !== AccountStatusTypes.AccountClosed,
+    // item.accountStatus === AccountStatusTypes.AccountActive,
+  ) as AccountsListDetails;
+  const referenceRecords = useAppSelector(
+    state => state.global.referenceRecord,
+  );
+  const productCodeValue = referenceRecords[
+    ReferenceDataGroup.PRODUCT_CODES
+  ]?.find(
+    (item: ReferenceData) =>
+      item.referenceDataType === ReferenceDataType.CREDIT_CARD,
+  )?.calculationValue;
+
+  useEffect(() => {
+    if (supplementaryRelationShipTypes) {
+      setRelationshipTypes(supplementaryRelationShipTypes);
+    }
+  }, [supplementaryRelationShipTypes]);
+
+  useEffect(() => {
+    if (referenceRecords[ReferenceDataGroup.CARD_LIMITS]?.length > 0) {
+      const listOfLimitTypes: Object[] = [];
+      const supplementaryCardLimits = referenceRecords[
+        ReferenceDataGroup.CARD_LIMITS
+      ]?.filter(
+        (item: ReferenceData) =>
+          item.referenceDataType ===
+          ReferenceDataType.SUPPLEMENTARY_CARD_LIMITS,
+      );
+      supplementaryCardLimits?.map((item: ReferenceData) => {
+        const object: Object = {
+          id: '',
+          code: item.code,
+          value: isArabic ? item.ValueAr : item.valueEn,
+        };
+        listOfLimitTypes.push(object);
+      });
+      setCardLimitTypes(listOfLimitTypes);
+      setSelectedCardLimitType(
+        listOfLimitTypes?.find(
+          item => item.code === MonthlyCardLimit.SHARED_LIMIT,
+        ),
+      );
+    }
+  }, [referenceRecords]);
+
+  useEffect(() => {
+    if (cardDetail && userDetail) {
+      setCardHolderDetails({
+        idNumber: userDetail?.customernumber,
+        mobileNumber: cardDetail?.dependentMobileNumber
+          .trim()
+          ?.slice(-PhoneNumberLength9),
+        name: cardDetail?.embossedName,
+        monthlyCreditLimit: cardDetail?.cardLimit,
+        currency: cardDetail?.cardCurrency ?? 'SAR',
+      });
+    }
+  }, [cardDetail, userDetail]);
+
+  const supplementaryCardHolderDetailsValidation = useFormik({
+    validateOnChange: true,
+    validateOnBlur: true,
+    initialValues: SupplementaryCardHolderDetailsSchemaInitialValues,
+    validationSchema: SupplementaryCardHolderDetailsSchema,
+    onSubmit: values => {},
+  });
+
+  const supplementaryCardLimitValidation = useFormik({
+    validateOnChange: true,
+    validateOnBlur: true,
+    initialValues: SupplementaryCardLimitSchemaInitialValues,
+    validationSchema: SupplementaryCardLimitSchema(
+      cardDetail?.cardLimit,
+      translate,
+    ),
+    onSubmit: values => {},
+  });
+
+  useEffect(() => {
+    if (
+      supplementaryCardHolderDetailsValidation?.values?.idNumber &&
+      supplementaryCardHolderDetailsValidation?.values?.idNumber.length ===
+        10 &&
+      supplementaryCardHolderDetailsValidation?.errors?.idNumber === undefined
+    ) {
+      Keyboard.dismiss();
+      validateDependentDetails();
+    }
+  }, [
+    supplementaryCardHolderDetailsValidation?.values?.idNumber,
+    supplementaryCardHolderDetailsValidation?.errors?.idNumber,
+  ]);
+
+  const validateDependentDetails = () => {
+    const options = {
+      headers: getHeaders({screenId: 'Screen1'}),
+      request: {
+        dependentID: supplementaryCardHolderDetailsValidation?.values?.idNumber,
+      },
+    };
+    validateDependentDetailsAction(options);
+  };
+
+  useEffect(() => {
+    if (validateDependentDetailsResponse?.isSuccess === true) {
+      dispatch(setDependentDetails(validateDependentDetailsResponse));
+      setDependentInfoValidated(true);
+      setDependentName(validateDependentDetailsResponse?.dependentNameEnglish);
+      return;
+    } else if (validateDependentDetailsResponse?.isSuccess === false) {
+      setDependentInfoValidated(false);
+      supplementaryCardHolderDetailsValidation?.setFieldError(
+        'idNumber',
+        translate(Errors.CreateSupplementaryCardInvalidIqama),
+      );
+    }
+  }, [validateDependentDetailsResponse, validateDependentDetailsError]);
+
+  useEffect(() => {
+    if (initiateScreeningCheckResponse?.isSuccess === true) {
+      const updatedSupplementaryCardDetails: SupplementaryCardDetail = {
+        ...supplementaryCardDetails,
+        dependentId: supplementaryCardHolderDetailsValidation?.values?.idNumber,
+        relationshipType: selectedRelationship?.code,
+        mobileNumber:
+          selectedRelationship?.code === CARD_HOLDER_RELATION.FAMILY_MEMBER
+            ? supplementaryCardHolderDetailsValidation?.values?.mobileNumber
+            : cardDetail?.dependentMobileNumber,
+      };
+      dispatch(setSupplementaryCardDetails(updatedSupplementaryCardDetails));
+      NavigationService.navigate(CreditCardRoutes.SupplementaryCardLimit);
+    } else if (initiateScreeningCheckResponse?.isSuccess === false) {
+    }
+  }, [initiateScreeningCheckResponse, initiateScreeningCheckError]);
+
+  const initiateScreeningCheck = () => {
+    if (selectedRelationship?.code === CARD_HOLDER_RELATION.FAMILY_MEMBER) {
+      const options = {
+        headers: getHeaders({screenId: 'Screen1'}),
+        request: {
+          custName:
+            supplementaryCardDetails?.dependentDetails?.dependentNameEnglish,
+        },
+      };
+      initiateScreeningCheckAction(options);
+    } else {
+      const updatedSupplementaryCardDetails: SupplementaryCardDetail = {
+        ...supplementaryCardDetails,
+        dependentId: userDetail?.customernumber,
+        relationshipType: selectedRelationship?.code,
+        mobileNumber: cardDetail?.dependentMobileNumber,
+      };
+      dispatch(setSupplementaryCardDetails(updatedSupplementaryCardDetails));
+      NavigationService.navigate(CreditCardRoutes.SupplementaryCardLimit);
+    }
+  };
+
+  const triggerInitiateOtp = () => {
+    const updatedSupplementaryCardDetails: SupplementaryCardDetail = {
+      ...supplementaryCardDetails,
+      cardLimit:
+        selectedCardLimitType?.code === MonthlyCardLimit.SHARED_LIMIT
+          ? cardDetail?.cardLimit
+          : supplementaryCardLimitValidation.values?.cardLimit
+              ?.replace(',', '')
+              .split('.')[0],
+      cardLimitType: selectedCardLimitType?.code,
+    };
+    dispatch(setSupplementaryCardDetails(updatedSupplementaryCardDetails));
+    const triggerOtpOptions = {
+      request: {
+        transactionName: APPLY_CARD_TRANSACTION_NAME,
+      },
+      headers: getHeaders({screenId: 'Screen1'}),
+    };
+    triggerOtpAction(triggerOtpOptions);
+  };
+
+  useEffect(() => {
+    if (
+      triggerOtpResponse?.isSuccess === 'true' ||
+      triggerOtpResponse?.isSuccess === true
+    ) {
+      if (triggerOtpResponse?.referenceNumber) {
+        setReferenceNumber(triggerOtpResponse?.referenceNumber);
+        setMaskedMobileNumber(triggerOtpResponse?.maskedMobileNumber);
+        setOtpError('');
+        setEnableOtp(true);
+      }
+    } else if (
+      triggerOtpResponse?.isSuccess === 'false' ||
+      triggerOtpResponse?.isSuccess === false
+    ) {
+      showToast({
+        id: 'toast',
+        toastMessage: 'Something went wrong',
+        inverted: false,
+        toastType: ToastTypeProps.error,
+      });
+    }
+  }, [triggerOtpResponse, triggerOtpError]);
+
+  const createSupplementaryCard = (otp: string) => {
+    const options = {
+      headers: getHeaders({screenId: 'Screen1'}),
+      request: getApplyCardRequest(otp),
+    };
+    applyCreditCardAction(options);
+  };
+
+  const getApplyCardRequest = (otp?: string) => {
+    const tempOTP = generateSha1(otp ?? '');
+    const formattedCardLimit = supplementaryCardDetails?.cardLimit
+      ?.replace(',', '')
+      .split('.')[0];
+    const applyCardRequest = {
+      verificationData: {
+        otp: {
+          otpHash: tempOTP,
+          transactionName: APPLY_CARD_TRANSACTION_NAME,
+          referenceNumber: referenceNumber,
+        },
+      },
+      supplementaryMobileNo: Number(supplementaryCardDetails?.mobileNumber),
+      applyForCardData: {
+        autoDebit: {
+          autoDebitAccountBranch: onePackAccount?.branch,
+          autoDebitAccountNo: onePackAccount?.accountNumber,
+        },
+        cashLimit: formattedCardLimit,
+        creditLimit: formattedCardLimit,
+        creditLimitCurrency: cardDetail?.cardCurrency,
+        deliveryCompany: onePackAccount?.branch,
+        primaryCardNumber: cardDetail?.primaryCardNumber,
+        suppCardLimitType: supplementaryCardDetails?.cardLimitType,
+        suppLimitFixedAmount: SUPPLEMENTARY_LIMIT_FIXED_AMOUNT,
+        documentIdNo:
+          supplementaryCardDetails?.relationshipType ===
+          CARD_HOLDER_RELATION.MYSELF
+            ? userDetail?.customernumber
+            : supplementaryCardDetails?.dependentId,
+        cashLimitCurrency: cardDetail?.cardCurrency,
+        cardProductCode: productCodeValue,
+        accountNumber: onePackAccount?.accountNumber,
+        accCreditLimitCurrency: '',
+        accSettlementCurrency: '',
+        accBranchCode: '',
+        embossedName:
+          supplementaryCardDetails?.relationshipType ===
+          CARD_HOLDER_RELATION.MYSELF
+            ? cardDetail?.embossedName
+            : supplementaryCardDetails?.dependentDetails?.dependentNameEnglish,
+      },
+      cardTypeInternal: cardDetail?.cardTypeInternal,
+      dependentRelationship:
+        supplementaryCardDetails?.dependentDetails?.dependentRelationshipCode ??
+        DEPENDENT_RELATIONSHIP_SELF,
+    };
+    return applyCardRequest;
+  };
+
+  useEffect(() => {
+    if (applyCreditCardResponse?.isSuccess === true) {
+      setOtpError('');
+      setEnableOtp(false);
+      const updatedSupplementaryCardDetails: SupplementaryCardDetail = {
+        ...supplementaryCardDetails,
+        callbackID: applyCreditCardResponse?.callBackID,
+      };
+      dispatch(setSupplementaryCardDetails(updatedSupplementaryCardDetails));
+      NavigationService.navigate(CreditCardRoutes.ActivateSupplementaryCard);
+    } else if (applyCreditCardResponse?.errors?.length > 0) {
+      switch (applyCreditCardResponse?.errors?.[0]?.errorCode) {
+        case BFFErrorCode.OTP_INVALID:
+          setOtpError(applyCreditCardResponse?.errors?.[0]?.errorDescription);
+          break;
+        case BFFErrorCode.OTP_EXPIRED:
+          setOtpError(applyCreditCardResponse?.errors?.[0]?.errorDescription);
+          break;
+        default:
+          break;
+      }
+    }
+  }, [applyCreditCardResponse, applyCreditCardError]);
+
+  const handleOnIvrCallbackSuccess = (response: any) => {
+    const addressIs = `${response?.buildingNumber} ${response?.unitNumber} ${response?.additionalNumber} ${response?.streetName} ${response?.city} ${response?.district} ${response?.region} ${response?.zipCode}`
+    retrieveCreditCards();
+    const customScreenProps: CustomStatusScreenProps = {
+      title: translate('CreateSupplementaryCardSuccessLblTitle'),
+      description: format(
+        translate('CreateSupplementaryCardSuccessLblDescription'),
+        addressIs,
+      ),
+      primaryButton: translate('CreateSupplementaryCardSuccessBtnPrimary'),
+      secondaryButton: translate('CreateSupplementaryCardSuccessBtnSecondary'),
+      onPrimaryButtonClick: () => {
+        NavigationService.reset({
+          routes: [
+            {
+              name: CreditCardRoutes.CreditCardTransaction,
+              params: {
+                selectedCCAccountNumber:
+                  supplementaryCardDetails?.selectedCardNumber,
+              },
+            },
+          ],
+        });
+      },
+      onSecondaryButtonClick: () => {
+        NavigationService.reset({
+          routes: [{name: TransferRoutes.BottomNavigation}],
+        });
+      },
+    };
+    NavigationService.navigate(
+      AuthRoutes.CustomStatusScreen,
+      customScreenProps,
+    );
+  };
+
+  const handleOnIvrCallbackFailure = () => {
+    NavigationService.goBack();
+    showToast({
+      id: '',
+      toastMessage: translate('Failed!!!'),
+      inverted: false,
+      toastType: ToastTypeProps.success,
+    });
+  };
+
+  return {
+    getSupplementaryRelationshipTypes,
+    showRelationshipDropdown,
+    setShowRelationshipDropdown,
+    relationshipTypes,
+    showMonthlyCardLimitDropdown,
+    setShowMonthlyCardLimitDropdown,
+    selectedRelationship,
+    setSelectedRelationShip,
+    cardHolderDetails,
+    termsChecked,
+    setTermsChecked,
+    cardLimitTypes,
+    selectedCardLimitType,
+    setSelectedCardLimitType,
+    supplementaryCardHolderDetailsValidation,
+    supplementaryCardLimitValidation,
+    dependentInfoValidated,
+    initiateScreeningCheck,
+    translate,
+    enableOtp,
+    setEnableOtp,
+    maskedMobileNumber,
+    triggerInitiateOtp,
+    otpError,
+    createSupplementaryCard,
+    dependentName,
+    callbackID: supplementaryCardDetails?.callbackID,
+    handleOnIvrCallbackSuccess,
+    handleOnIvrCallbackFailure,
+    userDetail,
+  };
+};
+
+
+###FilePath: ui-code-guide/supplementary-card-holder-details/index.tsx
+
+/**
+Author: Haseeb Muhsin
+Date Created:  7/10/2025
+ * Screen for displaying the supplementary card holder details and validating it for create journey
+ */
+
+import React, {useMemo} from 'react';
+import {
+  CARD_HOLDER_RELATION,
+  SupplementaryCardHolderDetailsProps,
+} from './types';
+import {ScrollView, TouchableOpacity, View} from 'react-native';
+import {useNewTheme} from 'react-core';
+import {getStyles} from './styles';
+import {Header} from 'app/components/header';
+import {LeftContentType} from 'app/components/header/left-content/types';
+import {RightContentType} from 'app/components/header/right-content/types';
+import {
+  CustomCheckbox,
+  CustomRadioButton,
+  Divider,
+  Dropdown,
+  Input,
+  Label,
+  SubmitButton,
+} from 'app/components';
+import {variants} from 'app/components/label/types';
+import DynamicBottomSheet from 'app/components/dynamic-bottom-sheet';
+import {RightContent} from 'app/components/header/right-content';
+import {useCreateSupplementaryCard} from '../../hooks/use-create-supplementary-card';
+import {Object} from 'app/features/onboarding/hooks';
+import {Tick02} from 'app/assets/svg';
+import {
+  COUNTRY_CODE_SA_DISPLAY,
+  KeyboardTypes,
+  MinimumInputLength,
+  PhoneNumberLength9,
+} from 'app/constants';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  LinearTransition,
+  useAnimatedStyle,
+} from 'react-native-reanimated';
+import useKeyboardVisible from 'app/hooks/useKeyboardVisible';
+export const SupplementaryCardHolderDetails: React.FC<
+  SupplementaryCardHolderDetailsProps
+> = props => {
+  const {navigation} = props;
+  const theme = useNewTheme();
+  const styleProps = {theme};
+  const style = getStyles(styleProps);
+  const {
+    showRelationshipDropdown,
+    setShowRelationshipDropdown,
+    relationshipTypes,
+    selectedRelationship,
+    setSelectedRelationShip,
+    cardHolderDetails,
+    supplementaryCardHolderDetailsValidation,
+    initiateScreeningCheck,
+    dependentInfoValidated,
+    translate,
+    dependentName,
+    termsChecked,
+    setTermsChecked,
+    userDetail,
+  } = useCreateSupplementaryCard();
+
+  const bottomSheet = () => (
+    <DynamicBottomSheet visible={showRelationshipDropdown}>
+      <View style={style.dropDownRoot}>
+        <View style={style.dropDownHeader}>
+          <Label
+            id=""
+            text={translate(
+              'CreateSupplementaryCardHolderDetailsDdRelationship',
+            )}
+            style={style.dropDownTitle}
+            variant={variants.titleS}></Label>
+          <View>
+            <RightContent
+              type={RightContentType.CLOSE_CANCEL}
+              onCloseCancelClick={() => {
+                setShowRelationshipDropdown(false);
+              }}></RightContent>
+          </View>
+        </View>
+        <View>
+          {relationshipTypes?.map((item: Object, index: number) => (
+            <>
+              <TouchableOpacity
+                onPress={() => {
+                  setSelectedRelationShip(item);
+                  setShowRelationshipDropdown(false);
+                  supplementaryCardHolderDetailsValidation.validateField(
+                    'idNumber',
+                  );
+                }}
+                style={style.dropDownItemRoot}>
+                <Label
+                  id=""
+                  text={item.value}
+                  style={style.dropDownTitle}></Label>
+                <CustomRadioButton
+                  id=""
+                  isChecked={selectedRelationship?.code === item.code}
+                  errorText=""
+                  icon={<Tick02 />}
+                  onPress={() => {
+                    setSelectedRelationShip(item);
+                    setShowRelationshipDropdown(false);
+                  }}></CustomRadioButton>
+              </TouchableOpacity>
+              {relationshipTypes?.length - 1 !== index && <Divider></Divider>}
+            </>
+          ))}
+        </View>
+      </View>
+    </DynamicBottomSheet>
+  );
+  const {keyboardOffset, keyboardHeight} = useKeyboardVisible();
+
+  const paddingStyle = useAnimatedStyle(() => {
+    const paddingBottom = interpolate(
+      keyboardOffset.value,
+      [0, keyboardHeight, 0],
+      [24, keyboardHeight, 24],
+      Extrapolation.CLAMP,
+    );
+    return {
+      paddingBottom,
+    };
+  });
+
+  const isSubmitButtonDisabled = useMemo(() => {
+    return (
+      (selectedRelationship?.code === CARD_HOLDER_RELATION.FAMILY_MEMBER &&
+        dependentInfoValidated === false) ||
+      selectedRelationship?.code === undefined ||
+      (selectedRelationship?.code === CARD_HOLDER_RELATION.FAMILY_MEMBER &&
+        !supplementaryCardHolderDetailsValidation?.isValid) ||
+      !termsChecked
+    );
+  }, [
+    supplementaryCardHolderDetailsValidation?.isValid,
+    termsChecked,
+    selectedRelationship?.code,
+    dependentInfoValidated,
+  ]);
+
+  return (
+    <View style={style.container}>
+      <Header
+        showCenterContent={false}
+        leftContentType={LeftContentType.BACK}
+        onLeftContentClick={() => {
+          navigation.goBack();
+        }}
+        onRightContentClick={() => {
+          navigation.pop(3);
+        }}
+        rightContentType={RightContentType.CLOSE_CANCEL}></Header>
+
+      <View style={style.mainContainer}>
+        <ScrollView
+          style={style.scroll}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps
+          contentContainerStyle={style.contentContainer}>
+          <View style={style.titleContainer}>
+            <Label
+              id="idCreateSupplementaryCardHolderDetailsTitle"
+              text={translate('CreateSupplementaryCardHolderDetailsLblTitle')}
+              variant={variants.titleXL}
+              style={style.title}></Label>
+            <Label
+              id="idCreateSupplementaryCardHolderDetailsDescription"
+              text={translate(
+                'CreateSupplementaryCardHolderDetailsLblDescription',
+              )}
+              variant={variants.bodyRegularM}
+              style={style.description}></Label>
+          </View>
+          <View style={style.inputContainer}>
+            <Dropdown
+              id="idCreateSupplementaryCardHolderDetailsRelationship"
+              placeholder={translate(
+                'CreateSupplementaryCardHolderDetailsDdRelationship',
+              )}
+              inputText={selectedRelationship?.value}
+              onPress={() =>
+                setShowRelationshipDropdown(!showRelationshipDropdown)
+              }
+              BottomSheet={bottomSheet()}
+            />
+            {selectedRelationship?.code === CARD_HOLDER_RELATION.MYSELF ? (
+              <View style={style.hiddenInputContainer}>
+                <Input
+                  id="idCreateSupplementaryCardHolderDetailsIdNumberSelf"
+                  placeholder={translate(
+                    'CreateSupplementaryCardHolderDetailsTxtIdNumber',
+                  )}
+                  value={cardHolderDetails?.idNumber}
+                  disabled></Input>
+                <Input
+                  id="idCreateSupplementaryCardHolderDetailsNameSelf"
+                  placeholder={translate(
+                    'CreateSupplementaryCardHolderDetailsTxtName',
+                  )}
+                  value={cardHolderDetails?.name}
+                  disabled></Input>
+                <Input
+                  id="idCreateSupplementaryCardHolderDetailsMobileNumberSelf"
+                  placeholder={translate(
+                    'CreateSupplementaryCardHolderDetailsTxtMobileNumber',
+                  )}
+                  value={userDetail?.phone?.slice(-9)}
+                  prefix={COUNTRY_CODE_SA_DISPLAY}
+                  disabled></Input>
+              </View>
+            ) : selectedRelationship?.code ===
+              CARD_HOLDER_RELATION.FAMILY_MEMBER ? (
+              <View style={style.hiddenInputContainer}>
+                <Input
+                  id="idCreateSupplementaryCardHolderDetailsIdNumberFamily"
+                  placeholder={translate(
+                    'CreateSupplementaryCardHolderDetailsTxtIdNumber',
+                  )}
+                  value={
+                    supplementaryCardHolderDetailsValidation.values.idNumber
+                  }
+                  setValue={supplementaryCardHolderDetailsValidation.handleChange(
+                    'idNumber',
+                  )}
+                  onFormikBlur={supplementaryCardHolderDetailsValidation.handleBlur(
+                    'idNumber',
+                  )}
+                  customKeyboardType={KeyboardTypes.NumberPad}
+                  maximumLength={MinimumInputLength}
+                  specialCharactersAllowed={false}
+                  errorTextStyle={style.errorIdStyle}
+                  errorText={
+                    supplementaryCardHolderDetailsValidation.touched.idNumber &&
+                    supplementaryCardHolderDetailsValidation.errors.idNumber
+                      ? supplementaryCardHolderDetailsValidation.errors.idNumber
+                      : undefined
+                  }></Input>
+                {dependentInfoValidated && (
+                  <>
+                    <Input
+                      id="idCreateSupplementaryCardHolderDetailsNameFamily"
+                      placeholder={translate(
+                        'CreateSupplementaryCardHolderDetailsTxtName',
+                      )}
+                      value={dependentName}
+                      disabled></Input>
+                    <Input
+                      id="idCreateSupplementaryCardHolderDetailsMobileNumberFamily"
+                      placeholder={translate(
+                        'CreateSupplementaryCardHolderDetailsTxtMobileNumber',
+                      )}
+                      value={
+                        supplementaryCardHolderDetailsValidation.values
+                          .mobileNumber
+                      }
+                      setValue={supplementaryCardHolderDetailsValidation.handleChange(
+                        'mobileNumber',
+                      )}
+                      onFormikBlur={supplementaryCardHolderDetailsValidation.handleBlur(
+                        'mobileNumber',
+                      )}
+                      prefix={COUNTRY_CODE_SA_DISPLAY}
+                      maximumLength={PhoneNumberLength9}
+                      specialCharactersAllowed={false}
+                      customKeyboardType={KeyboardTypes.NumberPad}
+                      errorText={
+                        supplementaryCardHolderDetailsValidation.touched
+                          .mobileNumber &&
+                        supplementaryCardHolderDetailsValidation.errors
+                          .mobileNumber
+                          ? supplementaryCardHolderDetailsValidation.errors
+                              .mobileNumber
+                          : undefined
+                      }></Input>
+                  </>
+                )}
+              </View>
+            ) : null}
+          </View>
+        </ScrollView>
+        <Animated.View
+          style={[style.stickyBarContainer, paddingStyle]}
+          layout={LinearTransition}>
+          <View style={style.checkContainer}>
+            <CustomCheckbox
+              id="idCreateSupplementaryCardHolderDetailsCheckbox"
+              isChecked={termsChecked}
+              onPress={() => {
+                setTermsChecked(!termsChecked);
+              }}></CustomCheckbox>
+            <Label
+              style={style.checkText}
+              id="idCreateSupplementaryCardHolderDetailsCheckbox text"
+              text={translate(
+                'CreateSupplementaryCardTermsLblCheckbox',
+              )}></Label>
+          </View>
+          <SubmitButton
+            id="idCreateSupplementaryCardHolderDetailsSubmit"
+            label={translate('CreateSupplementaryCardBtnNext')}
+            disabled={isSubmitButtonDisabled}
+            onPress={() => {
+              initiateScreeningCheck();
+            }}></SubmitButton>
+        </Animated.View>
+      </View>
+    </View>
+  );
+};
+
+
+###FilePath: ui-code-guide/supplementary-card-holder-details/styles.ts
+
+/**
+Author: Haseeb Muhsin
+Date Created:  7/10/2025
+ * Stylesheet for maintaining screen and component styles for create supplementary card holder details screen
+ */
+
+import {ScaledSheet} from 'react-native-size-matters';
+import {SupplementaryCardHolderDetailsStyleProps} from './types';
+import useNavigationBarHeight from 'app/hooks/useNavigationBarHeight';
+
+export const getStyles = (props: SupplementaryCardHolderDetailsStyleProps) => {
+  const {theme} = props;
+  const {navBarHeight} = useNavigationBarHeight();
+  return ScaledSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors['background-01'],
+      paddingBottom: navBarHeight,
+    },
+    mainContainer: {
+      flex: 1,
+    },
+    scroll: {
+      flexGrow: 1,
+    },
+    contentContainer: {
+      gap: 24,
+    },
+    stickyBarContainer: {
+      paddingTop: 24,
+      gap: 24,
+    },
+    titleContainer: {
+      gap: 8,
+      paddingHorizontal: 16,
+    },
+    title: {
+      color: theme.colors['content-primary'],
+    },
+    description: {
+      color: theme.colors['content-secondary'],
+    },
+    inputContainer: {
+      paddingHorizontal: 16,
+      gap: 16,
+    },
+    hiddenInputContainer: {
+      gap: 16,
+    },
+    dropDownRoot: {
+      paddingHorizontal: 16,
+      gap: 16,
+    },
+    dropDownHeader: {
+      flexDirection: 'row',
+    },
+    dropDownTitle: {
+      flex: 1,
+      color: theme.colors['content-primary'],
+    },
+    dropDownItemRoot: {
+      paddingVertical: 16,
+      flexDirection: 'row',
+    },
+    checkContainer: {
+      flexDirection: 'row',
+      gap: 8,
+      paddingHorizontal: 16,
+    },
+    acceptButtonContainer: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    checkText: {
+      flex: 1,
+    },
+    errorIdStyle: {
+      left: 16,
+    },
+  });
+};
+
+
+###FilePath: ui-code-guide/supplementary-card-holder-details/types.ts
+
+/**
+Author: Haseeb Muhsin
+Date Created:  7/10/2025
+ * Properties for configuring the create supplementary card holder screen and styles
+ */
+
+
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {CreditCardRootStackParamList} from 'app/navigator/credit-card-section';
+import {Theme} from 'react-core';
+
+export type SupplementaryCardHolderDetailsProps = {
+  navigation: NativeStackNavigationProp<CreditCardRootStackParamList>;
+};
+
+export type SupplementaryCardHolderDetailsStyleProps = {
+  theme: Theme;
+};
+
+export type CardHolderDetails = {
+  idNumber?: string;
+  name?: string;
+  mobileNumber?: string;
+  monthlyCreditLimit?: string;
+  currency?: string;
+};
+
+export enum CARD_HOLDER_RELATION {
+  MYSELF = '1',
+  FAMILY_MEMBER = '2',
+}
+
+
+###FilePath: core-code/credit-cards/index.ts
+
+export * from './queries/credit-cards-management';
+export * from './queries';
+
+
+###FilePath: core-code/credit-cards/constants/card-management.ts
+
+export const CreditCardManagementEndpoints = {
+  retrievePaymentType: '/retrieve-payment-type',
+  updatePaymentType: '/update-payment-type',
+  retrievePaymentChannels: '/retrieve-payment-channels',
+  updatePaymentChannels: '/evaluate-otp-and-update-payment-channels',
+  updateAvatarAndNickName: '/update-cc-supplementary-avatar-details',
+  updatePhoneNumber: '/update-cc-supplementary-cardholder-phone-number',
+  blockAndReissueIvrCallback:
+    '/evaluate-otp-and-initiate-credit-card-block-reissuance',
+  resetCreditCardPin: '/evaluate-otp-and-initiate-credit-card-pin-reset',
+  retrieveDebitCardTransactions: '/retrieve-debit-card-transactions',
+  retrieveDebitCardSecureInfo: '/retrieve-debit-card-secure-info',
+};
+
+
+###FilePath: core-code/credit-cards/constants/index.ts
+
+export * from './card-management';
+
+
+###FilePath: core-code/credit-cards/queries/credit-cards-management.ts
+
+import {
+  BaseQueryFn,
+  createApi,
+  FetchArgs,
+  fetchBaseQuery,
+} from '@reduxjs/toolkit/query/react';
+import { validateAPIStatus } from '../../common/utils/validateStatus';
+import {
+  RetrieveCardsResponse,
+  RetrieveCardsOptions,
+  RetrieveLinkedCardsResponse,
+  RetrieveLinkedCardsOptions,
+  InitiateLinkCardsResponse,
+  InitiateLinkCardsOptions,
+  InitiateDelinkCardsResponse,
+  InitiateDelinkCardsOptions,
+  InitiateOtpCreditCardsResponse,
+  InitiateOtpCreditCardsOptions,
+  RetrieveCreditCardEmbossingInfoOTPResponse,
+  RetrieveCreditCardEmbossingInfoOTPOptions,
+  RetrieveCreditCardEmbossingInfoBiometricResponse,
+  RetrieveCreditCardEmbossingInfoBiometricOptions,
+  RetrieveCreditCardUpgradeEligibilityResponse,
+  RetrieveCreditCardUpgradeEligibilityOptions,
+  RetrieveCreditCardDetailsResponse,
+  RetrieveCreditCardDetailsOptions,
+  RetrieveCreditCardTransactionsResponse,
+  RetrieveCreditCardTransactionsOptions,
+  InitiateScreeningCheckResponse,
+  InitiateScreeningCheckOptions,
+  RetrieveCcSupplementaryCardUsageRestrictionResponse,
+  RetrieveCcSupplementaryCardUsageRestrictionOptions,
+  UpdateCcSupplementaryLimitAndUsageRestrictionResponse,
+  UpdateCcSupplementaryLimitAndUsageRestrictionOptions,
+  EvaluateOtpAndInitiateCreditCardActivationResponse,
+  EvaluateOtpAndInitiateCreditCardActivationOptions,
+  ApplyCreditCardResponse,
+  ApplyCreditCardOptions,
+  RetrieveCreditCardStatementsResponse,
+  RetrieveCreditCardStatementsOptions,
+  InitiateCreditCardFreezeOptions,
+  InitiateCreditCardFreezeResponse,
+  InitiateCreditCardUnFreezeResponse,
+  InitiateCreditCardUnFreezeOptions,
+  ResetCreditCardPINResponse,
+  ResetCreditCardPINOptions,
+} from '../types/credit-cards-management-types';
+import { CreditCardManagementEndpoints } from '../constants';
+
+export const creditCardsManagementApi = (baseUrl: string) => {
+  const customBaseQuery: BaseQueryFn<FetchArgs, unknown, unknown> = async (
+    args,
+    api,
+    extraOptions,
+  ) => {
+    console.log('creditCardsManagementApi', {
+      endpoint: args?.url,
+      method: args?.method,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      body: args?.body,
+      headers: args?.headers,
+    });
+    return fetchBaseQuery({
+      baseUrl: baseUrl,
+    })(args, api, extraOptions);
+  };
+  return createApi({
+    baseQuery: customBaseQuery,
+    reducerPath: 'creditCardsManagementApi',
+    endpoints: (builder) => ({
+      retrieveCards: builder.mutation<
+        RetrieveCardsResponse,
+        RetrieveCardsOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/retrieve-cards',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+            validateStatus: validateAPIStatus,
+          };
+        },
+      }),
+      retrieveLinkedCards: builder.mutation<
+        RetrieveLinkedCardsResponse,
+        RetrieveLinkedCardsOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/retrieve-linked-cards',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+      initiateLinkCards: builder.mutation<
+        InitiateLinkCardsResponse,
+        InitiateLinkCardsOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/initiate-link-cards',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+      initiateDelinkCards: builder.mutation<
+        InitiateDelinkCardsResponse,
+        InitiateDelinkCardsOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/initiate-delink-cards',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+      initiateOtpCreditCards: builder.mutation<
+        InitiateOtpCreditCardsResponse,
+        InitiateOtpCreditCardsOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/initiate-otp',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+      retrieveCreditCardEmbossingInfoOTP: builder.mutation<
+        RetrieveCreditCardEmbossingInfoOTPResponse,
+        RetrieveCreditCardEmbossingInfoOTPOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/retrieve-credit-card-embossing-info',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+      retrieveCreditCardEmbossingInfoBiometric: builder.mutation<
+        RetrieveCreditCardEmbossingInfoBiometricResponse,
+        RetrieveCreditCardEmbossingInfoBiometricOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/retrieve-credit-card-embossing-info',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+      retrieveCreditCardUpgradeEligibility: builder.mutation<
+        RetrieveCreditCardUpgradeEligibilityResponse,
+        RetrieveCreditCardUpgradeEligibilityOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/retrieve-credit-card-upgrade-eligibility',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+      retrieveCreditCardDetails: builder.mutation<
+        RetrieveCreditCardDetailsResponse,
+        RetrieveCreditCardDetailsOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/retrieve-credit-card-details',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+      retrieveCreditCardTransactionsDetails: builder.mutation<
+        RetrieveCreditCardTransactionsResponse,
+        RetrieveCreditCardTransactionsOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/retrieve-credit-card-transactions-v1',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+      retrieveCreditCardStatements: builder.mutation<
+        RetrieveCreditCardStatementsResponse,
+        RetrieveCreditCardStatementsOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/retrieve-credit-card-statements',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+      initiateCreditCardFreeze: builder.mutation<
+        InitiateCreditCardFreezeResponse,
+        InitiateCreditCardFreezeOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/initiate-credit-card-freeze',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+      initiateScreeningCheck: builder.mutation<
+        InitiateScreeningCheckResponse,
+        InitiateScreeningCheckOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/initiate-screening-check',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+       retrieveCcSupplementaryCardUsageRestriction: builder.mutation<
+        RetrieveCcSupplementaryCardUsageRestrictionResponse,
+        RetrieveCcSupplementaryCardUsageRestrictionOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/retrieve-cc-supplementary-card-usage-restriction',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+        updateCcSupplementaryLimitAndUsageRestriction: builder.mutation<
+        UpdateCcSupplementaryLimitAndUsageRestrictionResponse,
+        UpdateCcSupplementaryLimitAndUsageRestrictionOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/update-cc-supplementary-limit-and-usage-restriction',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+        evaluateOtpAndInitiateCreditCardActivation: builder.mutation<
+        EvaluateOtpAndInitiateCreditCardActivationResponse,
+        EvaluateOtpAndInitiateCreditCardActivationOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/evaluate-otp-and-initiate-credit-card-activation',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+       initiateCreditCardUnFreeze: builder.mutation<
+        InitiateCreditCardUnFreezeResponse,
+        InitiateCreditCardUnFreezeOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/initiate-credit-card-unfreeze',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+      applyCreditCard: builder.mutation<
+        ApplyCreditCardResponse,
+        ApplyCreditCardOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/apply-credit-card',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+      resetCreditCardPIN: builder.mutation<
+        ResetCreditCardPINResponse,
+        ResetCreditCardPINOptions
+      >({
+        query: (options) => {
+          return {
+            url: CreditCardManagementEndpoints?.resetCreditCardPin,
+            method: 'POST',
+            headers: options?.headers,
+            body: options?.request,
+          };
+        },
+      }),
+    }),
+  });
+};
+
+
+###FilePath: core-code/credit-cards/queries/index.ts
+
+export * from './card-management';
+
+
+###FilePath: core-code/credit-cards/types/card-management.ts
+
+import { ApiErrors, ApiHeaders } from '../../../constants';
+
+/* Retrieve Payment Type */
+export type CardsRetrievePaymentTypeOptions = {
+  headers: ApiHeaders;
+  request: CardsRetrievePaymentTypeRequest;
+};
+export type CardsRetrievePaymentTypeRequest = {
+  creditCardNumber: string;
+};
+export type CardsRetrievePaymentTypeResponse = {
+  isSuccess: boolean;
+  cardPaymentType: string;
+  accountNumber: string;
+  errors?: ApiErrors[];
+};
+
+/* Update Payment Type */
+export type CardsUpdatePaymentTypeOptions = {
+  headers: ApiHeaders;
+  request: CardsRetrievePaymentTypeRequest;
+};
+export type CardsUpdatePaymentTypeRequest = {
+  creditCardNumber: string;
+  blockTypes: string;
+  accountNumber: string;
+};
+export type CardsUpdatePaymentTypeResponse = {
+  isSuccess: boolean;
+  cardPaymentType: string;
+  errors?: ApiErrors[];
+};
+
+/* Retrieve Payment Channels */
+export type CardsRetrievePaymentChannelsOptions = {
+  headers: ApiHeaders;
+  request: CardsRetrievePaymentChannelsRequest;
+};
+export type CardsRetrievePaymentChannelsRequest = {
+  creditCardNumber: string;
+};
+export type CardsRetrievePaymentChannelsResponse = {
+  isSuccess: boolean;
+  ECOM: boolean;
+  ATM: boolean;
+  POS: boolean;
+  ContactLess: boolean;
+  errors?: ApiErrors[];
+};
+
+/* Update Payment Channels */
+export type CardsUpdatePaymentChannelsOptions = {
+  headers: ApiHeaders;
+  request: CardsUpdatePaymentChannelsRequest;
+};
+export type PaymentChannelData = {
+  ccPaymentChannelType: string;
+  isEnabled: boolean;
+};
+export type CardsUpdatePaymentChannelsRequest = {
+  verificationData: {
+    otp: {
+      otpHash: string;
+      transactionName: string;
+      referenceNumber: string;
+    };
+  };
+  creditCardNumber: string;
+  paymentChannelDataList: PaymentChannelData[];
+};
+export type CardsUpdatePaymentChannelsResponse = {
+  isSuccess: boolean;
+  errors?: ApiErrors[];
+};
+
+/* Update Avatar & Nickname */
+export type CardsUpdateAvatarAndNicknameOptions = {
+  headers: ApiHeaders;
+  request: CardsUpdateAvatarAndNicknameRequest;
+};
+export type CardsUpdateAvatarAndNicknameRequest = {
+  isFriendlyNameChanged: boolean;
+  isAvatarImageSet: boolean;
+  avatarImageCode: string;
+  isCustomerImageSet: boolean;
+  customerImage: string;
+  friendlyName: string;
+  cardType: string;
+  cardNumber: string;
+};
+export type CardsUpdateAvatarAndNicknameResponse = {
+  isSuccess: boolean;
+  errors?: ApiErrors[];
+};
+
+/* Update Phone Number */
+export type CardsUpdatePhoneNumberOptions = {
+  headers: ApiHeaders;
+  request: CardsUpdatePhoneNumberRequest;
+};
+export type CardsUpdatePhoneNumberRequest = {
+  cardNo: string;
+  phoneNumber: string;
+};
+export type CardsUpdatePhoneNumberResponse = {
+  isSuccess: boolean;
+  errors?: ApiErrors[];
+};
+export type BlockAndReissueIvrCallbackRequest = {
+  verificationData: {
+    otp: {
+      otpHash: string;
+      transactionName: string;
+      referenceNumber: string;
+    };
+  };
+  cardNumber: string;
+  primaryCardNumber: string;
+  embossedName: string;
+  blockReason: string;
+  blockType: string;
+  cardTypeInternal: string;
+  cardClass: string;
+};
+export type RetrieveDebitCardTransactionsRequest = {
+  pageIndex: string;
+  categoryID: string;
+  fromDate: string;
+  toDate: string;
+  minAmount: number;
+  maxAmount: number;
+  sortingOrder: string;
+  sortingType: string;
+  cardNumber: string;
+  transactionType: string;
+  channel: string;
+};
+export type BlockAndReissueIvrCallbackResponse = {
+  isSuccess: string;
+  isCallbackRequired: string;
+  callBackID: string;
+};
+export type DebitCardTransactionList = {
+  title: string;
+  amountInLocalCurrency: number;
+  txnDateTime: string;
+  txnCurrency: string;
+  txnNature: string;
+  txnCode: string;
+  txnReference: string;
+  currentBalance: number;
+  spendingCategoryID: number;
+  bicCode: string;
+  billerID: number;
+  merchantID: number;
+  merchantImage: string;
+  isReversal: boolean;
+  accountEntrySrNo: number;
+};
+
+export interface VerificationData {
+  otp: Otp;
+}
+export interface Otp {
+  otpHash: string;
+  transactionName: string;
+  referenceNumber: string;
+}
+
+export type BlockAndReissueIvrCallbackOptions = {
+  headers: ApiHeaders;
+  request: BlockAndReissueIvrCallbackRequest;
+};
+
+export type RetrieveDebitCardTransactionsOptions = {
+  headers: ApiHeaders;
+  request: RetrieveDebitCardTransactionsRequest;
+};
+
+export type RetrieveDebitCardTransactionsResponse = {
+  isSuccess: boolean;
+  txnList: DebitCardTransactionList[];
+};
+
+export type RetrieveDebitCardSecureInfoResponse = {
+  pan: string;
+  cvv2: string;
+  cardStatus: string;
+  expiryDate: string;
+  key: string;
+};
+
+export type RetrieveDebitCardSecureInfoRequest = {
+  verificationData: VerificationData;
+  vpan: string;
+  cardKey: string;
+  isBiometricValidated: boolean;
+};
+
+export type RetrieveDebitCardSecureInfoOptions = {
+  headers: ApiHeaders;
+  request: RetrieveDebitCardSecureInfoRequest;
+};
+
+
+
+###FilePath: core-code/credit-cards/types/index.ts
+
+export * from './card-management';
+
+

@@ -1,0 +1,148 @@
+Definitions:
+
+profit-rate-inquiry-req:
+  description: profit rate inquiry request
+  type: object
+  properties:
+    productType:
+      $ref: ../../components/types.yaml#/productType
+
+profit-rate-inquiry-res:
+  description: profit rate inquiry response
+  type: object
+  properties:
+    isSuccess:
+      $ref: ../../components/types.yaml#/isSuccess
+    lastUpdatedOn:
+      $ref: ../../components/types.yaml#/lastUpdatedOn
+    profitRateList:
+      type: array
+      items:
+        type: object
+        properties:
+          currencyCode:
+            $ref: ../../components/types.yaml#/currencyName
+          depositQuarter:
+            $ref: ../../components/types.yaml#/depositQuarter
+          depositRate:
+            $ref: ../../components/types.yaml#/depositRate
+          depositYear:
+            $ref: ../../components/types.yaml#/depositYear
+          fromAmount:
+            $ref: ../../components/types.yaml#/amountFrom
+          toAmount:
+            $ref: ../../components/types.yaml#/amountFrom
+          isRecommendedRate:
+            $ref: ../../components/types.yaml#/isRecommendedRate
+          productId:
+            $ref: ../../components/types.yaml#/productId
+          tenure:
+            $ref: ../../components/types.yaml#/tenure
+Examples:
+
+profit-rate-inquiry-req:
+  summary: profit rate inquiry request
+  value:
+    productType: "RTDEP"
+
+profit-rate-inquiry-res:
+  summary: profit rate inquiry  response
+  value:
+    isSuccess: true
+    lastUpdatedOn: "2025-04-28 12:06:13"
+    profitRateList:
+      - currencyCode: "USD"
+        depositQuarter: "1"
+        depositRate: "3.5"
+        depositYear: "2025"
+        fromAmount: "5000"
+        toAmount: "50000"
+        isRecommendedRate: false
+        productId: "RTDEP"
+        tenure: 30
+
+ accounts.yaml
+
+openapi: 3.1.0
+info:
+  title: Accounts API
+  description: API related to Accounts Management.
+  contact:
+    name: API Support
+    url: https://www.gib.com/api-support
+    email: api.support@gib.com
+  version: '0.0.20'
+
+servers:
+  - url: http://0.0.0.0:8080/v1/api
+    variables: {}
+paths:
+    /accounts/profit-rate-inquiry:
+    post:
+      tags:
+        - accounts-management
+      summary: profit-rate-inquiry
+      description: profit rate inquiry
+      operationId: profit-rate-inquiry
+      parameters:
+        - $ref: '../components/headers.yaml#/Authorization'
+        - $ref: '../components/headers.yaml#/Content-Type'
+        - $ref: '../components/headers.yaml#/ContentLanguage'
+        - $ref: '../components/headers.yaml#/activityid'
+        - $ref: '../components/headers.yaml#/ChannelID'
+        - $ref: '../components/headers.yaml#/DeviceID'
+        - $ref: '../components/headers.yaml#/DeviceType'
+        - $ref: '../components/headers.yaml#/MobileISDN'
+        - $ref: '../components/headers.yaml#/ScreenID'
+        - $ref: '../components/headers.yaml#/ClientTimestamp'
+        - $ref: '../components/headers.yaml#/AppVersion'
+      requestBody:
+        description: loan transactions
+        content:
+          application/json:
+            schema:
+              $ref: 'definitions/profit-rate-inquiry.yaml#/profit-rate-inquiry-req'
+            examples:
+              objectExample:
+                $ref: 'examples/profit-rate-inquiry.yaml#/profit-rate-inquiry-req'
+        required: false
+      responses:
+        '200':
+          description: Successfully retrieved data
+          headers: { }
+          content:
+            application/json:
+              schema:
+                $ref: 'definitions/profit-rate-inquiry.yaml#/profit-rate-inquiry-res'
+              examples:
+                objectExample:
+                  $ref: 'examples/profit-rate-inquiry.yaml#/profit-rate-inquiry-res'
+        '400':
+          description: BadRequest
+          headers: { }
+          content:
+            application/json:
+              schema:
+                $ref: '../components/responses.yaml#/BadRequest'
+                description: Bad Request - The server could not understand the request.
+        '404':
+          description: NotFound
+          headers: { }
+          content:
+            application/json:
+              schema:
+                $ref: '../components/responses.yaml#/NotFound'
+                description: Not Found - The requested resource could not be found.
+        '500':
+          description: InternalServerError
+          headers: { }
+          content:
+            application/json:
+              schema:
+                $ref: '../components/responses.yaml#/InternalServerError'
+                description: Internal Server Error.
+      deprecated: false
+    parameters: [ ]
+tags:
+  - name: accounts-management
+    description: Accounts Management

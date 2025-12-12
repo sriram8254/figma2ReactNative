@@ -1,0 +1,21 @@
+RCM-1404 Virtual Debit Card - Card Themes APPROVED
+ Card Theme
+ As an existing customer valid Credentials  AND A
+ Logged In ND 
+ Card Theme from the virtual debit When I, open
+ card summary screen
+ , I can personalize my virtual card’s look Then
+ Exploring designs
+   - On tapping the Card theme quick action, the customer is taken to the card themes page
+   - The card themes are shown in a gallery view with the card in its current theme displayed at the 
+center
+   - The card themes are shown in a horizontal scrolling list below
+   - Available card themes are displayed normally and locked themes are displayed with a padlock 
+icon and grey overlay
+   - Tapping a locked theme pops up a message displaying the action required by the user to 
+unlock the theme
+ Applying themes    
+   - Choosing an unlocked theme and tapping Save (from the drawer) instantly updates the card art 
+and shows a  “New theme applied” toast
+   - If user's card is saved in Apple/Samsung Wallet, a message “Your wallet art will update within 
+24 h” appears

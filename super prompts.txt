@@ -1,0 +1,404 @@
+#####################################################################
+
+step-1: To Generate React Native Code with Figma image
+
+prompt_template = '''
+Generate React Native screen code from the attached design image for integration into an existing project.
+
+**Project Configuration:**
+- React: 19.1.1
+- React Native: 0.82.1
+- Gradle: 9.0.0
+- TypeScript: Required
+
+---
+
+## CRITICAL INSTRUCTIONS
+
+**DO NOT:**
+- Create mock components or mock functions
+- Recreate any existing components
+- Generate placeholder/TODO comments
+- Create standalone App.tsx files
+
+**DO:**
+- Use existing custom components with proper import statements
+- Follow the existing project structure and patterns
+- Generate production-ready, integration-ready code
+- Use proper file path format: `###FilePath: src/components/ExampleComponent/index.tsx`
+
+---
+
+## 1. COMPONENT MAPPING
+
+{component_mapping}
+
+
+---
+
+## 2. EXISTING CUSTOM COMPONENTS
+
+{existing_components}
+
+**Usage Instructions:**
+- Review all provided component definitions (props, types, usage patterns)
+- Match UI elements from the design to these components by type and purpose
+- Use these components instead of creating new ones or using default React Native components
+- Follow the exact prop structures and conventions shown in the definitions
+
+---
+
+## 3. SAMPLE WORKING CODE PATTERNS
+
+{sample_code}
+
+**Follow these patterns for:**
+- File structure (index.tsx, styles.ts, types.ts)
+- Import statements organization
+- Component composition
+- State management
+- Theme usage with `useNewTheme()`
+- Translation with `translation.useTranslation()`
+- Navigation patterns
+- Styling approaches with `getStyles()`
+
+---
+
+## 4. PROJECT STRUCTURE
+
+{package_structure}
+
+**Generate code following this structure:**
+- Place screen components in `app/features/{feature-name}/views/{screen-name}/`
+- Each screen should have:
+  - `index.tsx` - Main component
+  - `styles.ts` - StyleSheet definitions
+  - `types.ts` - TypeScript interfaces/types
+- Use proper import paths based on this structure
+- Import components from `@app/components` or `app/components`
+- Import SVG icons from `app/assets/svg`
+
+---
+
+## 5. USER STORIES & BUSINESS LOGIC
+
+{user_stories_file_content}
+
+**Implement according to:**
+- Field validation rules specified in user stories
+- Mandatory vs optional fields
+- Conditional field visibility
+- Data flow and state management requirements
+- Form submission and navigation logic
+
+---
+
+## GENERATION REQUIREMENTS
+
+### Design Analysis
+1. Analyze the attached design image carefully
+2. Identify all UI components, layouts, interactions, text content, and styling
+3. Map each visual element to existing custom components based on Component Mapping
+4. Extract exact text content, colors, spacing, and typography
+
+### Code Structure
+Generate files in this format:
+
+###FilePath: app/features/{feature}/views/{screen-name}/index.tsx
+[Component implementation]
+
+###FilePath: app/features/{feature}/views/{screen-name}/styles.ts
+[Styles implementation]
+
+###FilePath: app/features/{feature}/views/{screen-name}/types.ts
+[Types/interfaces]
+
+
+### Implementation Checklist
+- [ ] Use only existing custom components from the provided list
+- [ ] Import components with proper paths: `import * as Components from '@app/components'`
+- [ ] Import theme: `import {useNewTheme, Theme, translation} from 'react-core'`
+- [ ] Import SVG icons: `import {IconName} from 'app/assets/svg'`
+- [ ] Implement proper TypeScript types and interfaces
+- [ ] Use `getStyles()` pattern with theme parameter
+- [ ] Add proper navigation props and route params typing
+- [ ] Implement form validation based on user stories
+- [ ] Add state management for all interactive elements
+- [ ] Use translation keys: `const {t} = translation.useTranslation()`
+- [ ] Follow the exact file structure from sample code
+- [ ] Match design spacing, colors, typography precisely
+- [ ] Add proper event handlers (onPress, onChange, etc.)
+- [ ] Ensure accessibility and responsive design
+
+### Styling Guidelines
+- Use `theme.colors['color-name']` for all colors
+- Use `ContextualType` enum for Label variants (titleXL, bodyRegularM, etc.)
+- Create styles using `StyleSheet.create()` in separate styles.ts file
+- Pass theme to getStyles: `const styles = getStyles({theme})`
+- Follow spacing and layout patterns from sample code
+
+### State Management
+- Use useState for local component state
+- Implement proper form state (values, errors, touched states)
+- Add loading states where applicable
+- Handle async operations appropriately
+
+---
+
+## OUTPUT FORMAT
+
+Provide complete, production-ready code organized by file path:
+
+1. Main component file with all imports, logic, and JSX
+2. Styles file with theme-based StyleSheet
+3. Types file with all TypeScript interfaces
+
+**Code must be:**
+- Ready to integrate into the existing project
+- Free of mocks, placeholders, or TODOs
+- Following exact patterns from sample code
+- Using only provided custom components
+- Properly typed with TypeScript
+- Matching the design image exactly
+
+Generate the code now based on the attached design image.
+
+'''
+
+#####################################################################
+
+step-2:To Enrich the React Native Code with FIgmaAPI Json along with the image.
+
+ENRICH_PROMPT_TEMPLATE = '''
+
+You are enhancing React Native code with precise design specifications from Figma API JSON data.
+
+---
+
+## CONTEXT
+
+This is **iteration {iteration_number}** of code enrichment. You are refining previously generated code using Figma design data.
+
+**Input Files:**
+1. **Current Code** - React Native code from previous iteration (or Step-1 if first iteration)
+2. **Theme Colors File** - Pre-defined theme color mappings (key-value pairs)
+3. **Figma Design Image** - Visual reference for the screen
+4. **Figma API JSON Data** (Part {part_number} of {total_parts}) - Design specifications extracted from Figma
+
+---
+
+## CRITICAL INSTRUCTIONS
+
+### ❌ DO NOT:
+- Change existing component structure or component types
+- Remove or replace custom component imports
+- Create new components or mock implementations
+- Change file paths or file structure
+- Alter business logic or state management
+- Modify TypeScript types unless adding design-specific ones
+- Use hardcoded color hex values
+
+### ✅ DO:
+- Enrich styles with precise values from Figma API JSON
+- Map Figma colors to existing theme color keys carefully
+- Update padding, margin, spacing, borderRadius from Figma data
+- Apply font families, font sizes, font weights from Figma
+- Add shadows, borders, opacity values from Figma
+- Maintain existing component usage and imports
+- Keep the same file structure (index.tsx, styles.ts, types.ts)
+- Use `theme.colors['theme-key']` for all colors
+
+---
+
+## THEME COLOR MAPPING
+
+**Available Theme Colors (from theme_colors_common.txt):**
+
+{theme_colors_content}
+
+**Color Mapping Rules:**
+1. **Extract color from Figma JSON** - Look for color values in RGB, RGBA, or hex format
+2. **Find closest theme match** - Match Figma color to the closest existing theme key
+3. **Use theme key in code** - Replace with `theme.colors['theme-key-name']`
+4. **Priority mapping:**
+   - Background colors → `background-01` to `background-04`
+   - Surface colors → `surface-*` variations
+   - Text colors → `content-primary`, `content-secondary`, `content-tertiary`
+   - Interactive elements → `surface-interactive-*` or `content-interactive-*`
+   - Borders → `border-*` variations
+   - Icons → `icon-*` variations
+
+**Example Mapping:**
+
+Figma: {"r": 0.098, "g": 0.027, "b": 0.290, "a": 1} → #19074A → primary-100
+Code: backgroundColor: theme.colors['background-04'] // maps to primary-100
+
+
+---
+
+## FIGMA API JSON ANALYSIS
+
+**From the provided Figma JSON data, extract and apply:**
+
+### 1. **Layout & Spacing**
+- `paddingLeft`, `paddingRight`, `paddingTop`, `paddingBottom`
+- `itemSpacing` (gap between flex children)
+- `layoutMode` (HORIZONTAL, VERTICAL)
+- `primaryAxisAlignItems` (flex alignment)
+- `counterAxisAlignItems` (cross-axis alignment)
+- `layoutGrow` (flex grow)
+- `layoutAlign` (stretch, center, etc.)
+
+### 2. **Typography**
+- `fontFamily` (map to closest available system font or custom font)
+- `fontSize`
+- `fontWeight` (100-900)
+- `lineHeightPx` or `lineHeightPercent`
+- `letterSpacing`
+- `textAlignHorizontal` (LEFT, CENTER, RIGHT)
+- `textAlignVertical` (TOP, CENTER, BOTTOM)
+- `textCase` (UPPER, LOWER, TITLE)
+
+### 3. **Colors**
+- `fills` array (background colors, gradient fills)
+- `strokes` array (border colors)
+- `color` (text color)
+- Map ALL colors to theme keys - NEVER use raw hex/RGB values
+
+### 4. **Visual Effects**
+- `cornerRadius` or `rectangleCornerRadii` (border radius)
+- `effects` array (shadows, blurs)
+  - `type`: DROP_SHADOW, INNER_SHADOW, LAYER_BLUR
+  - `color`, `offset`, `radius`, `spread`
+- `opacity`
+- `strokeWeight` (border width)
+
+### 5. **Constraints & Sizing**
+- `constraints` (min/max width, height)
+- `minWidth`, `maxWidth`, `minHeight`, `maxHeight`
+- `layoutSizingHorizontal`, `layoutSizingVertical` (FIXED, HUG, FILL)
+
+---
+
+## ENRICHMENT PROCESS
+
+### Step 1: Identify Components in Figma JSON
+- Match Figma layer names to React Native components
+- Find corresponding nodes in JSON by `name`, `id`, or `type`
+
+### Step 2: Extract Design Properties
+- For each matched component, extract all relevant properties
+- Note down values for spacing, colors, typography, effects
+
+### Step 3: Map Colors to Theme
+- Convert Figma color values to theme keys
+- Document mapping decisions inline with comments
+
+### Step 4: Update Styles
+- Apply extracted values to StyleSheet in `styles.ts`
+- Update `getStyles()` function with precise measurements
+- Add responsive considerations if needed
+
+### Step 5: Validate Consistency
+- Ensure all colors use theme keys
+- Verify spacing follows design system patterns
+- Check typography hierarchy is maintained
+
+---
+
+## OUTPUT FORMAT
+
+Provide the enriched code in the same structure:
+
+###FilePath: app/features/{feature}/views/{screen-name}/index.tsx
+[Component implementation - keep existing structure, imports, logic]
+
+###FilePath: app/features/{feature}/views/{screen-name}/styles.ts
+[ENRICHED styles with Figma values and theme color mappings]
+
+###FilePath: app/features/{feature}/views/{screen-name}/types.ts
+[Types/interfaces - add any design-specific types if needed]
+
+
+---
+
+## ENRICHMENT CHECKLIST
+
+For each component/element, verify:
+- [ ] Background color mapped to theme key (from Figma `fills`)
+- [ ] Text color mapped to theme key (from Figma `color`)
+- [ ] Border color mapped to theme key (from Figma `strokes`)
+- [ ] Padding values applied (from Figma `padding*`)
+- [ ] Margin/spacing applied (from Figma `itemSpacing`)
+- [ ] Font family applied (from Figma `fontFamily`)
+- [ ] Font size applied (from Figma `fontSize`)
+- [ ] Font weight applied (from Figma `fontWeight`)
+- [ ] Line height applied (from Figma `lineHeight*`)
+- [ ] Border radius applied (from Figma `cornerRadius`)
+- [ ] Shadows applied (from Figma `effects`)
+- [ ] Opacity applied if < 1 (from Figma `opacity`)
+- [ ] Alignment/justification applied (from Figma layout properties)
+
+---
+
+## EXAMPLE ENRICHMENT
+
+**Before (Step-1 Code):**
+
+title: {
+fontSize: 24,
+fontWeight: 'bold',
+color: theme.colors['content-primary'],
+marginBottom: 16,
+},
+
+
+**After (Enriched with Figma JSON):**
+
+title: {
+fontSize: 28, // from Figma: fontSize
+fontWeight: '700', // from Figma: fontWeight
+lineHeight: 36, // from Figma: lineHeightPx
+letterSpacing: -0.5, // from Figma: letterSpacing
+color: theme.colors['content-inverted-primary'], // Figma fill: #FFFFFF → neutral-00 → content-inverted-primary
+marginBottom: 12, // from Figma: itemSpacing
+paddingHorizontal: 24, // from Figma: paddingLeft + paddingRight
+},
+
+
+---
+
+## SPECIAL NOTES FOR ITERATIVE ENRICHMENT
+
+**Iteration {iteration_number} Focus:**
+- This is part {part_number} of {total_parts} of Figma JSON data
+- Focus on enriching components/sections covered in this JSON chunk
+- Preserve all enrichments from previous iterations
+- Build upon (don't overwrite) previously refined styles
+- If a property was already enriched in a previous iteration, keep it unless this iteration provides more specific data
+
+**Handling Conflicts:**
+- If current Figma data conflicts with previous iteration, use the MORE SPECIFIC value
+- Document any conflicts in inline comments
+- Prioritize visual accuracy to the Figma design image
+
+---
+
+## INPUTS
+
+**Current Code (from previous iteration):**
+{current_code}
+
+**Figma API JSON Data (Part {part_number}):**
+{figma_json_chunk}
+
+**Figma Design Image Reference:**
+[Attached]
+
+---
+
+## TASK
+
+Enrich the current code with design specifications from the provided Figma JSON chunk. Focus on precision, theme color mapping, and maintaining existing component structure. Output the complete enriched code ready for the next iteration or final integration.
+
+'''

@@ -1,0 +1,30 @@
+RCM-1976 Deposit Calculator APPROVED
+ Deposit Calculator
+ As an existing customer accesse AND 
+d the Murabaha deposit - Apply flow
+ I, tap on 'Profit Rate Calculator' When 
+from profit rate screen
+ , I should be able view the profit Then
+ rates view the appropriate AND 
+maturity value 
+  - . The list should be updated The page should have two tabs: Saudi Riyal (selected by default) and US Dollar
+ based on the Murabaha deposit offerings for different currencies.
+  - On selecting the currency tab, Initial state of all fields will be set to ‘0” for 'Estimated profit', 'Maturity 
+Amount', 'Profit rate', 'Deposit Amount' & 'Deposity term'
+  - User should be shown a text box & slider to enter/key-in the deposit amount.
+  - Page should contain a  and max (eg: 100,000,000) amount, this minimum and maximum min (eg: 25,000)
+ limit is based on the limits offered by the bank fetched from the backend.
+  - Amount typed should reflect on the slider and vice versa.
+  - There should be an error message if the amount entered is not within min-max range
+     E.g: Amount entered is not within the permissible range
+ - Bottom of the page should have deposit term options applicable for the selected currency: 30 days, 60 days, 
+180 days and 360 days. Customer should be allowed to select one term at a time
+  - User should be allowed to select the deposit term from the list displayed for each currencies
+  - Amount & deposit terms are two mandatory fields for deciding the profit rate and Maturity amount
+  - Maturity amount (calculated from the profit rate and deposit amount) and profit rate (selected based on 
+the deposit amount entered by the user/selected on the slider and the term duration selected) should be 
+displayed on the page.
+ - Amount formatting and precision decimals – based on the currency list
+ - Screen should display the estimated profit in the currency - calculated from the profit rate and deposit 
+amount (entered by the user). The currency symbols should be the same as the currency tab.
+ - “Open Murabaha Deposit” button should take the user to the deposit initiation page

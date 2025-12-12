@@ -1,0 +1,3626 @@
+
+###FilePath: label/index.tsx
+
+import React, {FC} from 'react';
+import {Text} from 'react-native';
+import {getStyles} from './styles';
+import {LabelProperties} from './types';
+import {
+  getCurrentLanguage,
+  useNewTheme,
+  Language,
+  ContextualType,
+} from 'react-core';
+import Animated from 'react-native-reanimated';
+const Label: FC<LabelProperties> = (properties: LabelProperties) => {
+  const {
+    id,
+    variant = ContextualType.bodyRegularM,
+    text,
+    style,
+    numberOfLines,
+    textProps,
+  } = properties;
+  const theme = useNewTheme();
+  const language = getCurrentLanguage() as Language;
+  const styles = getStyles({theme, language, variant});
+
+  return (
+    <Animated.Text
+      key={id}
+      numberOfLines={numberOfLines}
+      style={[styles.labelStyle, style]}
+      {...textProps}>
+      {text}
+    </Animated.Text>
+  );
+};
+
+export {Label};
+
+
+###FilePath: label/styles.ts
+
+import {Platform, StyleSheet} from 'react-native';
+import {LabelStyleProperties} from './types';
+import {getFontStyles, Language} from 'react-core';
+
+export const getStyles = (props: LabelStyleProperties) => {
+  const {theme, language, variant} = props;
+  const fontStyles = getFontStyles(variant, language);
+  return StyleSheet.create({
+    labelStyle: {
+      color: theme.colors['content-primary'],
+      textAlign: 'left',
+      textAlignVertical: 'center',
+      // ...Platform.select({
+      //   ios: {
+      //     transform: [{ translateY: 10 }]
+      //   }
+      // }),
+      // transform: [{ translateY: -25 }],
+      // height: 32,
+      ...(language === Language.Arabic ? {paddingTop: 5} : {}),
+      // backgroundColor: 'red',
+      ...fontStyles,
+      ...Platform.select({
+        android: {
+          // fontFamily: 'Vazirmatn-Medium',
+          // fontFamily: 'Vazirmatn-Regular',
+          // fontFamily: 'Vazirmatn-SemiBold',
+          // fontWeight: undefined
+        },
+        // ios: {
+        //   // fontFamily: 'Vazirmatn'
+        //   fontFamily: 'Vazirmatn-SemiBold',
+        //   fontWeight: undefined
+        // }
+      }),
+
+      // ...Platform.select({
+      //   android: {
+      //     fontFamily: fontStyles.fontFamily.replaceAll(' ', '')
+      //   },
+      // }),
+    },
+  });
+};
+
+
+###FilePath: label/types.ts
+
+import { Language, ContextualType, Theme } from 'react-core';
+import { StyleProp, TextProps, TextStyle } from 'react-native';
+
+// export enum variants {
+//   titleXL = 'titleXL',
+//   titleL = 'titleL',
+//   titleM = 'titleM',
+//   titleS = 'titleS',
+//   titleXS = 'titleXS',
+//   bodySemiBoldL = 'bodySemiBoldL',
+//   bodyMediumL = 'bodyMediumL',
+//   bodyRegularL = 'bodyRegularL',
+//   bodySemiBoldM = 'bodySemiBoldM',
+//   bodyMediumM = 'bodyMediumM',
+//   bodyRegularM = 'bodyRegularM',
+//   bodySemiBoldS = 'bodySemiBoldS',
+//   bodyMediumS = 'bodyMediumS',
+//   bodyRegularS = 'bodyRegularS',
+//   bodySemiboldXS = 'bodySemiboldXS',
+//   bodyMediumXS = 'bodyMediumXS',
+//   bodyRegularXS = 'bodyRegularXS',
+// }
+
+export { ContextualType as variants }
+
+export interface LabelProperties {
+  id: string;
+  text: string;
+  variant?: ContextualType;
+  style?: StyleProp<TextStyle>;
+  numberOfLines?: number;
+  textProps?: TextProps;
+}
+export interface LabelStyleProperties {
+  theme: Theme;
+  language: Language;
+  variant: ContextualType;
+}
+
+
+###FilePath: custom-checkbox-button/index.tsx
+
+import {Pressable, View} from 'react-native';
+import React, {FC} from 'react';
+import {CheckboxButtonProperties} from './types';
+import {getStyle} from './styles';
+import {IconAlertCircle} from '@app/assets/svg/icon-alert-circle';
+import {IconAlertCircleInverted} from '@app/assets/svg/icon-alert-circle-inverted';
+import {Theme, useNewTheme} from 'react-core';
+import {Label} from '../label';
+import {Link} from '../link';
+import {variants} from '../label/types';
+import {Tick02} from 'app/assets/svg';
+import {linkVariant} from '../link/types';
+
+const CustomCheckbox: FC<CheckboxButtonProperties> = (
+  properties: CheckboxButtonProperties,
+) => {
+  const {
+    id,
+    onPress,
+    title,
+    isChecked,
+    inverted,
+    linkTitle,
+    onPressLink,
+    errorText,
+    style,
+    innerContainerStyle,
+    disabled = false,
+    titleStyle,
+    titleVariant = variants.bodyRegularM,
+    onPressDisabled = false,
+    buttonStyle,
+  } = properties;
+  const theme: Theme = useNewTheme();
+  const styles = getStyle(theme, isChecked, disabled, inverted);
+  const getCheckboxStyle = () => {
+    if (inverted) {
+      return errorText !== ''
+        ? styles.errorInverted
+        : !disabled
+        ? styles.inverted
+        : styles.disabled;
+    }
+    if (disabled) {
+      return styles.disabled;
+    }
+    if (errorText?.length) {
+      return styles.error;
+    }
+    return styles.default;
+  };
+  const buttonStyles = getCheckboxStyle();
+  return (
+    <View key={id} style={[styles.container, style]}>
+      <View style={[styles.innerContainer, innerContainerStyle]}>
+        <Pressable
+          onPress={onPress}
+          style={[buttonStyles, buttonStyle]}
+          disabled={onPressDisabled}>
+          {isChecked ? <Tick02 /> : ''}
+        </Pressable>
+        {(title || linkTitle) && (
+          <View style={styles.labelContainer}>
+            {title && (
+              <Label
+                id="custom-checkbox-button"
+                text={title}
+                variant={titleVariant}
+                style={[styles.title, titleStyle]}
+              />
+            )}
+
+            {linkTitle && (
+              <Link
+                id={'link-' + id}
+                linkText={' ' + linkTitle}
+                onPress={onPressLink}
+                variant={linkVariant.large}
+              />
+            )}
+          </View>
+        )}
+      </View>
+      {errorText && (
+        <View style={styles.errorContainer}>
+          {inverted ? <IconAlertCircleInverted /> : <IconAlertCircle />}
+          <Label
+            id="custom-checkbox-button"
+            text={errorText}
+            variant={variants.bodyRegularXS}
+            style={styles.errorTitle}
+          />
+        </View>
+      )}
+    </View>
+  );
+};
+
+export {CustomCheckbox};
+
+
+###FilePath: custom-checkbox-button/styles.ts
+
+import { Theme } from 'react-core';
+import { StyleSheet } from 'react-native';
+
+export const getStyle = (
+  theme: Theme,
+  isChecked?: boolean,
+  disabled?: boolean,
+  inverted?: boolean,
+) => {
+  return StyleSheet.create({
+    container: {
+      justifyContent: 'flex-start',
+      flexDirection: 'column',
+      gap: 8,
+      flexShrink: 1,
+    },
+    innerContainer: {
+      flexDirection: 'row',
+      flexShrink: 1,
+      gap: 8  //as per figma
+    },
+    labelContainer: {
+      flexDirection: 'row',
+      flexShrink: 1
+    },
+    errorContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexShrink: 1,
+    },
+    title: {
+      // fontSize: 16,
+      color: disabled
+        ? theme.colors['content-disabled']
+        : theme.colors['content-primary'],
+    },
+    linkText: {
+      fontSize: 16,
+      color: theme.colors['content-interactive-primary-enabled'],
+    },
+    errorTitle: {
+      color: inverted
+        ? theme.colors['content-semantic-error-inverted']
+        : theme.colors['border-semantic-error'],
+      marginHorizontal: 4,
+    },
+    default: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: isChecked
+        ? theme.colors['surface-interactive-tertiary-active']
+        : theme.colors['surface-interactive-primary-inverted-enabled'],
+      height: 24,
+      width: 24,
+      borderRadius: 4,
+      borderWidth: isChecked ? 0 : 1,
+      borderColor: isChecked ? '' : theme.colors['border-interactive-enabled'],
+    },
+    inverted: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: isChecked
+        ? theme.colors['surface-interactive-primary-inverted-active']
+        : theme.colors['surface-interactive-primary-inverted-enabled'],
+      height: 24,
+      width: 24,
+      borderRadius: 4,
+      borderWidth: 1,
+      borderColor: isChecked ? '' : theme.colors['border-interactive-enabled'],
+    },
+    disabled: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: isChecked
+        ? theme.colors['surface-interactive-primary-inverted-enabled']
+        : theme.colors['surface-interactive-primary-inverted-enabled'],
+      height: 24,
+      width: 24,
+      borderRadius: 4,
+      borderWidth: 1,
+      borderColor: isChecked
+        ? theme.colors['border-interactive-disabled']
+        : theme.colors['border-interactive-disabled'],
+    },
+    error: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: isChecked
+        ? theme.colors['surface-semantic-error-02']
+        : theme.colors['surface-semantic-error-01'],
+      height: 24,
+      width: 24,
+      borderRadius: 4,
+      borderWidth: 1,
+      borderColor: isChecked ? '' : theme.colors['border-semantic-error'],
+    },
+    errorInverted: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: isChecked
+        ? theme.colors['surface-semantic-inverted-error-02']
+        : theme.colors['surface-semantic-error-01'],
+      height: 24,
+      width: 24,
+      borderRadius: 4,
+      borderWidth: 1,
+      borderColor: isChecked
+        ? ''
+        : theme.colors['border-semantic-error-inverted'],
+    },
+  });
+};
+
+
+###FilePath: custom-checkbox-button/types.ts
+
+import {TextStyle, ViewStyle} from 'react-native';
+import {ContextualType} from 'react-core';
+
+export interface CheckboxButtonProperties {
+  id: string;
+  onPress?: () => void;
+  title?: string | React.ReactElement;
+  isChecked: boolean;
+  inverted?: boolean;
+  style?: ViewStyle;
+  onPressLink?: () => void;
+  innerContainerStyle?: ViewStyle;
+  errorText?: string;
+  linkTitle?: string;
+  disabled?: boolean;
+  titleStyle?: TextStyle;
+  titleVariant?: ContextualType;
+  onPressDisabled?: boolean;
+  buttonStyle?: ViewStyle;
+}
+
+
+###FilePath: screen/index.tsx
+
+import React, {FC, useEffect, useLayoutEffect, useRef, useState} from 'react';
+
+import {
+  View,
+  Pressable,
+  Platform,
+  StatusBar,
+  ScrollView,
+  KeyboardAvoidingView,
+  Dimensions,
+  Keyboard,
+  Animated,
+  Text,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+} from 'react-native';
+import {useNewTheme, Theme} from 'react-core';
+
+import {CustomCheckbox} from '../custom-checkbox-button';
+import LinearContainer from '../linear-gradient';
+import {getStyles} from './styles';
+import {ScreenContainerProperties} from './types';
+import {ArrowBackIcon} from '@app/assets/svg';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
+import useKeyboardVisible from 'app/hooks/useKeyboardVisible';
+import useStatusBarheight from 'app/hooks/useStatusBarHeight';
+import useAppColourScheme from 'app/hooks/useAppColourScheme';
+
+import {ShadowDivider} from '../shadow-divider';
+import LinearGradient from 'react-native-linear-gradient';
+import {
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+} from 'react-native-reanimated';
+import {SCROLL_SHADOW_OFFSET, SCROLL_SHADOW_OPACITY_MAX} from 'app/constants';
+import {StickyShadows} from '../sticky-shadows';
+import {StickyShadowDirections} from '../sticky-shadows/types';
+import {useScrollShadow} from 'app/hooks/use-scroll-shadow';
+
+const ScreenContainer: FC<ScreenContainerProperties> = ({
+  id,
+  children,
+  inverted = false,
+  circleRadiusButtomGlow = false,
+  showStatusBar = true,
+  showRightContent = false,
+  showCenterContent = false,
+  bottomScreenContent,
+  stickyKeyboardBottomView = false,
+  showCheckbox = false,
+  isChecked = false,
+  disabled = false,
+  onPressLeftContent,
+  onPressCenterContent,
+  onPressRightContent,
+  leftContent,
+  centerContent,
+  rightContent,
+  scrollViewStyle,
+  onPressCheckbox,
+  showGoBackIcon = false,
+  customContainerStyle,
+  customBottomScreenContentStyle,
+  headerContainerStyle,
+  backgroundColor,
+  disableKeyboardAvoidingScrollView = false,
+  disableScrollView = false,
+  removeBottomInsets = false,
+  bounceOnscroll = true,
+  keyboardContainerStyle,
+  stickyContent = null,
+  disableBottomSafeArea = false,
+  customStickyBottomPadding = 24,
+  disableInvertedNavigationBar = false,
+  shadowVisible = true,
+  loginPage = false,
+  onScrollRef = null,
+  ...scrollViewProps
+}) => {
+  const theme: Theme = useNewTheme();
+  const navigation = useNavigation();
+  const statusBarHeight = useStatusBarheight();
+  // const keyBoardVertical =
+  //   (statusBarHeight ?? 24) - (Platform.OS === 'ios' ? 16 : 24);
+  const styles = getStyles({
+    theme,
+    inverted,
+    statusBarHeight,
+    customStickyBottomPadding,
+  });
+  // const isKeyboardVisible = useKeyboardVisible().isKeyboardVisible;
+  const [keyBoardOffset, setKeyBoardOffset] = useState(keyBoardVertical);
+  const {navigationBarColor, navigationBarColorInverted} = useAppColourScheme();
+  // const scrollViewEnabled = disableScrollView
+  //   ? false
+  //   : Dimensions.get('window').height > 700
+  //   ? true
+  //   : false;
+
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [keyBoardVertical, setKeyBoardVertical] = useState(0);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', e => {
+      setIsKeyboardVisible(true);
+      setKeyBoardVertical(e.endCoordinates.height);
+    });
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+      setIsKeyboardVisible(false);
+      setKeyBoardVertical(0);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+
+  const goBack = () => {
+    navigation?.goBack();
+  };
+
+  useFocusEffect(() => {
+    if (Platform.OS === 'android') {
+      //for 3 button navigation bar color
+      navigation.setOptions({
+        navigationBarColor:
+          inverted && !disableInvertedNavigationBar
+            ? navigationBarColorInverted
+            : navigationBarColor,
+      });
+      return () => {
+        navigation.setOptions({
+          navigationBarColor: navigationBarColor,
+        });
+      };
+    }
+  });
+
+  // useEffect(() => {
+  //   isKeyboardVisible
+  //     ? setKeyBoardOffset(keyBoardVertical)
+  //     : setKeyBoardOffset(0);
+  // }, [isKeyboardVisible, keyBoardVertical]);
+
+  const statusBackgroundColor = () => {
+    if (backgroundColor) {
+      return backgroundColor;
+    } else if (inverted) {
+      return 'transparent';
+    } else return theme.colors['background-01'];
+  };
+
+  const scrollViewRef = useRef<ScrollView>(null);
+  // const scrollY = useRef(new Animated.Value(0)).current;
+  // const [prevScrollY, setPrevScrollY] = useState(0);
+  // const headerOpacity = scrollY.interpolate({
+  //   inputRange: [0, 100], // Adjust 100 to control fade-out distance
+  //   outputRange: [1, 0],
+  //   extrapolate: 'clamp',
+  // });
+  // const handleScroll = Animated.event(
+  //   [{nativeEvent: {contentOffset: {y: scrollY}}}],
+  //   {
+  //     useNativeDriver: false, // Set to true if not animating layout properties like height/width
+  //     listener: event => {
+  //       const currentScrollY = event?.nativeEvent.contentOffset.y;
+  //       // You can add logic here to determine scroll direction if needed for more complex animations
+  //       // For simple fade based on scroll position, the interpolate handles it.
+  //       setPrevScrollY(currentScrollY);
+  //     },
+  //   },
+  // );
+
+  useEffect(() => {
+    if (onScrollRef) onScrollRef(scrollViewRef.current);
+  }, []);
+
+  /* New Shadow Scroll */
+  const {
+    scrollable,
+    topShadowOpacity,
+    bottomShadowOpacity,
+    handleScroll,
+    handleScrollHeight,
+    handleContentSizeChange,
+  } = useScrollShadow();
+
+  return (
+    <LinearContainer
+      style={[
+        {
+          backgroundColor: backgroundColor ?? theme.colors['background-01'],
+        },
+        removeBottomInsets && {paddingBottom: 0},
+      ]}
+      inverted={inverted}
+      loginPage={loginPage}
+      disableBottomSafeArea={disableBottomSafeArea}
+      circleRadiusButtomGlow={circleRadiusButtomGlow}>
+      <KeyboardAvoidingView
+        style={[styles.keyboardContainer, keyboardContainerStyle]}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        enabled={!disableKeyboardAvoidingScrollView && isKeyboardVisible}
+        keyboardVerticalOffset={keyBoardOffset}
+        contentContainerStyle={styles.keyboardContentContainer}>
+        <View
+          style={[styles.containerStyle, customContainerStyle]}
+          id={id}
+          testID={id}>
+          {showStatusBar && (
+            <StatusBar
+              translucent
+              barStyle={inverted ? 'light-content' : 'dark-content'}
+              animated
+              backgroundColor={statusBackgroundColor()}
+            />
+          )}
+          {/* This view showing extra top space in */}
+          {/* <View style={styles.safeAreaStyle}> */}
+          {/* Header Bar */}
+          <View style={[styles.headerContainerStyle, headerContainerStyle]}>
+            {/* Left Header */}
+
+            <View style={styles.leftContainerStyle}>
+              {showGoBackIcon ? (
+                <Pressable style={styles.leftContentStyle} onPress={goBack}>
+                  <ArrowBackIcon
+                    color={
+                      inverted
+                        ? theme.colors['icon-interactive-inverted-enabled']
+                        : theme.colors['icon-interactive-secondary-enabled']
+                    }
+                  />
+                </Pressable>
+              ) : (
+                leftContent && (
+                  <Pressable
+                    focusable={false}
+                    style={styles.leftContentStyle}
+                    onPress={onPressLeftContent}>
+                    {leftContent}
+                  </Pressable>
+                )
+              )}
+            </View>
+
+            {/* Middle Label */}
+            <View style={styles.centerContainerStyle}>
+              {showCenterContent && (
+                <Pressable
+                  style={styles.centerLogoStyle}
+                  onPress={onPressCenterContent}>
+                  {centerContent}
+                </Pressable>
+              )}
+            </View>
+
+            {/* Right Header */}
+            <View style={styles.rightContainerStyle}>
+              {showRightContent && (
+                <Pressable
+                  style={styles.rightLogoStyle}
+                  onPress={onPressRightContent}>
+                  {rightContent}
+                </Pressable>
+              )}
+            </View>
+            {/* </View> */}
+          </View>
+          {/* {shadowVisible && (
+            <ShadowDivider height={16} sides={{bottom: true, top: false}} />
+          )} */}
+          {stickyContent}
+
+          <View style={{flex: 1}}>
+            {shadowVisible && (
+              <Animated.View style={{opacity: topShadowOpacity, zIndex: 10}}>
+                <StickyShadows />
+              </Animated.View>
+            )}
+            <Animated.ScrollView
+              onLayout={handleScrollHeight}
+              onContentSizeChange={handleContentSizeChange}
+              onScroll={e => {
+                // scrollY.value = e.nativeEvent.contentOffset.y;
+                handleScroll(e);
+              }}
+              scrollEnabled={!disableScrollView}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={scrollViewStyle}
+              bounces={false}
+              {...scrollViewProps}
+              ref={scrollViewRef}>
+              {children}
+            </Animated.ScrollView>
+            {shadowVisible && scrollable && !isKeyboardVisible && (
+              <Animated.View
+                style={{
+                  opacity: bottomShadowOpacity,
+                  zIndex: 10,
+                }}>
+                <StickyShadows
+                  direction={StickyShadowDirections.BOTTOM_TO_TOP}
+                  containerStyle={{
+                    top: -16,
+                  }}
+                />
+              </Animated.View>
+            )}
+          </View>
+          {showCheckbox && (
+            <View style={styles.checkboxContainerStyle}>
+              <CustomCheckbox
+                id="checkbox"
+                onPress={onPressCheckbox}
+                errorText=""
+                title="Checkbox"
+                isChecked={isChecked}
+                inverted={inverted}
+                disabled={disabled}
+              />
+            </View>
+          )}
+          <View
+            style={[
+              styles.bottomScreenContentStyle,
+              customBottomScreenContentStyle,
+              // shadowVisible && !isKeyboardVisible && styles.bottomShadowStyle,
+              stickyKeyboardBottomView && isKeyboardVisible
+                ? styles.stickyKeyboardBottomView
+                : {},
+            ]}>
+            {bottomScreenContent}
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </LinearContainer>
+  );
+};
+
+export {ScreenContainer};
+
+
+###FilePath: screen/styles.ts
+
+import {StyleSheet, Dimensions, Platform} from 'react-native';
+import {ScreenContainerStypeProps} from './types';
+import DeviceInfo from 'react-native-device-info';
+import useKeyboard from 'app/hooks/useKeyboardVisible';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import useNavigationBarHeight from 'app/hooks/useNavigationBarHeight';
+
+const {width, height} = Dimensions.get('window');
+const isTab = DeviceInfo.isTablet();
+const isPadOrTab = isTab && (width >= 768 || height >= 1024);
+
+export const getStyles = (properties: ScreenContainerStypeProps) => {
+  const insets = useSafeAreaInsets();
+  const {isKeyboardVisible, keyboardHeight} = useKeyboard();
+  const {navBarHeight} = useNavigationBarHeight();
+
+  // const isKeyBoardVisible = useKeyboardVisible()?.isKeyboardVisible;
+  const {
+    theme,
+    inverted,
+    statusBarHeight,
+    customStickyBottomPadding = 24,
+  } = properties;
+  return StyleSheet.create({
+    containerStyle: {
+      flex: 1,
+      backgroundColor: inverted ? undefined : theme.colors['background-01'],
+    },
+    keyboardContainer: {
+      flex: 1,
+    },
+
+    keyboardContentContainer: {
+      paddingBottom: 150,
+      padding: 20,
+      margin: 50,
+    },
+    headerContainerStyle: {
+      height: 40,
+      width: '100%',
+      justifyContent: 'center',
+      ...Platform.select({
+        ios: {
+          paddingTop: 0,
+        },
+        android: {
+          marginTop: inverted ? statusBarHeight : 0,
+        },
+      }),
+      flexDirection: 'row',
+      marginBottom: 8,
+    },
+    leftContainerStyle: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+    },
+    centerContainerStyle: {
+      flex: 1,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    rightContainerStyle: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'flex-end',
+    },
+    centerLogoStyle: {
+      position: 'absolute',
+      alignSelf: 'center',
+      height: 40,
+      justifyContent: 'center',
+    },
+    rightLogoStyle: {
+      position: 'absolute',
+      alignSelf: 'flex-end',
+      height: 40,
+      justifyContent: 'center',
+      right: 16,
+    },
+    leftContentStyle: {
+      position: 'absolute',
+      left: 16,
+      height: 40,
+      justifyContent: 'center',
+      alignItems: 'flex-start',
+      width: 40,
+    },
+    checkboxContainerStyle: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    // bottomScreenContentStyle: {
+    //   ...Platform.select({
+    //     ios: {
+    //       paddingBottom: isKeyBoardVisible ? (height < 700 ? 24 : 62) : 24,
+    //     },
+    //     android: {
+    //       paddingBottom: 24,
+    //     },
+    //   }),
+    // },
+    bottomScreenContentStyle: {
+      ...Platform.select({
+        ios: {
+          paddingBottom: isKeyboardVisible
+            ? height < 700
+              ? 24
+              : insets.top
+            : 24,
+        }, //ios
+        android: {
+          paddingBottom: isKeyboardVisible
+            ? navBarHeight - 16 // to remove the excess padding on keyboard alive
+            : navBarHeight + 24,
+          // paddingBottom: navBarHeight + 24, // padding for CTA across the ScreenConatainer.
+        },
+      }),
+    },
+    bottomShadowStyle: {
+      boxShadow: '0 -8px 12px 0 rgba(0, 0, 0, 0.10))',
+    },
+    topBar: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 1,
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+
+    linearGradient: {
+      height: 10,
+      width: '100%',
+    },
+
+    stickyKeyboardBottomView: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: isKeyboardVisible ? keyboardHeight : 0,
+      paddingBottom: customStickyBottomPadding,
+    },
+    safeAreaStyle: {
+      paddingTop: isPadOrTab ? 25 : 0,
+    },
+    stickyShadowTop: {
+      zIndex: 1,
+      top: 0,
+      bottom: null
+    },
+    stickyShadowBottom: {
+     zIndex: 1,
+     bottom: 0,
+     top: null
+    },
+  });
+};
+
+
+###FilePath: screen/types.ts
+
+import {Theme} from 'react-core';
+import React, {ReactNode} from 'react';
+import {StyleProp, ViewStyle,ScrollView} from 'react-native';
+
+export interface ScreenContainerProperties {
+  id: string;
+  children?: ReactNode;
+  inverted?: boolean;
+  showStatusBar?: boolean;
+  circleRadiusButtomGlow?: boolean;
+  bottomScreenContent?: ReactNode;
+  stickyKeyboardBottomView?: boolean;
+  showStory?: boolean;
+  showRightContent?: boolean;
+  showCenterContent?: boolean;
+  showCheckbox?: boolean;
+  isChecked?: boolean;
+  disabled?: boolean;
+  onPressCheckbox?: () => void;
+  onPressLeftContent?: () => void;
+  onPressCenterContent?: () => void;
+  onPressRightContent?: () => void;
+  leftContent?: React.JSX.Element;
+  stickyContent?: ReactNode;
+  centerContent?: React.JSX.Element;
+  rightContent?: React.JSX.Element;
+  scrollViewStyle?: StyleProp<ViewStyle>;
+  showGoBackIcon?: boolean;
+  customContainerStyle?: StyleProp<ViewStyle>;
+  customBottomScreenContentStyle?: StyleProp<ViewStyle>;
+  headerContainerStyle?: StyleProp<ViewStyle>;
+  backgroundColor?: string;
+  disableKeyboardAvoidingScrollView?: boolean;
+  disableScrollView?: boolean;
+  showsHorizontalScrollIndicator?: boolean;
+  showsVerticalScrollIndicator?: boolean;
+  removeBottomInsets?:boolean
+  bounceOnscroll?: boolean;
+  keyboardContainerStyle?: ViewStyle;
+  disableBottomSafeArea?:boolean; //supports for iOS
+  customStickyBottomPadding?: number;
+  disableInvertedNavigationBar?: boolean;
+  shadowVisible?: boolean;
+  loginPage?: boolean;
+  onScrollRef?: (a:ScrollView) => void;
+
+}
+
+export interface ScreenContainerStypeProps {
+  theme: Theme;
+  inverted: boolean;
+  statusBarHeight: number;
+  customStickyBottomPadding?: number;
+}
+
+
+###FilePath: submit-button/index.tsx
+
+import React, {FC} from 'react';
+import {Button, ButtonProperties} from '../custom-button';
+import useKeyboardVisible from 'app/hooks/useKeyboardVisible';
+import {View, StyleSheet} from 'react-native';
+
+const SubmitButton: FC<ButtonProperties> = props => {
+  const isKeyBoardVisible = useKeyboardVisible()?.isKeyboardVisible;
+   const { paddingHorizontal, ...restProps } = props;
+  const effectivePadding = isKeyBoardVisible ? 0 : (paddingHorizontal ?? 16);
+  return (
+       <View style={[!isKeyBoardVisible &&  { paddingHorizontal: effectivePadding }]}>
+      <Button isSubmitButton={isKeyBoardVisible} {...restProps} />
+    </View>
+  );
+};
+
+
+export {SubmitButton};
+
+
+###FilePath: custom-input/index.tsx
+
+import React, {FC, useEffect, useRef, useState} from 'react';
+import {
+  Animated,
+  Easing,
+  Image,
+  Keyboard,
+  NativeSyntheticEvent,
+  Pressable,
+  Text,
+  TextInput,
+  TextInputFocusEventData,
+  View,
+} from 'react-native';
+import {
+  getCurrencyComponentStyle,
+  getFlagComponentStyle,
+  getStyle,
+} from './styles';
+import {useNewTheme, translation, Theme} from 'react-core';
+import {InputProperties} from './type';
+import {Cancel_01} from 'app/assets/svg';
+import EyeOpenComponent from '@app/assets/svg/eye-open';
+import {EyeCloseComponent} from '@app/assets/svg/eye-close';
+import {ErrorText} from '../error-text';
+import {HelperText} from '../helper-text';
+import {Label} from '../label';
+
+import {
+  ALPHA_NUMERIC_ARABIC_REGEX,
+  ALPHA_NUMERIC_ARABIC_WITH_SPACE_REGEX,
+  ALPHA_NUMERIC_REGEX,
+  ALPHA_NUMERIC_WITH_SPACE_REGEX,
+  ARABIC_REGEX,
+  EMOJI_REGEX,
+  KeyboardTypes,
+  NUMERIC_REGEX,
+} from 'app/constants';
+import {variants} from '../label/types';
+import RemoteSvg from '../remote-svg';
+import {formatIbanWithSpaces, Size} from 'app/utils';
+import {Currency} from '../Currency';
+import {isRTLLanguage} from 'app/utils/language-utils';
+
+const Input: FC<InputProperties> = (
+  properties: InputProperties,
+): JSX.Element => {
+  const {
+    id,
+    disabled = false,
+    placeholder = '',
+    errorText,
+    helperText,
+    value = '',
+    customKeyboardType = KeyboardTypes.VisiblePassword,
+    inverted = false,
+    prefix,
+    SuffixIcon,
+    clearInputValue,
+    secure = false,
+    setValue,
+    maximumLength,
+    formatAmount = false,
+    onPressOut,
+    setTouchedProperty,
+    onEndEditing,
+    onFormikBlur,
+    textInputProps,
+    onKeyboardFocus,
+    flag,
+    currency,
+    alwaysFocusOn = false,
+    isIban = false,
+    onFocus,
+    setComponentFocus,
+    specialCharactersAllowed = true,
+    spaceAllowed = false,
+    max = 200,
+    numbersAllowed = true,
+    onPressSuffixIcon,
+    arabicAllowed = false,
+    isZeroAllowed = true,
+    emojisAllowed = false,
+    suffixIconStyle,
+    isCurrencyInput = currency !== undefined,
+    isTextInputMenuShow = true,
+    errorTextStyle,
+    customRef = false,
+    truncateTail = false,
+  } = properties;
+  const [fieldActive, setFieldActive] = useState(!!value);
+  const [secureValue, setSecureValue] = useState(!!secure);
+  const [showCloseIcon, setShowCloseIcon] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [showTruncateOverlay, setShowtruncateOverlay] = useState(false);
+  const position = new Animated.Value(
+    fieldActive || value || alwaysFocusOn ? 1 : 0,
+  );
+  const isError = Boolean(errorText && errorText?.length > 0);
+  const theme: Theme = useNewTheme();
+  const inputRef = useRef<TextInput>(null);
+  const {t} = translation.useTranslation();
+  const styles = getStyle({
+    position,
+    fieldActive,
+    theme,
+    inverted,
+    focused,
+    disabled,
+    isError,
+    isCurrencyInput,
+  });
+
+  useEffect(() => {
+    // Move placeholder if the value is set from outside
+    if ((value && !fieldActive) || alwaysFocusOn) {
+      setFieldActive(true);
+      Animated.timing(position, {
+        toValue: 1,
+        duration: 1,
+        useNativeDriver: false,
+        easing: Easing.ease,
+      }).start();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  useEffect(() => {
+    //for reset to default state
+    if (!focused && !value) {
+      setComponentFocus?.(false);
+      setFieldActive(false);
+    }
+  }, [focused, value]);
+
+  useEffect(() => {
+    if (value) {
+      setTimeout(() => {
+        inputRef.current?.setSelection(0, 0);
+        setShowtruncateOverlay(truncateTail);
+      }, 5);
+    }
+    // blur on keyboard hide or out press
+    const keyboardHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      inputRef.current?.blur();
+    });
+    return () => {
+      keyboardHideListener.remove();
+    };
+  }, []);
+
+  const handleOnFocus = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
+    setFocused(true);
+    onKeyboardFocus?.();
+    setComponentFocus?.(true);
+    onFocus?.(e);
+    setShowtruncateOverlay(false);
+    if (!fieldActive) {
+      setFieldActive(true);
+      Animated.timing(position, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: false,
+        easing: Easing.ease,
+      }).start();
+    }
+
+    /* While Input Focus, Cursor Points to end of input value */
+    inputRef.current?.setSelection(value.length, value.length);
+  };
+
+  const handleOnBlur = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
+    setFocused(false);
+    setComponentFocus?.(false);
+    onFormikBlur?.(e);
+    setShowtruncateOverlay(truncateTail);
+    if (formatAmount) {
+      if (value && !value.includes('.')) {
+        setValue?.(value + '.00');
+      }
+    }
+    if (fieldActive && value === '') {
+      if (fieldActive && value === '' && !alwaysFocusOn) {
+        setFieldActive(false);
+        Animated.timing(position, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: false,
+          easing: Easing.ease,
+        }).start();
+      }
+    }
+
+    /* While Input Blur, Cursor Points to start of input value */
+    inputRef.current?.setSelection(0, 0);
+  };
+
+  const changeMode = () => {
+    setShowCloseIcon(!showCloseIcon);
+    setSecureValue(!secureValue);
+  };
+
+  const iconColor = () => {
+    if (errorText && errorText?.length > 0) {
+      return inverted ? styles.invertedIcon.color : styles.errorIcon.color;
+    }
+    if (focused) {
+      return inverted ? styles.invertedIcon.color : styles.focusedIcon.color;
+    }
+    if (disabled) {
+      return styles.disabledIcon.color;
+    } else {
+      return inverted ? styles.invertedIcon.color : styles.defaultIcon.color;
+    }
+  };
+
+  const clearInput = () => {
+    setValue?.('');
+    clearInputValue && clearInputValue();
+  };
+
+  const getFinishedText = (text: string) => {
+    let output = text;
+    //This code is not needed anymore as inputs by default changed with visible-password scheme.
+    //Thus user cant long press on special characters
+
+    // if (!specialCharactersAllowed) {
+    //   let allowed =
+    //     /[a-zA-Z0-9\u0600-\u06FF]/
+    //   if(spaceAllowed) {
+    //     allowed = /[a-zA-Z0-9\u0600-\u06FF ]/
+    //   }
+    //   for (let i = 0; i < text.length; i++) {
+    //     if (allowed.test(text[i])) {
+    //       output += text[i];
+    //     }
+    //   }
+    // } else {
+    //   output = text;
+    // } //RCM-1679
+    let finishedText = spaceAllowed ? output : output.replace(/\s+/g, '');
+    if (!emojisAllowed) {
+      finishedText = finishedText.replace(EMOJI_REGEX, '');
+    }
+    if (!specialCharactersAllowed) {
+      if (spaceAllowed) {
+        finishedText = finishedText.replace(/[^a-zA-Z0-9\u0600-\u06FF ]/, '');
+      } else {
+        finishedText = finishedText.replace(/[^a-zA-Z0-9\u0600-\u06FF]/, '');
+      }
+    }
+
+    if (!numbersAllowed) {
+      finishedText = finishedText.replace(NUMERIC_REGEX, '');
+    }
+    if (!arabicAllowed) {
+      finishedText = finishedText.replace(ARABIC_REGEX, '');
+    }
+    if (finishedText.length <= max) {
+      return finishedText;
+    } else {
+      return finishedText.slice(0, max);
+    }
+  };
+
+  const handleInputChange = (text: string) => {
+    if (formatAmount) {
+      const rawText = text.replace(/,/g, '');
+      if (rawText === '' || (!isZeroAllowed && rawText === '0')) {
+        setValue?.('');
+        return;
+      }
+      const regex = /^\d+(\.\d{0,2})?$/;
+      if (regex.test(rawText) || rawText === '') {
+        const [integer, decimal] = rawText.split('.');
+        const formattedInteger = new Intl.NumberFormat('en-US').format(
+          Number(integer || ''),
+        );
+        let formattedText =
+          decimal !== undefined
+            ? `${formattedInteger}.${decimal}`
+            : formattedInteger;
+        if (formattedText.length && integer.length > 8) {
+          return;
+        }
+        if (formattedText.length && decimal?.length > 2) {
+          return;
+        }
+        if (
+          formattedText.length &&
+          integer.length === 9 &&
+          formattedText.endsWith('.')
+        ) {
+          formattedText = formattedText.slice(0, -1);
+        }
+        setValue?.(formattedText);
+      }
+    } else if (isIban) {
+      const finishedText = getFinishedText(text) ?? '';
+      const formattedIban = formatIbanWithSpaces(finishedText);
+      setValue?.(formattedIban);
+    } else {
+      const finishedText = getFinishedText(text) ?? '';
+      setValue?.(finishedText);
+      if (finishedText.length === 1) {
+        setTouchedProperty && setTouchedProperty();
+      }
+    }
+  };
+
+  //For currency
+  const currencyInputComponent = () => {
+    return (
+      <Pressable
+        style={styles.currencyInputContainer}
+        onPress={() => {
+          inputRef.current?.focus();
+        }}>
+        <View style={styles.inputRowCurrency}>
+          {isCurrencyInput && !isRTLLanguage() && (
+            <CurrencyComponent currency={currency} fieldActive={fieldActive} />
+          )}
+          <TextInput
+            ref={inputRef}
+            contextMenuHidden={true}
+            selectTextOnFocus={false}
+            maxLength={maximumLength}
+            onFocus={handleOnFocus}
+            onBlur={handleOnBlur}
+            value={value}
+            onPressOut={onPressOut}
+            editable={!disabled}
+            keyboardType={customKeyboardType}
+            // onChangeText={value => setValue?.(value)}
+            onChangeText={handleInputChange}
+            secureTextEntry={secureValue}
+            autoCorrect={false}
+            autoComplete="off"
+            underlineColorAndroid="transparent"
+            style={[
+              styles.currencyInput,
+              disabled && styles.disabledInputStyle,
+            ]}
+            onEndEditing={onEndEditing}
+            selectionColor={
+              inverted
+                ? theme.colors['border-interactive-enabled']
+                : theme.colors['border-interactive-active']
+            }
+            {...textInputProps}
+            cursorColor={theme.colors['border-interactive-active']}
+          />
+          {isCurrencyInput && isRTLLanguage() && (
+            <CurrencyComponent currency={currency} fieldActive={fieldActive} />
+          )}
+        </View>
+      </Pressable>
+    );
+  };
+
+  useEffect(() => {
+    if (customRef === true) {
+      inputRef.current?.focus();
+    }
+  }, [customRef]);
+
+  return (
+    <View key={id} style={styles.parentContainer}>
+      <View
+        style={[
+          styles.container,
+          focused && {...styles.focusedContainer},
+          disabled && styles.disabledContainerStyle,
+          isError ? styles.errorContainerStyle : null,
+        ]}>
+        <FlagComponent flag={flag} />
+        <View style={styles.innerContainer}>
+          <Animated.Text
+            style={[
+              styles.placeholder,
+              fieldActive && styles.animatedPlacholderStyle,
+              disabled && styles.disabledPlaceholderStyle,
+            ]}
+            numberOfLines={1}>
+            {placeholder}
+          </Animated.Text>
+          <View style={styles.inputRow}>
+            {prefix &&
+              typeof prefix === 'string' &&
+              (focused || value !== '') && (
+                <Label
+                  id="custom-input"
+                  text={prefix}
+                  variant={variants.bodyRegularM}
+                  style={[
+                    styles.prefixStyle,
+                    {opacity: focused || value != '' ? 1 : 0},
+                  ]}
+                />
+              )}
+            {prefix && typeof prefix !== 'string' && (
+              <View
+                style={[
+                  styles.prefixSymbol,
+                  {opacity: focused || value != '' ? 1 : 0},
+                ]}>
+                {prefix}
+              </View>
+            )}
+            {isCurrencyInput ? (
+              currencyInputComponent()
+            ) : (
+              <>
+                <TextInput
+                  ref={inputRef}
+                  contextMenuHidden={isTextInputMenuShow}
+                  selectTextOnFocus={false}
+                  maxLength={maximumLength}
+                  onFocus={handleOnFocus}
+                  onBlur={handleOnBlur}
+                  value={value}
+                  onPressOut={onPressOut}
+                  editable={!disabled}
+                  keyboardType={
+                    secureValue ? KeyboardTypes.Default : customKeyboardType
+                  }
+                  // onChangeText={value => setValue?.(value)}
+                  onChangeText={handleInputChange}
+                  secureTextEntry={secureValue}
+                  autoCorrect={false}
+                  autoComplete="off"
+                  importantForAutofill="no"
+                  textContentType="none"
+                  spellCheck={false}
+                  underlineColorAndroid="transparent"
+                  style={[
+                    styles.input,
+                    showTruncateOverlay && {color: 'transparent'},
+                    disabled && styles.disabledInputStyle,
+                  ]}
+                  onEndEditing={onEndEditing}
+                  selectionColor={
+                    inverted
+                      ? theme.colors['border-interactive-enabled']
+                      : theme.colors['border-interactive-active']
+                  }
+                  {...textInputProps}
+                  cursorColor={theme.colors['border-interactive-active']}
+                />
+                {showTruncateOverlay && (
+                  <View style={styles.truncateOverlay}>
+                    <Label
+                      id="id"
+                      text={value ?? ''}
+                      textProps={{ellipsizeMode: 'tail', numberOfLines: 1}}
+                      style={[styles.input, {textAlign: 'left', paddingTop: 0}]} // paddingTop as per Label comp style
+                    />
+                  </View>
+                )}
+              </>
+            )}
+          </View>
+        </View>
+        {focused && value !== '' && !disabled && (
+          <Pressable style={styles.cancelContainer} onPress={clearInput}>
+            <Cancel_01 color={iconColor()} />
+          </Pressable>
+        )}
+        {secure && (focused || value !== '') && (
+          <Pressable
+            style={styles.cancelContainer}
+            onPress={disabled ? undefined : changeMode}>
+            {showCloseIcon ? (
+              <EyeCloseComponent stroke={iconColor()} />
+            ) : (
+              <EyeOpenComponent stroke={iconColor()} />
+            )}
+          </Pressable>
+        )}
+        {SuffixIcon && (
+          <Pressable onPress={onPressSuffixIcon} style={styles.cancelContainer}>
+            <View style={[styles.cancelContainer, suffixIconStyle]}>
+              <SuffixIcon />
+            </View>
+          </Pressable>
+        )}
+      </View>
+      {errorText && errorText?.length > 0 && (
+        <View style={[styles.errorTextContainer, errorTextStyle]}>
+          <ErrorText id="custom-input" errorText={t(errorText)} />
+          {/* {currency && (
+            <CurrencyComponent
+              currency={currency}
+              fieldActive={fieldActive}
+              color={theme.colors['content-semantic-error-01']}
+            />
+          )} */}
+        </View>
+      )}
+      {helperText && helperText?.length > 0 && (
+        <View style={styles.helperText}>
+          <HelperText id="custom-input" helperText={t(helperText)} />
+          {currency && (
+            <CurrencyComponent currency={currency} fieldActive={fieldActive} />
+          )}
+        </View>
+      )}
+    </View>
+  );
+};
+
+const FlagComponent = ({flag}) => {
+  const theme = useNewTheme();
+  const styles = getFlagComponentStyle({theme});
+  return flag ? (
+    <View style={styles.flagContainer}>
+      <RemoteSvg uri={flag} size={24} />
+    </View>
+  ) : null;
+};
+
+export const CurrencyComponent = ({
+  currency,
+  fieldActive,
+  color = useNewTheme().colors['content-secondary'],
+}) => {
+  const theme: Theme = useNewTheme();
+  const styles = getCurrencyComponentStyle({theme});
+  return currency && fieldActive ? (
+    <View style={styles.currencyContainer}>
+      <Currency
+        currencyType={currency ?? 'SAR'}
+        iconProps={{
+          color: color,
+          size: Size['size-01'],
+        }}
+      />
+    </View>
+  ) : null;
+};
+
+export {Input};
+
+
+###FilePath: custom-input/styles.ts
+
+import {Typography} from '@app/utils';
+import {Platform, StyleSheet} from 'react-native';
+import {CustomInputStyleParams} from './type';
+import {getForcedLTRDirection, isRTLLanguage} from 'app/utils/language-utils';
+import {getCurrentLanguage, getFontStyles, Language} from 'react-core';
+import {variants} from '../label/types';
+export const getStyle = ({
+  position,
+  fieldActive,
+  theme,
+  inverted,
+  focused,
+  disabled,
+  isError,
+  isCurrencyInput,
+}: CustomInputStyleParams) => {
+  return StyleSheet.create({
+    parentContainer: {
+      display: 'flex',
+      gap: 8,
+      width: '100%',
+      padding: 0,
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'flex-start',
+    },
+    inputRow: {
+      display: 'flex',
+      gap: 8,
+      flexDirection: getForcedLTRDirection(),
+    },
+    inputRowCurrency: {
+      display: 'flex',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    container: {
+      display: 'flex',
+      flexDirection: 'row',
+      gap: 16,
+      height: 64,
+      borderWidth: 1,
+      borderColor: '#FFFFFF00',
+      width: '100%',
+      backgroundColor: inverted
+        ? theme.colors['surface-interactive-secondary-inverted-enabled']
+        : theme.colors['surface-interactive-secondary-enabled'],
+      paddingHorizontal: 16,
+      borderRadius: 8,
+      alignItems: 'center',
+      alignSelf: 'stretch',
+    },
+    innerContainer: {
+      flex: 1,
+      display: 'flex',
+      justifyContent: fieldActive ? 'flex-end' : 'center',
+      gap: 4,
+    },
+    placeholder: {
+      ...(fieldActive ? {} : {position: 'absolute'}),
+      color: inverted
+        ? theme.colors['content-inverted-secondary']
+        : theme.colors['content-secondary'],
+      ...getFontStyles(variants.bodyRegularM, getCurrentLanguage() as Language),
+      textAlign: 'left',
+      writingDirection: 'ltr',
+    },
+
+    input: {
+      color: inverted
+        ? theme.colors['content-inverted-primary']
+        : theme.colors['content-primary'],
+      // width: isRTLLanguage() && isCurrencyInput ? 'auto' : '100%',
+      // lineHeight: Platform.OS === 'ios' ? 0 : 24, // lineHeight is overwritten
+      height: 24,
+      padding: 0,
+      flex: 1,
+      textAlignVertical: 'center',
+      // paddingHorizontal: isRTLLanguage() ? 14 : 0,
+      textAlign: isRTLLanguage() ? 'right' : 'left',
+      writingDirection: isRTLLanguage() ? 'rtl' : 'ltr',
+      // fontVariant: ['tabular-nums'],
+      ...getFontStyles(variants.bodyRegularM, getCurrentLanguage() as Language),
+      ...(isRTLLanguage()
+        ? Platform.select({ios: {lineHeight: 28}})
+        : {lineHeight: 19.5}), // changing this because it's breaking in arabic for english text
+      minWidth: 100, // added min width to fix cropping issue in smaller devices
+      fontWeight: 400,
+    },
+    currencyInput: {
+      color: inverted
+        ? theme.colors['content-inverted-primary']
+        : theme.colors['content-primary'],
+      width: isRTLLanguage() && isCurrencyInput ? 'auto' : '100%',
+      padding: 0,
+      height: 24,
+      textAlign: isRTLLanguage() ? 'right' : 'left',
+      ...getFontStyles(variants.bodyRegularM, getCurrentLanguage() as Language),
+      ...(isRTLLanguage()
+        ? Platform.select({ios: {lineHeight: 28}})
+        : {lineHeight: 19.5}),
+      //marginTop: Platform.OS === 'ios' ? 16 : 0,
+    },
+    truncateOverlay: {
+      flexDirection: getForcedLTRDirection(),
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      left: 0,
+      right: 0,
+      alignItems: 'center',
+      pointerEvents: 'none',
+    },
+    animatedPlacholderStyle: {
+      height: 16,
+      top: position.interpolate({
+        inputRange: [0, 1],
+        outputRange: [20, 0],
+      }),
+      ...getFontStyles(
+        variants.bodyRegularXS,
+        getCurrentLanguage() as Language,
+      ),
+    },
+    focusedContainer: {
+      borderWidth: 1,
+      borderColor: inverted
+        ? theme.colors['border-interactive-inverted-active']
+        : theme.colors['border-interactive-active'],
+    },
+    cancelContainer: {
+      justifyContent: 'center',
+      // alignSelf: 'center',
+      height: 24,
+      width: 24,
+      padding: 5,
+      alignItems: 'center',
+    },
+    disabledContainerStyle: {
+      backgroundColor: theme.colors['surface-interactive-secondary-disabled'],
+      borderWidth: 0,
+    },
+    disabledPlaceholderStyle: {
+      color: inverted
+        ? theme.colors['content-inverted-disabled']
+        : theme.colors['content-disabled'],
+    },
+    disabledInputStyle: {
+      color: theme.colors['content-disabled'],
+    },
+    errorContainerStyle: {
+      backgroundColor: inverted
+        ? theme.colors['surface-interactive-secondary-inverted-enabled']
+        : theme.colors['surface-semantic-error-01'],
+      borderColor: inverted
+        ? theme.colors['border-semantic-error-inverted']
+        : theme.colors['border-semantic-error'],
+      borderWidth: 1,
+    },
+    bottomContainerStyle: {
+      display: 'flex',
+      flexDirection: 'row',
+      gap: 4,
+      paddingLeft: 16,
+    },
+    errorText: {
+      color: inverted
+        ? theme.colors['content-semantic-error-inverted']
+        : theme.colors['border-semantic-error'],
+      justifyContent: 'center',
+      ...getFontStyles(
+        variants.bodyRegularXS,
+        getCurrentLanguage() as Language,
+      ),
+    },
+    alertIconContainer: {
+      width: 12,
+      height: 16,
+      justifyContent: 'center',
+    },
+    eyeOpen: {
+      color: focused
+        ? theme.colors['icon-interactive-secondary-active']
+        : theme.colors['icon-interactive-secondary-enabled'],
+    },
+    focusedIcon: {
+      color: theme.colors['icon-interactive-secondary-active'],
+    },
+    invertedIcon: {
+      color: isError
+        ? theme.colors['icon-semantic-error-01']
+        : theme.colors['icon-interactive-inverted-active'],
+    },
+    errorIcon: {
+      color: theme.colors['icon-semantic-error-01'],
+    },
+    prefixStyle: {
+      color: theme.colors['content-disabled'],
+      textAlignVertical: 'center',
+      height: 24,
+      paddingBottom: isRTLLanguage() && Platform.OS === 'ios' ? 0 : undefined,
+      paddingTop: isRTLLanguage() && Platform.OS === 'android' ? 0 : undefined,
+      ...(isRTLLanguage() ? {} : {}),
+    },
+    disabledIcon: {
+      color: theme.colors['icon-interactive-secondary-enabled'],
+    },
+    defaultIcon: {
+      color: disabled
+        ? theme.colors['icon-interactive-inverted-disabled']
+        : theme.colors['icon-interactive-secondary-enabled'],
+    },
+    prefixSymbol: {
+      justifyContent: 'center',
+      paddingRight: 10,
+      width: 15,
+    },
+    helperText: {
+      flexDirection: 'row',
+      gap: 1,
+      maxWidth: '95%',
+    },
+    errorTextContainer: {
+      flexDirection: 'row',
+      gap: 1,
+    },
+    currencyInputContainer: {
+      width: '100%',
+      height: '100%',
+    },
+  });
+};
+
+export const getFlagComponentStyle = ({theme}) => {
+  return StyleSheet.create({
+    /* Flag Component Style */
+    flagContainer: {
+      borderRadius: 999,
+      height: 24,
+      width: 24,
+      backgroundColor: theme.colors['background-01'],
+      alignSelf: 'center',
+      overflow: 'hidden',
+    },
+  });
+};
+
+export const getCurrencyComponentStyle = ({}) => {
+  return StyleSheet.create({
+    /* Currency Component Style */
+    currencyContainer: {
+      alignContent: 'center',
+      justifyContent: 'center',
+      height: 24,
+      //marginTop: Platform.OS === 'ios' ? 26 : 0,
+    },
+  });
+};
+
+
+###FilePath: custom-input/type.ts
+
+import {KeyboardTypes} from 'app/constants';
+import {Theme} from 'react-core';
+import {useRef} from 'react';
+import {
+  Animated,
+  NativeSyntheticEvent,
+  TextInput,
+  StyleProp,
+  TextInputFocusEventData,
+  TextInputProps,
+  ViewStyle,
+} from 'react-native';
+
+export type InputProperties = {
+  id: string;
+  disabled?: boolean;
+  placeholder?: string;
+  errorText?: string | false | undefined;
+  helperText?: string;
+  value?: string;
+  setValue?: (value: string) => void;
+  clearInputValue?: () => void;
+  inverted?: boolean;
+  customKeyboardType?: KeyboardTypes;
+  prefix?: React.ReactNode | string;
+  SuffixIcon?: any;
+  secure?: boolean;
+  maximumLength?: number;
+  formatAmount?: boolean;
+  onPressOut?: () => void;
+  onPressSuffixIcon?: () => void;
+  setTouchedProperty?: () => void;
+  onEndEditing?: () => void;
+  onFormikBlur?: (e: NativeSyntheticEvent<TextInputFocusEventData>) => void;
+  textInputProps?: TextInputProps;
+  onKeyboardFocus?: () => void;
+  alwaysFocusOn?: boolean;
+  isIban?: boolean;
+  setComponentFocus?: (status: boolean) => void;
+  flag?: string;
+  currency?: string;
+  onFocus?: (e: NativeSyntheticEvent<TextInputFocusEventData>) => void;
+  onBlur?: (e: NativeSyntheticEvent<TextInputFocusEventData>) => void;
+  specialCharactersAllowed?: boolean;
+  spaceAllowed?: boolean;
+  max?: number;
+  numbersAllowed?: boolean;
+  arabicAllowed?: boolean;
+  isZeroAllowed?: boolean;
+  emojisAllowed?: boolean;
+  getFocusOut?: () => void;
+  suffixIconStyle?: StyleProp<ViewStyle>;
+  isCurrencyInput?: boolean;
+  isTextInputMenuShow?: boolean;
+  customRef?: boolean;
+  errorTextStyle?: StyleProp<ViewStyle>;
+  truncateTail?: boolean;
+};
+
+export type CustomInputStyleParams = {
+  position: Animated.Value;
+  fieldActive: boolean;
+  theme: Theme;
+  inverted: boolean;
+  focused: boolean;
+  disabled: boolean;
+  isError: boolean;
+  isCurrencyInput: boolean;
+};
+
+
+###FilePath: root-detail/index.tsx
+
+/* eslint-disable react-hooks/exhaustive-deps */
+/**
+Author: Haseeb Muhsin
+Date Created:  13/10/2025
+ * Component for displaying details or summary on a given flow
+ *
+ * Allow users to view title
+ * Allow users to view main content
+ * Allow users to interact with the content
+ */
+
+import React, {useEffect, useMemo, useRef, useState} from 'react';
+import {RootDetailProps} from './types';
+import {useNewTheme} from 'react-core';
+import {getStyles} from './style';
+import {ImageBackground, StatusBar, View} from 'react-native';
+import {Images} from 'app/constants';
+import {Header} from '../header';
+import {HeaderType} from '../header/types';
+import {LeftContentType} from '../header/left-content/types';
+import {
+  Gesture,
+  GestureDetector,
+  GestureType,
+  ScrollView,
+} from 'react-native-gesture-handler';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  interpolateColor,
+  runOnJS,
+  useAnimatedProps,
+  useAnimatedReaction,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
+import {NavigationService} from 'app/utils';
+import BottomSheet, {
+  BottomSheetScrollView,
+  useBottomSheetInternal,
+} from '@gorhom/bottom-sheet';
+import {useScrollShadow} from 'app/hooks/use-scroll-shadow';
+import {StickyShadows} from '../sticky-shadows';
+import {StickyShadowDirections} from '../sticky-shadows/types';
+import {Animated as RNAnimated} from 'react-native';
+import {RightContentType} from '../header/right-content/types';
+export const RootDetail: React.FC<RootDetailProps> = props => {
+  const {
+    title = '',
+    headerContent,
+    scrollContent,
+    bottomContent,
+    showTitleOnlyOnFullScreen = false,
+    rightContentClick,
+  } = props;
+  const sheetTranslateY = useSharedValue(0);
+  const theme = useNewTheme();
+  const styleProps = {theme};
+  const style = getStyles(styleProps);
+  const [inverted, setInverted] = useState(false);
+  const [customSnapPoints, setCustomSnapPoints] = useState<any[]>([]);
+  const [mainContentHeight, setMainContentHeight] = useState(0);
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const animatedPosition = useSharedValue(0);
+  const animatedIndex = useSharedValue(0);
+
+  const headerAnimatedStyle = useAnimatedStyle(() => {
+    const bgColor = interpolateColor(
+      animatedPosition.value,
+      [headerHeight, 0],
+      ['transparent', theme.colors['surface-01']],
+    );
+    return {
+      backgroundColor: bgColor,
+    };
+  });
+
+  const screenTitleAnimatedStyle = useAnimatedStyle(() => {
+    const color = interpolateColor(
+      animatedPosition.value,
+      [headerHeight, 0],
+      [
+        showTitleOnlyOnFullScreen
+          ? 'transparent'
+          : theme.colors['content-inverted-primary'],
+        theme.colors['content-primary'],
+      ],
+    );
+    return {
+      color,
+    };
+  });
+
+  const screenLeftIconAnimatedStyle = useAnimatedProps(() => {
+    const stroke = interpolateColor(
+      animatedPosition.value,
+      [headerHeight, 0],
+      [
+        theme.colors['icon-interactive-inverted-active'],
+        theme.colors['icon-interactive-primary-active'],
+      ],
+    );
+    return {
+      stroke,
+    };
+  });
+
+  const headerOpacityAnimatedStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(
+      animatedPosition.value,
+      [0, headerHeight],
+      [0, 1],
+    );
+    return {
+      opacity,
+    };
+  });
+
+  const sheetAnimatedStyle = useAnimatedStyle(() => {
+    const radius = interpolate(
+      animatedPosition.value,
+      [0, headerHeight],
+      [0, 16],
+    );
+    return {
+      borderTopLeftRadius: radius,
+      borderTopRightRadius: radius,
+    };
+  });
+
+  useMemo(() => {
+    if (mainContentHeight && headerHeight) {
+      setCustomSnapPoints([
+        mainContentHeight - headerHeight,
+        mainContentHeight,
+      ]);
+    }
+  }, [mainContentHeight, headerHeight]);
+  useEffect(() => {
+    StatusBar.setBarStyle(inverted ? 'dark-content' : 'light-content');
+  }, []);
+
+  const {
+    scrollable,
+    topShadowOpacity,
+    bottomShadowOpacity,
+    handleScroll,
+    handleRootScrollHeight,
+    handleContentSizeChange,
+  } = useScrollShadow();
+
+  useAnimatedReaction(
+    () => animatedIndex.value,
+    index => {
+      if (index === 0 || index === 1) {
+        console.log('root-detail', {index, height: customSnapPoints[index]});
+        runOnJS(handleRootScrollHeight)(customSnapPoints[index] ?? 0);
+      }
+    },
+  );
+
+  return (
+    <ImageBackground
+      source={Images.theme_background}
+      resizeMode="cover"
+      style={style.container}>
+      <Header
+        inverted
+        type={HeaderType.TRANSFER}
+        leftContentType={LeftContentType.BACK}
+        rightContentType={
+          RightContentType.CLOSE_SUMMARY
+        } /**RCM-3505 - defect fixes */
+        onRightContentClick={rightContentClick}
+        showRightContent={
+          rightContentClick && true
+        } /**RCM-3505 - defect fixes */
+        centerContentTitle={title}
+        animatedStyles={headerAnimatedStyle}
+        centerTextAnimatedStyle={screenTitleAnimatedStyle}
+        leftIconAnimatedStyle={screenLeftIconAnimatedStyle}
+        onLeftContentClick={() => {
+          NavigationService.goBack();
+        }}
+      />
+      <Animated.View
+        style={style.mainContent}
+        onLayout={e => {
+          setMainContentHeight(e.nativeEvent.layout.height);
+        }}>
+        <Animated.View
+          onLayout={e => {
+            setHeaderHeight(e.nativeEvent.layout.height);
+          }}
+          style={headerOpacityAnimatedStyle}>
+          {headerContent}
+        </Animated.View>
+
+        {customSnapPoints.length > 0 && (
+          <BottomSheet
+            index={0}
+            snapPoints={customSnapPoints}
+            handleComponent={null}
+            enablePanDownToClose={false}
+            bottomInset={0}
+            enableDynamicSizing={false}
+            enableOverDrag={false}
+            enableContentPanningGesture={true}
+            enableHandlePanningGesture={false}
+            onChange={index => {
+              if (index === 0) {
+                setInverted(false);
+              } else {
+                setInverted(true);
+              }
+            }}
+            animatedIndex={animatedIndex}
+            animatedPosition={animatedPosition}
+            >
+            <Animated.View
+              style={[
+                style.sheetContent,
+                sheetAnimatedStyle,
+                bottomContent ? style.bottomContentCustom : undefined,
+              ]}>
+              <RNAnimated.View style={{opacity: topShadowOpacity, zIndex: 10}}>
+                <StickyShadows />
+              </RNAnimated.View>
+              <BottomSheetScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={style.scrollViewContent}
+                bounces={false}
+                onScroll={handleScroll}
+                onContentSizeChange={handleContentSizeChange}
+                >
+                {scrollContent}
+              </BottomSheetScrollView>
+            </Animated.View>
+          </BottomSheet>
+        )}
+      </Animated.View>
+      {bottomContent && scrollable && (
+        <RNAnimated.View style={{opacity: bottomShadowOpacity, zIndex: 10}}>
+          <StickyShadows
+            direction={StickyShadowDirections.BOTTOM_TO_TOP}
+            containerStyle={{marginTop: -16}}
+          />
+        </RNAnimated.View>
+      )}
+      {bottomContent}
+    </ImageBackground>
+  );
+};
+
+
+###FilePath: root-detail/style.ts
+
+/**
+Author: Haseeb Muhsin
+Date Created:  13/10/2025
+ * Stylesheet for maintaining the styles for the root detail component
+ */
+
+import {ScaledSheet} from 'react-native-size-matters';
+import {RootDetailStyleProps} from './types';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+
+export const getStyles = (props: RootDetailStyleProps) => {
+  const {theme} = props;
+  const insets = useSafeAreaInsets();
+  return ScaledSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors['background-03'],
+    },
+    mainContent: {
+      flex: 1,
+    },
+    sheetContent: {
+      backgroundColor: theme.colors['surface-01'],
+      flexGrow: 1,
+      // paddingHorizontal: 16,
+      paddingTop: 24,
+      borderTopLeftRadius: 16,
+      borderTopRightRadius: 16,
+      //paddingBottom: insets.bottom, //transparent bottom nav bar
+    },
+
+    scrollViewContent: {
+      flexGrow: 1,
+    },
+    bottomFixedContent: {
+      paddingBottom: 24,
+      paddingTop: 16,
+      paddingHorizontal: 16,
+      backgroundColor: theme.colors['surface-01'],
+    },
+    bottomContentCustom: {
+      paddingBottom: 0,
+    },
+  });
+};
+
+
+###FilePath: root-detail/types.ts
+
+/**
+Author: Haseeb Muhsin
+Date Created:  12/10/2025
+ * Properties sheet for maintaing the view and style props for root detail component.
+ */
+
+import {Theme} from 'react-core';
+import React from 'react';
+
+export type RootDetailProps = {
+  title?: string;
+  headerContent?: React.ReactNode;
+  scrollContent?: React.ReactNode;
+  bottomContent?: React.ReactNode;
+  showTitleOnlyOnFullScreen?: boolean;
+  rightContentClick?: () => void;
+};
+
+export type RootDetailStyleProps = {
+  theme: Theme;
+};
+
+
+###FilePath: header/index.tsx
+
+/**
+Author: Haseeb Muhsin
+Date Created:  2/10/2025
+ * Component for displaying header for a screen.
+ *
+ * Allow users to select type of headers
+ * Allow users to configure actions upon click of any header elements
+ */
+
+import React from 'react';
+import {HeaderProps, HeaderType} from './types';
+import {useNewTheme} from 'react-core';
+import {getStyles} from './styles';
+import {StatusBar, View} from 'react-native';
+import {LeftContent} from './left-content';
+import {RightContent} from './right-content';
+import {CenterContent} from './center-content';
+import {CenterContentType} from './center-content/types';
+import Animated, {useSharedValue} from 'react-native-reanimated';
+import {Label} from '../label';
+import {RightContentType} from './right-content/types';
+import {MeemArabicLogo} from 'app/assets/svg';
+import {variants} from '../label/types';
+import {CustomProgressBar} from '../custom-progress-bar';
+import {ProgressBarVariants} from '../custom-progress-bar/types';
+
+export const Header: React.FC<HeaderProps> = props => {
+  const {
+    type = HeaderType.DEFAULT,
+    inverted = false,
+    showBackground = false,
+    showStatusBar = true,
+    showLeftContent = true,
+    showRightContent = true,
+    showCenterContent = true,
+    showStories = false,
+    animatedStyles,
+    onLayoutHeight,
+    endIconAnimatedStyle,
+    centerIconAnimatedStyle,
+    centerContentTitle = 'Transfers',
+    rightContentType,
+    leftContentType,
+    onLeftContentClick,
+    onRightContentClick,
+    storyTitle = 'Title',
+    centerTextAnimatedStyle,
+    leftIconAnimatedStyle,
+  } = props;
+
+  const theme = useNewTheme();
+  const styleProps = {theme, inverted, showBackground, showStories};
+  const style = getStyles(styleProps);
+  const leftContentWidth = useSharedValue(24);
+
+  return (
+    <View>
+      <Animated.View
+        style={[style.container, animatedStyles]}
+        onLayout={e => onLayoutHeight?.(e.nativeEvent.layout.height)}>
+        <StatusBar
+          hidden={!showStatusBar}
+          animated
+          backgroundColor={'transparent'}
+          barStyle={
+            inverted || showStories ? 'light-content' : 'dark-content'
+          }></StatusBar>
+        {showLeftContent ? (
+          <LeftContent
+            type={leftContentType}
+            inverted={inverted}
+            leftContentWidth={width => {
+              leftContentWidth.value = width;
+            }}
+            onLeftContentClick={() => {
+              onLeftContentClick?.();
+            }}
+            leftIconAnimatedStyle={leftIconAnimatedStyle}></LeftContent>
+        ) : (
+          <View style={style.dummyEndContainer}></View>
+        )}
+        {showCenterContent && (
+          <CenterContent
+            type={
+              type === HeaderType.TRANSFER
+                ? CenterContentType.TEXT
+                : type === HeaderType.SADAD
+                ? CenterContentType.SADAD
+                : CenterContentType.MEEM
+            }
+            inverted={inverted}
+            animatedStyle={centerIconAnimatedStyle}
+            textAnimatedStyle={centerTextAnimatedStyle}
+            title={centerContentTitle}></CenterContent>
+        )}
+        {showRightContent ? (
+          <RightContent
+            type={rightContentType}
+            leftContentWidth={leftContentWidth.value}
+            inverted={inverted}
+            animatedStyle={endIconAnimatedStyle}
+            onCloseCancelClick={() => {
+              onRightContentClick?.();
+            }}
+            onLanguageClick={() => {
+              onRightContentClick?.();
+            }}></RightContent>
+        ) : showStories ? undefined : (
+          <View style={style.dummyEndContainer}></View>
+        )}
+        {showStories && (
+          <View style={style.showStoriesContainer}>
+            <View style={style.progressBarRootView}>
+              {[1, 2, 3, 4, 5, 6].map(item => (
+                <CustomProgressBar
+                  id=""
+                  variant={ProgressBarVariants.informative}
+                  size={2}
+                  progress={100}></CustomProgressBar>
+              ))}
+            </View>
+
+            <View style={style.showStoriesRootContainer}>
+              <View style={style.storyTitleContainer}>
+                <MeemArabicLogo
+                  color={theme.colors['brand-01']}></MeemArabicLogo>
+                <Label
+                  id=""
+                  text={storyTitle}
+                  variant={variants.bodyRegularM}
+                  style={style.title}></Label>
+              </View>
+              <RightContent
+                type={RightContentType.CLOSE_CANCEL}
+                onCloseCancelClick={() => {
+                  onRightContentClick?.();
+                }}></RightContent>
+            </View>
+          </View>
+        )}
+      </Animated.View>
+    </View>
+  );
+};
+
+
+###FilePath: header/styles.ts
+
+/**
+Author: Haseeb Muhsin
+Date Created:  2/10/2025
+ */
+
+import {ScaledSheet} from 'react-native-size-matters';
+import {HeaderStyleProps} from './types';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+
+export const getStyles = (props: HeaderStyleProps) => {
+  const {theme, inverted, showBackground, showStories} = props;
+  const insets = useSafeAreaInsets();
+  return ScaledSheet.create({
+    container: {
+      paddingTop: insets.top,
+      paddingHorizontal: 16,
+      justifyContent: 'space-between',
+      flexGrow: 1,
+      flexDirection: 'row',
+      minHeight: insets.top + 40,
+      zIndex:1,
+      backgroundColor:
+        showBackground && inverted
+          ? theme.colors['background-03']
+          : showBackground
+          ? theme.colors['background-01']
+          : showStories
+          ? 'black'
+          : undefined,
+    },
+    showStoriesRootContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      gap: 16,
+      alignItems: 'center',
+    },
+    showStoriesContainer: {
+      borderTopLeftRadius: 16,
+      borderTopRightRadius: 16,
+      backgroundColor: '#F0E8FF',
+      flex: 1,
+      marginHorizontal: -16,
+      gap: 16,
+      paddingHorizontal: 16,
+      paddingTop: 16,
+    },
+    storyTitleContainer: {
+      flex: 1,
+      flexDirection: 'row',
+      gap: 8,
+      alignItems: 'center',
+    },
+    title: {
+      color: theme.colors['content-primary'],
+    },
+    progressBarRootView: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    dummyEndContainer: {
+      minWidth:24
+    }
+  });
+};
+
+
+###FilePath: header/types.ts
+
+/**
+Author: Haseeb Muhsin
+Date Created:  1/10/2025
+ */
+
+import {AnimatedStyle} from 'react-native-reanimated';
+import {StyleProp} from 'react-native';
+import {Theme} from 'react-core';
+import {IconProps} from 'app/constants';
+import {LeftContentType} from './left-content/types';
+import {RightContentType} from './right-content/types';
+
+export type HeaderProps = {
+  type?: HeaderType;
+  inverted?: boolean;
+  showBackground?: boolean;
+  showStatusBar?: boolean;
+  showLeftContent?: boolean;
+  showCenterContent?: boolean;
+  showRightContent?: boolean;
+  showStories?: boolean;
+  animatedStyles?: StyleProp<AnimatedStyle>;
+  onLayoutHeight?: (height: number) => void;
+  endIconAnimatedStyle?: Partial<IconProps>;
+  centerIconAnimatedStyle?: Partial<IconProps>;
+  centerContentTitle?: string;
+  rightContentType?: RightContentType;
+  leftContentType?: LeftContentType;
+  onLeftContentClick?: () => void;
+  onRightContentClick?: () => void;
+  storyTitle?: string,
+  centerTextAnimatedStyle?:StyleProp<AnimatedStyle>,
+  leftIconAnimatedStyle?: Partial<IconProps>
+};
+
+export type HeaderStyleProps = {
+  theme: Theme;
+  inverted: boolean;
+  showBackground: boolean;
+  showStories: boolean;
+};
+
+export enum HeaderType {
+  DEFAULT = 'Default',
+  OTHER = 'Other',
+  TRANSFER = 'Transfer',
+  SADAD = 'SADAD',
+}
+export enum HeaderState {
+  ENABLED = 'Enabled',
+  FOCUS = 'Focus',
+}
+
+
+###FilePath: header/center-content/index.tsx
+
+/**
+Author: Haseeb Muhsin
+Date Created:  2/10/2025
+
+ */
+
+import React from 'react';
+import {CenterContentProps, CenterContentType} from './types';
+import {useNewTheme} from 'react-core';
+import {getStyles} from './styles';
+import {MeemLogoNew} from 'app/assets/svg/meem-logo-new';
+import {SadadLogo} from 'app/assets/svg/sadad-logo';
+import {Label} from 'app/components/label';
+import {variants} from 'app/components/label/types';
+import {View} from 'react-native';
+
+export const CenterContent: React.FC<CenterContentProps> = props => {
+  const {
+    type = CenterContentType.MEEM,
+    title = '',
+    inverted = false,
+    animatedStyle,
+    textAnimatedStyle
+  } = props;
+  const theme = useNewTheme();
+  const styleProps = {theme, inverted};
+  const style = getStyles(styleProps);
+  return (
+    <>
+      {type === CenterContentType.MEEM && (
+        <View style={style.baseContainer}>
+          <MeemLogoNew
+            isAnimated={animatedStyle && true}
+            color={
+              inverted ? theme.colors['brand-02'] : theme.colors['brand-01']
+            }
+            animatedProps={animatedStyle}></MeemLogoNew>
+        </View>
+      )}
+      {type === CenterContentType.SADAD && (
+        <View style={style.baseContainer}>
+          <SadadLogo
+            isAnimated={animatedStyle && true}
+            color={
+              inverted ? theme.colors['brand-02'] : theme.colors['brand-01']
+            }
+            animatedProps={animatedStyle}></SadadLogo>
+        </View>
+      )}
+      {type === CenterContentType.TEXT && (
+        <View style={style.textContainer}>
+          <Label
+            id=""
+            text={title}
+            variant={variants.titleXS}
+            numberOfLines={1}
+            style={[style.text, textAnimatedStyle]}></Label>
+        </View>
+      )}
+    </>
+  );
+};
+
+
+###FilePath: header/center-content/styles.ts
+
+/**
+Author: Haseeb Muhsin
+Date Created:  1/10/2025
+ */
+
+import {ScaledSheet} from 'react-native-size-matters';
+import {CenterContentStyleProps} from './types';
+
+export const getStyles = (props: CenterContentStyleProps) => {
+  const {theme, inverted = false} = props;
+  return ScaledSheet.create({
+    textContainer: {
+      // minWidth: 278,
+      maxWidth: 278,
+      alignItems: 'center',
+      alignSelf: 'center',
+    },
+    baseContainer: {
+      alignSelf: 'center',
+    },
+    text: {
+      color: inverted
+        ? theme.colors['content-inverted-primary']
+        : theme.colors['content-primary'],
+    },
+  });
+};
+
+
+###FilePath: header/center-content/types.ts
+
+/**
+Author: Haseeb Muhsin
+Date Created:  1/10/2025
+ */
+
+import {IconProps} from 'app/constants';
+import {StyleProp} from 'react-native';
+import {Theme} from 'react-core';
+import {AnimatedStyle} from 'react-native-reanimated';
+
+export type CenterContentProps = {
+  type?: CenterContentType;
+  title?: string;
+  inverted?: boolean;
+  animatedStyle?: Partial<IconProps>;
+  textAnimatedStyle?: StyleProp<AnimatedStyle>;
+};
+
+export type CenterContentStyleProps = {
+  theme: Theme;
+  inverted: boolean;
+};
+
+export enum CenterContentType {
+  MEEM = 'Meem',
+  SADAD = 'Sadad',
+  TEXT = 'Text',
+}
+
+
+###FilePath: header/hooks/use-header-component.ts
+
+/**
+Author: Haseeb Muhsin
+Date Created:  4/10/2025
+ */
+
+import {useAppSelector} from 'app/redux/hooks';
+
+export const useHeaderComponent = () => {
+  const userDetails = useAppSelector(state => state?.global?.userDetails);
+
+  return {
+    userDetails,
+  };
+};
+
+
+###FilePath: header/left-content/index.tsx
+
+/**
+Author: Haseeb Muhsin
+Date Created:  1/10/2025
+ */
+
+import React from 'react';
+import {LeftContentProps, LeftContentType} from './types';
+import {HeaderState} from '../types';
+import {useNewTheme} from 'react-core';
+import {getStyles} from './styles';
+import {Pressable, View} from 'react-native';
+import {ArrowBackIcon, MoreHorizontalIcon} from 'app/assets/svg';
+import {Avatar} from 'app/components/avatar';
+import {AvatarSizes} from 'app/components/avatar/types';
+import {Label} from 'app/components/label';
+import {variants} from 'app/components/label/types';
+import {useHeaderComponent} from '../hooks/use-header-component';
+import {AvatarImageTypes} from 'app/components/choose-avatar-bottom-sheet/types';
+
+export const LeftContent: React.FC<LeftContentProps> = props => {
+  const {
+    type = LeftContentType.AVATAR,
+    state = HeaderState.ENABLED,
+    inverted = false,
+    leftContentWidth,
+    onLeftContentClick,
+    leftIconAnimatedStyle,
+  } = props;
+  const theme = useNewTheme();
+  const styleProps = {theme, state, type, inverted};
+  const style = getStyles(styleProps);
+  const iconColor = inverted
+    ? theme.colors['icon-interactive-inverted-enabled']
+    : theme.colors['icon-interactive-secondary-enabled'];
+  const {userDetails} = useHeaderComponent();
+  return (
+    <>
+      <View
+        style={style.root}
+        onLayout={e => {
+          leftContentWidth?.(e.nativeEvent.layout.width);
+        }}>
+        {type === LeftContentType.BACK && (
+          <Pressable
+            style={style.squareContainer}
+            onPress={() => {
+              onLeftContentClick?.();
+            }}>
+            <ArrowBackIcon
+              rtl={false}
+              color={iconColor}
+              isAnimated={leftIconAnimatedStyle && true}
+              animatedProps={leftIconAnimatedStyle}></ArrowBackIcon>
+          </Pressable>
+        )}
+        {type === LeftContentType.MENU && (
+          <Pressable style={style.squareContainer} onPress={() => {
+              onLeftContentClick?.();
+            }}>
+            <MoreHorizontalIcon color={iconColor}></MoreHorizontalIcon>
+          </Pressable>
+        )}
+        {type === LeftContentType.AVATAR && (
+          <View style={style.avatarContainer}>
+            <Avatar
+              id=""
+              image={
+                userDetails?.profilePicture
+                  ? userDetails?.profilePicture
+                  : undefined
+              }
+              onClick={() => {
+                onLeftContentClick?.();
+              }}
+              initial={
+                userDetails?.firstname?.trim()?.charAt(0)?.toUpperCase() ?? 'Z'
+              }
+              size={AvatarSizes.small}
+              showFallbackInitial={true}
+              onlyImage={userDetails?.imageType !== AvatarImageTypes.avatar}
+              inverted={inverted}></Avatar>
+          </View>
+        )}
+        {type === LeftContentType.POINTS && (
+          <View style={style.pointsContainer}>
+            <Avatar
+              id=""
+              initial="Z"
+              size={AvatarSizes.small}
+              inverted={inverted}></Avatar>
+            <Label
+              id=""
+              text="985 pts"
+              variant={variants.bodyRegularS}
+              style={style.pointsText}></Label>
+          </View>
+        )}
+      </View>
+    </>
+  );
+};
+
+
+###FilePath: header/left-content/styles.ts
+
+/**
+Author: Haseeb Muhsin
+Date Created:  1/10/2025
+ */
+
+import {ScaledSheet} from 'react-native-size-matters';
+import {LeftContentStyleProps} from './types';
+import {HeaderState} from '../types';
+
+export const getStyles = (props: LeftContentStyleProps) => {
+  const {theme, state = HeaderState.ENABLED, inverted = false} = props;
+  return ScaledSheet.create({
+    root: {
+      alignSelf: 'center',
+    },
+    squareContainer: {
+      width: state === HeaderState.FOCUS ? 28 : 24,
+      height: state === HeaderState.FOCUS ? 28 : 24,
+      borderWidth: state === HeaderState.FOCUS ? 2 : 0,
+      borderColor: theme.colors['border-focus'],
+      borderRadius: state === HeaderState.FOCUS ? 4 : 0,
+      alignSelf: 'center',
+      alignItems: 'center',
+    },
+    avatarContainer: {
+      backgroundColor:
+        state === HeaderState.FOCUS && inverted
+          ? theme.colors['border-focus-inverted']
+          : state === HeaderState.FOCUS
+          ? theme.colors['border-focus']
+          : undefined,
+      borderRadius: 999,
+    },
+    //Focus on points not added. Will be added later. Also the bordercolor needs to revisit
+    pointsContainer: {
+      borderRadius: 999,
+      paddingVertical: 2,
+      paddingStart: 2,
+      paddingEnd: 12,
+      flexDirection: 'row',
+      borderWidth: 1,
+      borderColor: inverted
+        ? theme.colors['border-inverted-enabled-02']
+        : theme.colors['border-interactive-active'],
+      gap: 8,
+      alignSelf: 'flex-start',
+    },
+    pointsText: {
+      color: inverted
+        ? theme.colors['content-inverted-primary']
+        : theme.colors['content-primary'],
+    },
+  });
+};
+
+
+###FilePath: header/left-content/types.ts
+
+/**
+Author: Haseeb Muhsin
+Date Created:  1/10/2025
+ */
+
+import {Theme} from 'react-core';
+import {HeaderState} from '../types';
+import { IconProps } from 'app/constants';
+
+export type LeftContentProps = {
+  type?: LeftContentType;
+  state?: HeaderState;
+  inverted?: boolean;
+  leftContentWidth?: (width: number) => void;
+  onLeftContentClick?: () => void;
+  leftIconAnimatedStyle?:Partial<IconProps>
+};
+
+export type LeftContentStyleProps = {
+  theme: Theme;
+  state: HeaderState;
+  inverted: boolean;
+};
+export enum LeftContentType {
+  AVATAR = 'Avatar',
+  POINTS = 'Points',
+  BACK = 'Back',
+  MENU = 'Menu',
+}
+
+
+###FilePath: header/right-content/index.tsx
+
+/**
+Author: Haseeb Muhsin
+Date Created:  2/10/2025
+ */
+
+import React from 'react';
+import {RightContentProps, RightContentType} from './types';
+import {HeaderState} from '../types';
+import {getStyles} from './styles';
+import {translation, useNewTheme} from 'react-core';
+import {Pressable, View} from 'react-native';
+import {CancelIcon, Notification02, Search} from 'app/assets/svg';
+import {Label} from 'app/components/label';
+import {variants} from 'app/components/label/types';
+
+export const RightContent: React.FC<RightContentProps> = props => {
+  const {
+    type = RightContentType.SEARCH_AND_NOTIFICATIONS,
+    state = HeaderState.ENABLED,
+    inverted = false,
+    leftContentWidth,
+    animatedStyle,
+    onCloseCancelClick,
+    onLanguageClick,
+  } = props;
+  const theme = useNewTheme();
+  const styleProps = {theme, state, inverted, leftContentWidth};
+  const style = getStyles(styleProps);
+  const {t} = translation.useTranslation();
+  const iconColor = inverted
+    ? theme.colors['icon-interactive-inverted-enabled']
+    : theme.colors['icon-interactive-secondary-enabled'];
+  return (
+    <>
+      {type === RightContentType.CLOSE_SUMMARY && (
+        /**RCM-3505 - defect fixes */
+        <View style={style.endIconContainer}>
+          <Pressable
+            style={style.circularContainer}
+            onPress={() => {
+              onCloseCancelClick?.();
+            }}>
+            <CancelIcon
+              color={
+                theme.colors['icon-interactive-secondary-enabled']
+              }></CancelIcon>
+          </Pressable>
+        </View>
+      )}
+      {type === RightContentType.CLOSE_CANCEL && (
+        <View style={style.endIconContainer}>
+          <Pressable
+            style={style.circularContainer}
+            onPress={() => {
+              onCloseCancelClick?.();
+            }}>
+            <CancelIcon color={iconColor}></CancelIcon>
+          </Pressable>
+        </View>
+      )}
+      {type === RightContentType.LANGUAGE && (
+        <View style={style.endIconContainer}>
+          <Pressable style={style.languageContainer} onPress={onLanguageClick}>
+            <Label
+              id=""
+              text={t('AuthenticationLoginBtnTranslate')}
+              variant={variants.bodySemiBoldM}
+              style={style.text}></Label>
+          </Pressable>
+        </View>
+      )}
+      {type === RightContentType.SEARCH_AND_NOTIFICATIONS && (
+        <View style={style.endIconContainer}>
+          <Notification02
+            isAnimated={animatedStyle && true}
+            color={iconColor}
+            animatedProps={animatedStyle}></Notification02>
+          <Search
+            isAnimated={animatedStyle && true}
+            color={iconColor}
+            animatedProps={animatedStyle}></Search>
+        </View>
+      )}
+    </>
+  );
+};
+
+
+###FilePath: header/right-content/styles.ts
+
+/**
+Author: Haseeb Muhsin
+Date Created:  2/10/2025
+ */
+
+import {ScaledSheet} from 'react-native-size-matters';
+import {RightContentStyleProps} from './types';
+
+export const getStyles = (props: RightContentStyleProps) => {
+  const {theme, inverted = false, leftContentWidth} = props;
+  return ScaledSheet.create({
+    circularContainer: {
+      width: 24,
+      height: 24,
+      backgroundColor: theme.colors['surface-02'],
+      padding: 4,
+      borderRadius: 999,
+      alignSelf: 'center',
+    },
+    languageContainer: {
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: inverted
+        ? theme.colors['border-interactive-inverted-enabled']
+        : theme.colors['border-interactive-active'],
+    
+      width:65,
+      height:40,
+      alignItems:'center',
+      justifyContent:'center'
+    },
+    text: {
+      color: inverted
+        ? theme.colors['content-interactive-inverted-enabled']
+        : theme.colors['content-interactive-primary-enabled'],
+    },
+    endIconContainer: {
+      flexDirection: 'row-reverse',
+      gap: 16,
+      alignSelf: 'center',
+      minWidth: leftContentWidth, // This is written to balance the left side and make center content in the middle
+      maxWidth: leftContentWidth,
+    },
+  });
+};
+
+
+###FilePath: header/right-content/types.ts
+
+/**
+Author: Haseeb Muhsin
+Date Created:  2/10/2025
+ */
+
+import {Theme} from 'react-core';
+import {HeaderState} from '../types';
+import {IconProps} from 'app/constants';
+
+export type RightContentProps = {
+  type?: RightContentType;
+  state?: HeaderState;
+  inverted?: boolean;
+  leftContentWidth?: number;
+  animatedStyle?: Partial<IconProps>;
+  onCloseCancelClick?: () => void;
+  onSearchClick?: () => void;
+  onNotificationClick?: () => void;
+  onLanguageClick?: () => void;
+  onOtherClick?: () => void;
+};
+
+export type RightContentStyleProps = {
+  theme: Theme;
+  state: HeaderState;
+  inverted: boolean;
+  leftContentWidth?: number;
+};
+export enum RightContentType {
+  CLOSE_CANCEL = 'Close_Cancel',
+  LANGUAGE = 'Language',
+  SEARCH_AND_NOTIFICATIONS = 'Search_And_Notifications',
+  OTHER = 'Other',
+  CLOSE_SUMMARY = 'close_summary',
+}
+
+
+###FilePath: link/index.tsx
+
+import React, {useState} from 'react';
+import {View, Pressable} from 'react-native';
+import {Label} from '../label';
+import {getStyle} from './styles';
+import {LinkProps, linkVariant} from './types';
+import {useNewTheme} from 'react-core';
+import {variants} from '../label/types';
+
+const Link = (properties: LinkProps): JSX.Element => {
+  const [isActive, setIsActive] = useState(false);
+  const theme = useNewTheme();
+
+  const {
+    id,
+    linkText,
+    variant = linkVariant.medium,
+    inverted,
+    Icon,
+    onPress,
+    disabled,
+    customStyle,
+    customLabelStyle,
+  } = properties;
+  const styles = getStyle({theme});
+
+  const getLabelVariant = () => {
+    switch (variant) {
+      case linkVariant.small:
+        return variants.bodySemiboldXS;
+      case linkVariant.medium:
+        return variants.bodySemiBoldS;
+      case linkVariant.large:
+        return variants.bodySemiBoldM;
+    }
+  };
+
+  return (
+    <Pressable
+      key={id}
+      onPress={onPress}
+      onPressIn={() => setIsActive(!isActive)}
+      onPressOut={() => setIsActive(!isActive)}
+      style={[
+        styles.container,
+
+        variant !== linkVariant.large
+          ? styles.largeAndMidumVariantGap
+          : styles.smallVariantGap,
+        customStyle,
+      ]}
+      disabled={disabled}>
+      {Icon && (
+        <View
+          style={[
+            variant === linkVariant.small
+              ? styles.smallIconViewStyle
+              : styles.iconViewStyle,
+          ]}>
+          <Icon color={isActive ? styles.activeStyle.color : undefined} />
+        </View>
+      )}
+
+      <Label
+        id="link"
+        variant={getLabelVariant()}
+        style={[
+          inverted ? styles.baseInvertedTextStyle : styles.baseTextStyle,
+          disabled && styles.disabledStyle,
+          isActive && styles.activeStyle,
+          customLabelStyle,
+        ]}
+        text={linkText}
+      />
+    </Pressable>
+  );
+};
+
+export {Link};
+
+
+###FilePath: link/styles.ts
+
+import { StyleSheet } from 'react-native';
+import { LinkStyleProps } from './types';
+import { Typography } from '@app/utils';
+
+export const getStyle = (properties: LinkStyleProps) => {
+  const { theme } = properties;
+  return StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      minHeight: 24,
+      alignSelf: 'flex-start',
+      alignItems: 'center',
+    },
+    smallVariantGap: {
+      gap: 4,
+    },
+    largeAndMidumVariantGap: {
+      gap: 8,
+    },
+    iconViewStyle: {
+      height: 20,
+      width: 20,
+    },
+    smallIconViewStyle: {
+      height: 16,
+      width: 16,
+    },
+    baseTextStyle: {
+      // marginStart: 4,
+      color: theme.colors['content-interactive-primary-enabled'],
+      alignItems: 'center',
+    },
+    baseInvertedTextStyle: {
+      marginStart: 4,
+      color: theme.colors['content-interactive-inverted-enabled'],
+      alignItems: 'center',
+    },
+    disabledStyle: {
+      color: theme.colors['content-interactive-primary-disabled'],
+    },
+
+    activeStyle: {
+      color: theme.colors['content-interactive-primary-active'],
+    },
+
+    largeSizeStyle: {
+      fontSize: 16,
+      lineHeight: 24,
+    },
+    mediumSizeStyle: {
+      fontSize: 14,
+      lineHeight: 20,
+    },
+    smallSizeStyle: {
+      fontSize: 12,
+      lineHeight: 16,
+    },
+  });
+};
+
+
+###FilePath: link/types.ts
+
+import {IconProps} from 'app/constants';
+import {FC} from 'react';
+import {Theme} from 'react-core';
+import {StyleProp, TextStyle, ViewStyle} from 'react-native';
+
+export enum linkVariant {
+  large = 'Large',
+  medium = 'Medium',
+  small = 'Small',
+}
+export interface LinkProps {
+  id: string;
+  disabled?: boolean;
+  variant?: linkVariant;
+  inverted?: boolean;
+  linkText: string;
+  Icon?: FC<IconProps>;
+  onPress?: () => void;
+  customStyle?: StyleProp<ViewStyle>;
+  customLabelStyle?: StyleProp<TextStyle>;
+}
+
+export interface LinkStyleProps {
+  theme: Theme;
+}
+
+export interface SvgColorProps {
+  iconcolor: string;
+}
+
+
+###FilePath: sticky-button-bar/index.tsx
+
+/**
+Author: Haseeb Muhsin
+Date Created:  27/10/2025
+ * Sticky button bar component which handles the bottom content of the screen with keyboard changes.
+ *
+ * Allow users to view buttons and actions
+ * Allow users to view alert and total amount
+ * Allow users to view any helper text
+ * Allow users to check before continue
+ * NB: Few actions like swipe button success still needs to be added.
+ */
+
+import React from 'react';
+import {
+  ActionLayout,
+  ActionType,
+  StickyBarStatus,
+  StickyButtonBarProps,
+} from './types';
+import {Pressable, View} from 'react-native';
+import {translation, useNewTheme} from 'react-core';
+import {getStyles} from './styles';
+import {Button} from '../custom-button';
+import {CurrencyType} from '../Currency/types';
+import {HelperMessageIcon} from 'app/assets/svg/helper-message-icon';
+import {Label} from '../label';
+import {CancelIcon} from 'app/assets/svg';
+import {variants} from '../label/types';
+import {CheckmarkCircle01Icon} from 'app/assets/svg/checkmark-circle-01-icon';
+import {InformationAlertCircleIcon} from 'app/assets/svg/information-alert-circle-icon';
+import {AlertErrorCircleIcon} from 'app/assets/svg/alert-error-circle-icon';
+import {Alert02Icon} from 'app/assets/svg/alert-02-icon';
+import {ButtonVariants} from '../custom-button/types';
+import {Figure} from '../figure';
+import {FigureSizes} from '../figure/types';
+import {CustomCheckbox} from '../custom-checkbox-button';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  useAnimatedStyle,
+} from 'react-native-reanimated';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {useKeyboardSettings} from 'app/hooks/use-keyboard-settings';
+import {StickyShadows} from '../sticky-shadows';
+import {
+  StickyShadowDirections,
+} from '../sticky-shadows/types';
+import {InteractiveSwipeButton} from '../interactive-swipe-button';
+
+export const StickyButtonBar: React.FC<StickyButtonBarProps> = props => {
+  const {
+    inverted = false,
+    showBackground = true,
+    checkBox1,
+    checkBox2,
+    helperText,
+    actionType = ActionType.BUTTONS,
+    totalAmount,
+    currency = CurrencyType.SAR,
+    alertMessage,
+    stickyBarStatus = StickyBarStatus.SUCCESS,
+    fadeEffect = false,
+    onAlertClose,
+    primaryButton,
+    onPrimaryButtonClick,
+    secondaryButton,
+    onSecondaryButtonClick,
+    tertiaryButton,
+    onTertiaryButtonClick,
+    actionLayout = ActionLayout.VERTICAL,
+    onCheckBox1Checked,
+    onCheckBox2Checked,
+    checkBox1Checked = false,
+    checkBox2Checked = false,
+    disableKeyboardAvoidingBehaviour = false,
+    disableButtons = false,
+    swipeButtonText,
+    swipeButtonOnValidated,
+    swipeButtonOnConfirmed,
+    resetSwipeButton,
+    swipeButtonValidated,
+    primaryButtonProps,
+    secondaryButtonProps,
+    tertiaryButtonProps,
+  } = props;
+  const theme = useNewTheme();
+  const styleProps = {
+    theme,
+    inverted,
+    showBackground,
+    stickyBarStatus,
+    actionLayout,
+  };
+  const style = getStyles(styleProps);
+  const {keyboardHeight, keyboardOffset, isKeyboardVisible} =
+    useKeyboardSettings();
+  const insets = useSafeAreaInsets();
+  const {t} = translation.useTranslation();
+  const paddingStyle = useAnimatedStyle(() => {
+    const paddingBottom = interpolate(
+      keyboardOffset.value,
+      [0, keyboardHeight],
+      [insets.bottom + 24, keyboardHeight + insets.bottom],
+      Extrapolation.CLAMP,
+    );
+    const paddingHorizontal = interpolate(
+      keyboardOffset.value,
+      [0, keyboardHeight],
+      [16, 0],
+      Extrapolation.CLAMP,
+    );
+    const paddingTop = interpolate(
+      keyboardOffset.value,
+      [0, keyboardHeight],
+      [24, 0],
+      Extrapolation.CLAMP,
+    );
+    return {
+      paddingBottom: paddingBottom,
+      paddingHorizontal: paddingHorizontal,
+      paddingTop: paddingTop,
+    };
+  });
+
+  return (
+    <Animated.View
+      style={[
+        style.container,
+        !disableKeyboardAvoidingBehaviour && paddingStyle,
+      ]}>
+      {fadeEffect && (
+        <StickyShadows
+          direction={StickyShadowDirections.BOTTOM_TO_TOP}
+          containerStyle={{top: -16}}></StickyShadows>
+      )}
+
+      {alertMessage && (
+        <View style={[style.alertTextContainer]}>
+          {stickyBarStatus === StickyBarStatus.SUCCESS && (
+            <CheckmarkCircle01Icon
+              color={
+                theme.colors['icon-semantic-success-01']
+              }></CheckmarkCircle01Icon>
+          )}
+          {stickyBarStatus === StickyBarStatus.INFO && (
+            <InformationAlertCircleIcon
+              color={
+                theme.colors['icon-semantic-info-01']
+              }></InformationAlertCircleIcon>
+          )}
+          {stickyBarStatus === StickyBarStatus.WARNING && (
+            <Alert02Icon
+              color={theme.colors['icon-semantic-warning-01']}></Alert02Icon>
+          )}
+
+          {stickyBarStatus === StickyBarStatus.ERROR && (
+            <AlertErrorCircleIcon
+              color={
+                theme.colors['icon-semantic-error-01']
+              }></AlertErrorCircleIcon>
+          )}
+
+          <Label
+            id="StickyButtonBarAlertLabel"
+            text={alertMessage}
+            variant={variants.bodyRegularS}
+            style={style.alertText}></Label>
+          {onAlertClose && (
+            <Pressable onPress={onAlertClose} style={style.closeIconContainer}>
+              <CancelIcon
+                color={
+                  theme.colors['icon-interactive-secondary-enabled']
+                }></CancelIcon>
+            </Pressable>
+          )}
+        </View>
+      )}
+      {helperText && (
+        <View style={style.helperTextContainer}>
+          <HelperMessageIcon
+            color={
+              inverted
+                ? theme.colors['icon-inverted-secondary']
+                : theme.colors['icon-secondary']
+            }></HelperMessageIcon>
+          <Label
+            id="StickyButtonBarHelperTextLabel"
+            text={helperText}
+            variant={variants.bodyRegularXS}
+            style={style.helperText}></Label>
+        </View>
+      )}
+      {totalAmount && (
+        <View style={style.totalAmountContainer}>
+          <Label
+            id="StickyButtonBarTotalAmountLabel"
+            text={t('OnboardingMonthlyExpensesLblTotalAmount')}
+            variant={variants.bodyRegularL}
+            style={style.totalAmountText}></Label>
+          <Figure
+            amount={totalAmount}
+            currencyName={currency}
+            showBalance={true}
+            inverted={inverted}
+            size={FigureSizes.M}></Figure>
+        </View>
+      )}
+      {checkBox1 && (
+        <View style={[style.checkBoxContainer]}>
+          <CustomCheckbox
+            id="StickyButtonBarCheckbox1"
+            isChecked={checkBox1Checked ?? false}
+            inverted={inverted}
+            onPress={onCheckBox1Checked}
+            titleStyle={style.checkBoxTitle}
+            title={checkBox1}></CustomCheckbox>
+          {checkBox2 && (
+            <CustomCheckbox
+              id="StickyButtonBarCheckbox2"
+              inverted={inverted}
+              onPress={onCheckBox2Checked}
+              isChecked={checkBox2Checked ?? false}
+              titleStyle={style.checkBoxTitle}
+              title={checkBox2}></CustomCheckbox>
+          )}
+        </View>
+      )}
+      {actionType === ActionType.BUTTONS && (
+        <View style={style.actionLayoutContainer}>
+          {tertiaryButton &&
+            !(isKeyboardVisible && actionLayout === ActionLayout.VERTICAL) && (
+              <Button
+                id="StickyButtonBarTertiaryButton"
+                label={tertiaryButton}
+                inverted={inverted}
+                variant={ButtonVariants.ghost}
+                disabled={disableButtons}
+                onPress={onTertiaryButtonClick}
+                style={style.button}
+                {...tertiaryButtonProps}
+              />
+            )}
+          {secondaryButton &&
+            !(isKeyboardVisible && actionLayout === ActionLayout.VERTICAL) && (
+              <Button
+                id="StickyButtonBarSecondaryButton"
+                label={secondaryButton}
+                inverted={inverted}
+                disabled={disableButtons}
+                variant={ButtonVariants.secondary}
+                onPress={onSecondaryButtonClick}
+                style={style.button}
+                {...secondaryButtonProps}
+              />
+            )}
+          <Button
+            id="StickyButtonBarTertiaryButton"
+            label={primaryButton}
+            inverted={inverted}
+            onPress={onPrimaryButtonClick}
+            disabled={disableButtons}
+            style={[
+              style.button,
+              !disableKeyboardAvoidingBehaviour &&
+                isKeyboardVisible &&
+                style.buttonOverKeyboard,
+            ]}
+            {...primaryButtonProps}
+          />
+        </View>
+      )}
+
+      {actionType === ActionType.SWIPE_BUTTON && (
+        <InteractiveSwipeButton
+          reset={resetSwipeButton}
+          label={swipeButtonText ?? ''}
+          disabled={disableButtons}
+          alreadyValidated={swipeButtonValidated}
+          onConfirmed={() => {
+            swipeButtonOnConfirmed?.();
+          }}></InteractiveSwipeButton>
+      )}
+    </Animated.View>
+  );
+};
+
+
+###FilePath: sticky-button-bar/styles.ts
+
+/**
+Author: Haseeb Muhsin
+Date Created:  27/10/2025
+ * Stylesheet for maintaining all the styles specific to sticky button bar
+ */
+
+import {ScaledSheet} from 'react-native-size-matters';
+import {
+  ActionLayout,
+  StickyBarStatus,
+  StickyButtonBarStyleProps,
+} from './types';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+
+export const getStyles = (props: StickyButtonBarStyleProps) => {
+  const {theme, inverted, showBackground, stickyBarStatus, actionLayout} =
+    props;
+  const insets = useSafeAreaInsets();
+  return ScaledSheet.create({
+    container: {
+      paddingBottom: insets.bottom + 24,
+      paddingTop: 24,
+      paddingHorizontal: 16,
+      gap: 24,
+      position:'relative',
+      backgroundColor:
+        showBackground && inverted
+          ? theme.colors['background-03']
+          : showBackground
+          ? theme.colors['background-01']
+          : undefined,
+    },
+    alertTextContainer: {
+      padding: 16,
+      gap: 8,
+      backgroundColor:
+        stickyBarStatus === StickyBarStatus.SUCCESS
+          ? theme.colors['surface-semantic-success-01']
+          : stickyBarStatus === StickyBarStatus.ERROR
+          ? theme.colors['surface-semantic-error-01']
+          : stickyBarStatus === StickyBarStatus.WARNING
+          ? theme.colors['surface-semantic-warning-01']
+          : theme.colors['surface-semantic-info-01'],
+      borderRadius: 8,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    alertText: {
+      color: theme.colors['content-primary'],
+      flex: 1,
+    },
+    closeIconContainer: {
+      backgroundColor: theme.colors['surface-01'],
+      width: 20,
+      height: 20,
+      borderRadius: 999,
+      gap: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    actionLayoutContainer: {
+      flexDirection:
+        actionLayout === ActionLayout.HORIZONTAL ? 'row' : 'column',
+      gap: actionLayout === ActionLayout.HORIZONTAL ? 8 : 16,
+    },
+    button: {
+      flex: actionLayout === ActionLayout.HORIZONTAL ? 1 : undefined,
+    },
+    totalAmountContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    totalAmountText: {
+      color: inverted
+        ? theme.colors['content-inverted-secondary']
+        : theme.colors['content-secondary'],
+    },
+    helperTextContainer: {
+      gap: 4,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    helperText: {
+      color: inverted
+        ? theme.colors['content-inverted-secondary']
+        : theme.colors['content-secondary'],
+    },
+    checkBoxContainer: {
+      gap: 16,
+    },
+    checkBoxTitle: {
+      color: inverted
+        ? theme.colors['content-inverted-primary']
+        : theme.colors['content-primary'],
+    },
+    buttonOverKeyboard: {
+      borderRadius: 0,
+    },
+  });
+};
+
+
+###FilePath: sticky-button-bar/types.ts
+
+/**
+Author: Haseeb Muhsin
+Date Created:  27/10/2025
+ * Properties sheet for maintaining all the types and properties specific to Sticky button bar
+ */
+
+import {Theme} from 'react-core';
+import { ButtonProperties } from '../custom-button';
+
+export type StickyButtonBarProps = {
+  inverted?: boolean;
+  showBackground?: boolean;
+  alertMessage?: string;
+  stickyBarStatus?: StickyBarStatus;
+  checkBox1?: string;
+  onCheckBox1Checked?: () => void;
+  checkBox1Checked?: boolean;
+  checkBox2?: string;
+  onCheckBox2Checked?: () => void;
+  checkBox2Checked?: boolean;
+  totalAmount?: string;
+  currency?: string;
+  fadeEffect?: boolean;
+  actionType?: ActionType;
+  helperText?: string;
+  alertText?: string;
+  onAlertClose?: () => void;
+  primaryButton?: string;
+  onPrimaryButtonClick?: () => void;
+  secondaryButton?: string;
+  onSecondaryButtonClick?: () => void;
+  tertiaryButton?: string;
+  onTertiaryButtonClick?: () => void;
+  actionLayout?: ActionLayout;
+  disableKeyboardAvoidingBehaviour?: boolean;
+  disableButtons?: boolean;
+  swipeButtonText?: string;
+  swipeButtonOnValidated?: () => void;
+  swipeButtonOnConfirmed?: () => void;
+  resetSwipeButton?: boolean;
+  swipeButtonValidated?: boolean;
+  primaryButtonProps?:ButtonProperties;
+  secondaryButtonProps?: ButtonProperties;
+  tertiaryButtonProps?: ButtonProperties
+};
+
+export type StickyButtonBarStyleProps = {
+  theme: Theme;
+  inverted: boolean;
+  showBackground: boolean;
+  stickyBarStatus: StickyBarStatus;
+  actionLayout: ActionLayout;
+};
+
+export enum StickyBarStatus {
+  SUCCESS = 'Success',
+  ERROR = 'Error',
+  WARNING = 'Warning',
+  INFO = 'Info',
+}
+
+export enum ActionType {
+  SWIPE_BUTTON = 'SwipeButton',
+  BUTTONS = 'Buttons',
+}
+
+export enum ActionLayout {
+  HORIZONTAL = 'Horizontal',
+  VERTICAL = 'Vertical',
+}
+
+

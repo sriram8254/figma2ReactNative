@@ -1,0 +1,13 @@
+Feature:CreditCard
+Screen Name : MonthlyExpenses
+Component                     Name 
+	
+Background for this screen    ScreenContainer 
+Title                         Label                     
+Subtitle                      Label                     
+user input field              Input
+user input field              Input
+check box                     CustomCheckbox
+Total                         Label                      
+Amount                        Icon + Label           
+Button                        SubmitButton

@@ -1,0 +1,3624 @@
+
+
+Generate React Native screen code from the attached design image for integration into an existing project.
+
+**Project Configuration:**
+- React: 19.1.1
+- React Native: 0.82.1
+- Gradle: 9.0.0
+- TypeScript: Required
+
+---
+
+## CRITICAL INSTRUCTIONS
+
+**DO NOT:**
+- Create mock components or mock functions
+- Recreate any existing components
+- Generate placeholder/TODO comments
+- Create standalone App.tsx files
+
+**DO:**
+- Use existing custom components with proper import statements
+- Follow the existing project structure and patterns
+- Generate production-ready, integration-ready code
+- Use proper file path format: `###FilePath: app/features/{feature}/views/{screen-name}/index.tsx`
+- Separate business logic into custom hooks
+- Define validation schemas using Yup
+- Use Formik for form management
+
+---
+
+## FILE STRUCTURE & ARCHITECTURE
+
+**IMPORTANT:** Hooks and Schemas are at the **feature level**, NOT inside the view folder.
+
+```
+app/features/{feature}/
+├── views/
+│   └── {screen-name}/
+│       ├── index.tsx          # Main view component (UI only)
+│       ├── styles.ts          # StyleSheet definitions
+│       ├── types.ts           # TypeScript interfaces/types
+│       └── translations.ts    # Translation keys (en/ar)
+├── hooks/
+│   └── use-{screen-name}.ts   # Custom hook (business logic, state, handlers)
+└── schemas/
+    └── {screen-name}-schema.ts # Yup validation schema & initial values
+```
+
+**Example Structure:**
+```
+app/features/credit-card/
+├── views/
+│   ├── monthly-expenses/
+│   │   ├── index.tsx
+│   │   ├── styles.ts
+│   │   ├── types.ts
+│   │   └── translations.ts
+│   └── personal-details/
+│       ├── index.tsx
+│       ├── styles.ts
+│       ├── types.ts
+│       └── translations.ts
+├── hooks/
+│   ├── use-monthly-expenses.ts
+│   └── use-personal-details.ts
+└── schemas/
+    ├── monthly-expenses-schema.ts
+    └── personal-details-schema.ts
+```
+
+### Architecture Principles:
+
+1. **View (views/{screen-name}/index.tsx):** Pure UI component, no business logic
+2. **Hook (hooks/use-{screen-name}.ts):** All state, logic, handlers, validation
+3. **Schema (schemas/{screen-name}-schema.ts):** Yup validation rules, initial values, types
+4. **Styles (views/{screen-name}/styles.ts):** Theme-based StyleSheet
+5. **Types (views/{screen-name}/types.ts):** Component props, navigation types, style props
+6. **Translations (views/{screen-name}/translations.ts):** i18n keys and values
+
+---
+
+## NAMING CONVENTIONS & STANDARDS
+
+### 1. Import Order
+**STRICT ORDER - Must follow this sequence:**
+```typescript
+// 1. React imports (always first)
+import React, {FC, useState, useEffect, useMemo} from 'react';
+import {View, Text, StyleSheet} from 'react-native';
+
+// 2. Third-party library imports
+import {useNavigation} from '@react-navigation/native';
+import {useFormik} from 'formik';
+
+// 3. Custom component imports (after React and third-party)
+import * as Components from '@app/components';
+
+// 4. Theme and utilities
+import {useNewTheme, Theme, translation, ContextualType} from 'react-core';
+
+// 5. Assets (SVG icons, images)
+import {IconName} from 'app/assets/svg';
+
+// 6. Feature-level imports (hooks, schemas) - OUTSIDE view folder
+import {useScreenName} from '../../hooks/use-screen-name';
+import {ScreenNameSchema, screenNameInitialValues} from '../../schemas/screen-name-schema';
+
+// 7. Local view imports (types, styles)
+import {getStyles} from './styles';
+import {ScreenNameProps} from './types';
+```
+
+### 2. Component ID Naming Convention
+
+**Pattern:** `<<ComponentName>><<FieldName>>`
+- Use **TitleCase** for both component name and field name
+- No spaces, no underscores, just concatenated TitleCase
+
+**Examples:**
+```typescript
+// Input components
+id="InputTotalExpenses"
+id="InputFinancialObligations"
+id="InputNickname"
+
+// Label components
+id="LabelTitle"
+id="LabelDescription"
+id="LabelScreenTitle"
+id="LabelScreenSubtitle"
+
+// Button components
+id="ButtonNext"
+id="SubmitButtonNextButton"
+
+// Checkbox components
+id="CustomCheckboxDisclosureCheckbox"
+id="CheckboxAcknowledgement"
+
+// Screen containers
+id="ScreenContainerMonthlyExpensesScreen"
+```
+
+### 3. Translation Key Pattern
+
+**Pattern:** `<<Journey>><<ScreenName>><<ComponentAbbreviation>><<FieldName>>`
+- All parts in TitleCase, no separators
+- Component abbreviation must be in proper case
+
+**Component Abbreviations:**
+- `Lbl` = Label
+- `Btn` = Button
+- `Txt` = Text input value
+- `Plc` = Placeholder
+- `Chk` = Checkbox
+- `Info` = Info/help text
+- `Error` = Error message
+
+**Examples:**
+```typescript
+// Labels
+title={t('CreditCardApplicationMonthlyExpensesLblTitle')}
+text={t('OnboardingMonthlyExpensesLblSubtitle')}
+
+// Buttons
+label={t('OnboardingMonthlyExpensesNextBtnLbl')}
+
+// Placeholders
+placeholder={t('OnboardingMonthlyExpensesPlcTotalExpenses')}
+placeholder={t('OnboardingMonthlyExpensesPlcFinancialOblgn')}
+
+// Checkboxes
+title={t('OnboardingMonthlyExpensesChkTitle')}
+linkTitle={t('OnboardingMonthlyExpensesChkLinkTitle')}
+
+// Info text
+text={t('OnboardingMonthlyExpensesInfoFinancialOblgn')}
+
+// Total/Summary
+text={t('OnboardingMonthlyExpensesLblTotalAmt')}
+```
+
+---
+
+## CUSTOM HOOKS PATTERN
+
+### Hook File Structure: `app/features/{feature}/hooks/use-{screen-name}.ts`
+
+**Location:** At feature level, NOT inside view folder
+
+**Purpose:** Centralize all business logic, state management, form handling, and event handlers
+
+**Must Include:**
+1. All useState declarations
+2. Formik form management
+3. useMemo for computed values
+4. All event handlers (onChange, onPress, etc.)
+5. Validation logic
+6. Navigation logic
+7. API calls (if any)
+
+**Example Pattern:**
+```typescript
+###FilePath: app/features/{feature}/hooks/use-{screen-name}.ts
+
+import {useState, useMemo} from 'react';
+import {useFormik} from 'formik';
+import {useNavigation} from '@react-navigation/native';
+import {ScreenNameSchema, screenNameInitialValues} from '../schemas/screen-name-schema';
+
+export const useScreenName = () => {
+  // 1. State declarations
+  const [fieldOne, setFieldOne] = useState<string>('');
+  const [fieldTwo, setFieldTwo] = useState<string>('');
+  const [isChecked, setIsChecked] = useState<boolean>(false);
+
+  const navigation = useNavigation();
+
+  // 2. Formik form management
+  const formikForm = useFormik({
+    validateOnChange: true,
+    validateOnBlur: true,
+    initialValues: screenNameInitialValues,
+    validationSchema: ScreenNameSchema,
+    onSubmit: async (values) => {
+      // Submit logic here
+      console.log('Form submitted:', values);
+    },
+  });
+
+  // 3. Helper functions (if needed)
+  const parseAmount = (amountString: string): number => {
+    return parseFloat(amountString.replace(/,/g, '') || '0');
+  };
+
+  // 4. Computed values with useMemo
+  const isFormValid = useMemo(() => {
+    // Validation logic
+    return fieldOne !== '' && fieldTwo !== '' && isChecked;
+  }, [fieldOne, fieldTwo, isChecked]);
+
+  // 5. Event handlers
+  const onChangeFieldOne = (text: string) => {
+    setFieldOne(text);
+  };
+
+  const onChangeFieldTwo = (text: string) => {
+    setFieldTwo(text);
+  };
+
+  const onCheckboxSelect = () => {
+    setIsChecked(!isChecked);
+  };
+
+  const handleNext = () => {
+    console.log('Next pressed');
+    // navigation.navigate('NextScreen');
+  };
+
+  const onBackButtonPress = () => {
+    navigation.goBack();
+  };
+
+  // 6. Return all state, handlers, and computed values
+  return {
+    // State
+    fieldOne,
+    fieldTwo,
+    isChecked,
+
+    // Form
+    formikForm,
+
+    // Computed
+    isFormValid,
+
+    // Handlers
+    onChangeFieldOne,
+    onChangeFieldTwo,
+    onCheckboxSelect,
+    handleNext,
+    onBackButtonPress,
+  };
+};
+```
+
+---
+
+## VALIDATION SCHEMAS PATTERN
+
+### Schema File Structure: `app/features/{feature}/schemas/{screen-name}-schema.ts`
+
+**Location:** At feature level, NOT inside view folder
+
+**Purpose:** Define Yup validation rules, initial values, and form types
+
+**Must Include:**
+1. Yup validation schema
+2. Initial values object
+3. TypeScript type for form values
+4. Import error message keys from constants
+
+**Example Pattern:**
+```typescript
+###FilePath: app/features/{feature}/schemas/{screen-name}-schema.ts
+
+import {Errors} from '@app/constants';
+import * as yup from 'yup';
+
+// 1. Yup Validation Schema
+export const ScreenNameSchema = yup.object().shape({
+  fieldOne: yup
+    .string()
+    .min(3, Errors.FieldOneMinLength)
+    .max(50, Errors.FieldOneMaxLength)
+    .required(Errors.FieldOneRequired),
+
+  fieldTwo: yup
+    .string()
+    .matches(/^[0-9]+$/, Errors.FieldTwoInvalid)
+    .required(Errors.FieldTwoRequired),
+});
+
+// 2. Initial Values
+export const screenNameInitialValues = {
+  fieldOne: '',
+  fieldTwo: '',
+};
+
+// 3. TypeScript Type
+export type ScreenNameInitialValuesType = {
+  fieldOne: string;
+  fieldTwo: string;
+};
+```
+
+**Common Validation Patterns:**
+```typescript
+// Required field
+.required(Errors.FieldRequired)
+
+// Min/Max length
+.min(3, Errors.MinLength)
+.max(50, Errors.MaxLength)
+
+// Regex patterns
+.matches(/^[a-zA-Z0-9]+$/, Errors.AlphanumericOnly)
+.matches(/^[0-9]+$/, Errors.NumericOnly)
+
+// Email
+.email(Errors.InvalidEmail)
+
+// Number validation
+yup.number()
+  .min(0, Errors.MinValue)
+  .max(1000000, Errors.MaxValue)
+  .required(Errors.Required)
+```
+
+---
+
+## VIEW COMPONENT PATTERN
+
+### View File: `app/features/{feature}/views/{screen-name}/index.tsx`
+
+**Purpose:** Pure UI component - only rendering, no business logic
+
+**Pattern:**
+```typescript
+###FilePath: app/features/{feature}/views/{screen-name}/index.tsx
+
+// 1. React imports
+import React from 'react';
+import {View} from 'react-native';
+
+// 2. Third-party imports
+// (if needed)
+
+// 3. Custom components
+import {
+  ScreenContainer,
+  Label,
+  Input,
+  SubmitButton,
+  CustomCheckbox,
+} from '@app/components';
+
+// 4. Theme and utilities
+import {useNewTheme, translation, ContextualType} from 'react-core';
+
+// 5. Assets
+import {IconName} from 'app/assets/svg';
+
+// 6. Feature-level imports (hooks, schemas) - TWO LEVELS UP
+import {useScreenName} from '../../hooks/use-screen-name';
+
+// 7. Local view imports (types, styles)
+import {getStyles} from './styles';
+import {ScreenNameProps} from './types';
+import {variants} from 'app/components/label/types';
+
+const ScreenName: React.FC<ScreenNameProps> = ({navigation}) => {
+  const theme = useNewTheme();
+  const styles = getStyles({theme});
+  const {t} = translation.useTranslation();
+
+  // Get all state and handlers from custom hook
+  const {
+    fieldOne,
+    fieldTwo,
+    isChecked,
+    formikForm,
+    isFormValid,
+    onChangeFieldOne,
+    onChangeFieldTwo,
+    onCheckboxSelect,
+    handleNext,
+    onBackButtonPress,
+  } = useScreenName();
+
+  return (
+    <ScreenContainer
+      id="ScreenContainerScreenName"
+      showGoBackIcon
+      onPressLeftContent={onBackButtonPress}
+      bottomScreenContent={
+        <View style={styles.bottomContentContainer}>
+          <SubmitButton
+            id="SubmitButtonNext"
+            label={t('JourneyScreenNameBtnNext')}
+            onPress={handleNext}
+            disabled={!isFormValid}
+          />
+        </View>
+      }>
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.headerContainer}>
+          <Label
+            id="LabelScreenTitle"
+            text={t('JourneyScreenNameLblTitle')}
+            variant={variants.titleL}
+            style={styles.screenTitle}
+          />
+          <Label
+            id="LabelScreenSubtitle"
+            text={t('JourneyScreenNameLblSubtitle')}
+            variant={variants.bodyRegularM}
+            style={styles.subTitle}
+          />
+        </View>
+
+        {/* Form Section */}
+        <View style={styles.formSection}>
+          <Input
+            id="InputFieldOne"
+            placeholder={t('JourneyScreenNamePlcFieldOne')}
+            value={fieldOne}
+            setValue={onChangeFieldOne}
+            errorText={
+              formikForm.touched.fieldOne
+                ? formikForm.errors.fieldOne
+                : ''
+            }
+          />
+
+          <Input
+            id="InputFieldTwo"
+            placeholder={t('JourneyScreenNamePlcFieldTwo')}
+            value={fieldTwo}
+            setValue={onChangeFieldTwo}
+            errorText={
+              formikForm.touched.fieldTwo
+                ? formikForm.errors.fieldTwo
+                : ''
+            }
+          />
+        </View>
+
+        {/* Checkbox */}
+        <View style={styles.checkboxContainer}>
+          <CustomCheckbox
+            id="CustomCheckboxConsent"
+            isChecked={isChecked}
+            onPress={onCheckboxSelect}
+            title={t('JourneyScreenNameChkTitle')}
+          />
+        </View>
+      </View>
+    </ScreenContainer>
+  );
+};
+
+export default ScreenName;
+```
+
+---
+
+## 1. COMPONENT MAPPING
+
+Feature:CreditCard
+Screen Name : PersonalDetails
+Component                     Name 
+	
+Background for this screen    ScreenContainer 
+Title                         Label                     
+Subtitle                      Label                     
+user input field              Input
+user input field              Input
+user input field              Dropdown        
+Button                        SubmitButton
+
+
+---
+
+## 2. EXISTING CUSTOM COMPONENTS
+
+
+###FilePath: label/index.tsx
+
+import React, {FC} from 'react';
+import {Text} from 'react-native';
+import {getStyles} from './styles';
+import {LabelProperties} from './types';
+import {
+  getCurrentLanguage,
+  useNewTheme,
+  Language,
+  ContextualType,
+} from 'react-core';
+import Animated from 'react-native-reanimated';
+const Label: FC<LabelProperties> = (properties: LabelProperties) => {
+  const {
+    id,
+    variant = ContextualType.bodyRegularM,
+    text,
+    style,
+    numberOfLines,
+    textProps,
+  } = properties;
+  const theme = useNewTheme();
+  const language = getCurrentLanguage() as Language;
+  const styles = getStyles({theme, language, variant});
+
+  return (
+    <Animated.Text
+      key={id}
+      numberOfLines={numberOfLines}
+      style={[styles.labelStyle, style]}
+      {...textProps}>
+      {text}
+    </Animated.Text>
+  );
+};
+
+export {Label};
+
+
+###FilePath: label/styles.ts
+
+import {Platform, StyleSheet} from 'react-native';
+import {LabelStyleProperties} from './types';
+import {getFontStyles, Language} from 'react-core';
+
+export const getStyles = (props: LabelStyleProperties) => {
+  const {theme, language, variant} = props;
+  const fontStyles = getFontStyles(variant, language);
+  return StyleSheet.create({
+    labelStyle: {
+      color: theme.colors['content-primary'],
+      textAlign: 'left',
+      textAlignVertical: 'center',
+      // ...Platform.select({
+      //   ios: {
+      //     transform: [{ translateY: 10 }]
+      //   }
+      // }),
+      // transform: [{ translateY: -25 }],
+      // height: 32,
+      ...(language === Language.Arabic ? {paddingTop: 5} : {}),
+      // backgroundColor: 'red',
+      ...fontStyles,
+      ...Platform.select({
+        android: {
+          // fontFamily: 'Vazirmatn-Medium',
+          // fontFamily: 'Vazirmatn-Regular',
+          // fontFamily: 'Vazirmatn-SemiBold',
+          // fontWeight: undefined
+        },
+        // ios: {
+        //   // fontFamily: 'Vazirmatn'
+        //   fontFamily: 'Vazirmatn-SemiBold',
+        //   fontWeight: undefined
+        // }
+      }),
+
+      // ...Platform.select({
+      //   android: {
+      //     fontFamily: fontStyles.fontFamily.replaceAll(' ', '')
+      //   },
+      // }),
+    },
+  });
+};
+
+
+###FilePath: label/types.ts
+
+import { Language, ContextualType, Theme } from 'react-core';
+import { StyleProp, TextProps, TextStyle } from 'react-native';
+
+// export enum variants {
+//   titleXL = 'titleXL',
+//   titleL = 'titleL',
+//   titleM = 'titleM',
+//   titleS = 'titleS',
+//   titleXS = 'titleXS',
+//   bodySemiBoldL = 'bodySemiBoldL',
+//   bodyMediumL = 'bodyMediumL',
+//   bodyRegularL = 'bodyRegularL',
+//   bodySemiBoldM = 'bodySemiBoldM',
+//   bodyMediumM = 'bodyMediumM',
+//   bodyRegularM = 'bodyRegularM',
+//   bodySemiBoldS = 'bodySemiBoldS',
+//   bodyMediumS = 'bodyMediumS',
+//   bodyRegularS = 'bodyRegularS',
+//   bodySemiboldXS = 'bodySemiboldXS',
+//   bodyMediumXS = 'bodyMediumXS',
+//   bodyRegularXS = 'bodyRegularXS',
+// }
+
+export { ContextualType as variants }
+
+export interface LabelProperties {
+  id: string;
+  text: string;
+  variant?: ContextualType;
+  style?: StyleProp<TextStyle>;
+  numberOfLines?: number;
+  textProps?: TextProps;
+}
+export interface LabelStyleProperties {
+  theme: Theme;
+  language: Language;
+  variant: ContextualType;
+}
+
+
+###FilePath: custom-checkbox-button/index.tsx
+
+import {Pressable, View} from 'react-native';
+import React, {FC} from 'react';
+import {CheckboxButtonProperties} from './types';
+import {getStyle} from './styles';
+import {IconAlertCircle} from '@app/assets/svg/icon-alert-circle';
+import {IconAlertCircleInverted} from '@app/assets/svg/icon-alert-circle-inverted';
+import {Theme, useNewTheme} from 'react-core';
+import {Label} from '../label';
+import {Link} from '../link';
+import {variants} from '../label/types';
+import {Tick02} from 'app/assets/svg';
+import {linkVariant} from '../link/types';
+
+const CustomCheckbox: FC<CheckboxButtonProperties> = (
+  properties: CheckboxButtonProperties,
+) => {
+  const {
+    id,
+    onPress,
+    title,
+    isChecked,
+    inverted,
+    linkTitle,
+    onPressLink,
+    errorText,
+    style,
+    innerContainerStyle,
+    disabled = false,
+    titleStyle,
+    titleVariant = variants.bodyRegularM,
+    onPressDisabled = false,
+    buttonStyle,
+  } = properties;
+  const theme: Theme = useNewTheme();
+  const styles = getStyle(theme, isChecked, disabled, inverted);
+  const getCheckboxStyle = () => {
+    if (inverted) {
+      return errorText !== ''
+        ? styles.errorInverted
+        : !disabled
+        ? styles.inverted
+        : styles.disabled;
+    }
+    if (disabled) {
+      return styles.disabled;
+    }
+    if (errorText?.length) {
+      return styles.error;
+    }
+    return styles.default;
+  };
+  const buttonStyles = getCheckboxStyle();
+  return (
+    <View key={id} style={[styles.container, style]}>
+      <View style={[styles.innerContainer, innerContainerStyle]}>
+        <Pressable
+          onPress={onPress}
+          style={[buttonStyles, buttonStyle]}
+          disabled={onPressDisabled}>
+          {isChecked ? <Tick02 /> : ''}
+        </Pressable>
+        {(title || linkTitle) && (
+          <View style={styles.labelContainer}>
+            {title && (
+              <Label
+                id="custom-checkbox-button"
+                text={title}
+                variant={titleVariant}
+                style={[styles.title, titleStyle]}
+              />
+            )}
+
+            {linkTitle && (
+              <Link
+                id={'link-' + id}
+                linkText={' ' + linkTitle}
+                onPress={onPressLink}
+                variant={linkVariant.large}
+              />
+            )}
+          </View>
+        )}
+      </View>
+      {errorText && (
+        <View style={styles.errorContainer}>
+          {inverted ? <IconAlertCircleInverted /> : <IconAlertCircle />}
+          <Label
+            id="custom-checkbox-button"
+            text={errorText}
+            variant={variants.bodyRegularXS}
+            style={styles.errorTitle}
+          />
+        </View>
+      )}
+    </View>
+  );
+};
+
+export {CustomCheckbox};
+
+
+###FilePath: custom-checkbox-button/styles.ts
+
+import { Theme } from 'react-core';
+import { StyleSheet } from 'react-native';
+
+export const getStyle = (
+  theme: Theme,
+  isChecked?: boolean,
+  disabled?: boolean,
+  inverted?: boolean,
+) => {
+  return StyleSheet.create({
+    container: {
+      justifyContent: 'flex-start',
+      flexDirection: 'column',
+      gap: 8,
+      flexShrink: 1,
+    },
+    innerContainer: {
+      flexDirection: 'row',
+      flexShrink: 1,
+      gap: 8  //as per figma
+    },
+    labelContainer: {
+      flexDirection: 'row',
+      flexShrink: 1
+    },
+    errorContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexShrink: 1,
+    },
+    title: {
+      // fontSize: 16,
+      color: disabled
+        ? theme.colors['content-disabled']
+        : theme.colors['content-primary'],
+    },
+    linkText: {
+      fontSize: 16,
+      color: theme.colors['content-interactive-primary-enabled'],
+    },
+    errorTitle: {
+      color: inverted
+        ? theme.colors['content-semantic-error-inverted']
+        : theme.colors['border-semantic-error'],
+      marginHorizontal: 4,
+    },
+    default: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: isChecked
+        ? theme.colors['surface-interactive-tertiary-active']
+        : theme.colors['surface-interactive-primary-inverted-enabled'],
+      height: 24,
+      width: 24,
+      borderRadius: 4,
+      borderWidth: isChecked ? 0 : 1,
+      borderColor: isChecked ? '' : theme.colors['border-interactive-enabled'],
+    },
+    inverted: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: isChecked
+        ? theme.colors['surface-interactive-primary-inverted-active']
+        : theme.colors['surface-interactive-primary-inverted-enabled'],
+      height: 24,
+      width: 24,
+      borderRadius: 4,
+      borderWidth: 1,
+      borderColor: isChecked ? '' : theme.colors['border-interactive-enabled'],
+    },
+    disabled: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: isChecked
+        ? theme.colors['surface-interactive-primary-inverted-enabled']
+        : theme.colors['surface-interactive-primary-inverted-enabled'],
+      height: 24,
+      width: 24,
+      borderRadius: 4,
+      borderWidth: 1,
+      borderColor: isChecked
+        ? theme.colors['border-interactive-disabled']
+        : theme.colors['border-interactive-disabled'],
+    },
+    error: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: isChecked
+        ? theme.colors['surface-semantic-error-02']
+        : theme.colors['surface-semantic-error-01'],
+      height: 24,
+      width: 24,
+      borderRadius: 4,
+      borderWidth: 1,
+      borderColor: isChecked ? '' : theme.colors['border-semantic-error'],
+    },
+    errorInverted: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: isChecked
+        ? theme.colors['surface-semantic-inverted-error-02']
+        : theme.colors['surface-semantic-error-01'],
+      height: 24,
+      width: 24,
+      borderRadius: 4,
+      borderWidth: 1,
+      borderColor: isChecked
+        ? ''
+        : theme.colors['border-semantic-error-inverted'],
+    },
+  });
+};
+
+
+###FilePath: custom-checkbox-button/types.ts
+
+import {TextStyle, ViewStyle} from 'react-native';
+import {ContextualType} from 'react-core';
+
+export interface CheckboxButtonProperties {
+  id: string;
+  onPress?: () => void;
+  title?: string | React.ReactElement;
+  isChecked: boolean;
+  inverted?: boolean;
+  style?: ViewStyle;
+  onPressLink?: () => void;
+  innerContainerStyle?: ViewStyle;
+  errorText?: string;
+  linkTitle?: string;
+  disabled?: boolean;
+  titleStyle?: TextStyle;
+  titleVariant?: ContextualType;
+  onPressDisabled?: boolean;
+  buttonStyle?: ViewStyle;
+}
+
+
+###FilePath: screen/index.tsx
+
+import React, {FC, useEffect, useLayoutEffect, useRef, useState} from 'react';
+
+import {
+  View,
+  Pressable,
+  Platform,
+  StatusBar,
+  ScrollView,
+  KeyboardAvoidingView,
+  Dimensions,
+  Keyboard,
+  Animated,
+  Text,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+} from 'react-native';
+import {useNewTheme, Theme} from 'react-core';
+
+import {CustomCheckbox} from '../custom-checkbox-button';
+import LinearContainer from '../linear-gradient';
+import {getStyles} from './styles';
+import {ScreenContainerProperties} from './types';
+import {ArrowBackIcon} from '@app/assets/svg';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
+import useKeyboardVisible from 'app/hooks/useKeyboardVisible';
+import useStatusBarheight from 'app/hooks/useStatusBarHeight';
+import useAppColourScheme from 'app/hooks/useAppColourScheme';
+
+import {ShadowDivider} from '../shadow-divider';
+import LinearGradient from 'react-native-linear-gradient';
+import {
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+} from 'react-native-reanimated';
+import {SCROLL_SHADOW_OFFSET, SCROLL_SHADOW_OPACITY_MAX} from 'app/constants';
+import {StickyShadows} from '../sticky-shadows';
+import {StickyShadowDirections} from '../sticky-shadows/types';
+import {useScrollShadow} from 'app/hooks/use-scroll-shadow';
+
+const ScreenContainer: FC<ScreenContainerProperties> = ({
+  id,
+  children,
+  inverted = false,
+  circleRadiusButtomGlow = false,
+  showStatusBar = true,
+  showRightContent = false,
+  showCenterContent = false,
+  bottomScreenContent,
+  stickyKeyboardBottomView = false,
+  showCheckbox = false,
+  isChecked = false,
+  disabled = false,
+  onPressLeftContent,
+  onPressCenterContent,
+  onPressRightContent,
+  leftContent,
+  centerContent,
+  rightContent,
+  scrollViewStyle,
+  onPressCheckbox,
+  showGoBackIcon = false,
+  customContainerStyle,
+  customBottomScreenContentStyle,
+  headerContainerStyle,
+  backgroundColor,
+  disableKeyboardAvoidingScrollView = false,
+  disableScrollView = false,
+  removeBottomInsets = false,
+  bounceOnscroll = true,
+  keyboardContainerStyle,
+  stickyContent = null,
+  disableBottomSafeArea = false,
+  customStickyBottomPadding = 24,
+  disableInvertedNavigationBar = false,
+  shadowVisible = true,
+  loginPage = false,
+  onScrollRef = null,
+  ...scrollViewProps
+}) => {
+  const theme: Theme = useNewTheme();
+  const navigation = useNavigation();
+  const statusBarHeight = useStatusBarheight();
+  // const keyBoardVertical =
+  //   (statusBarHeight ?? 24) - (Platform.OS === 'ios' ? 16 : 24);
+  const styles = getStyles({
+    theme,
+    inverted,
+    statusBarHeight,
+    customStickyBottomPadding,
+  });
+  // const isKeyboardVisible = useKeyboardVisible().isKeyboardVisible;
+  const [keyBoardOffset, setKeyBoardOffset] = useState(keyBoardVertical);
+  const {navigationBarColor, navigationBarColorInverted} = useAppColourScheme();
+  // const scrollViewEnabled = disableScrollView
+  //   ? false
+  //   : Dimensions.get('window').height > 700
+  //   ? true
+  //   : false;
+
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [keyBoardVertical, setKeyBoardVertical] = useState(0);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', e => {
+      setIsKeyboardVisible(true);
+      setKeyBoardVertical(e.endCoordinates.height);
+    });
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+      setIsKeyboardVisible(false);
+      setKeyBoardVertical(0);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+
+  const goBack = () => {
+    navigation?.goBack();
+  };
+
+  useFocusEffect(() => {
+    if (Platform.OS === 'android') {
+      //for 3 button navigation bar color
+      navigation.setOptions({
+        navigationBarColor:
+          inverted && !disableInvertedNavigationBar
+            ? navigationBarColorInverted
+            : navigationBarColor,
+      });
+      return () => {
+        navigation.setOptions({
+          navigationBarColor: navigationBarColor,
+        });
+      };
+    }
+  });
+
+  // useEffect(() => {
+  //   isKeyboardVisible
+  //     ? setKeyBoardOffset(keyBoardVertical)
+  //     : setKeyBoardOffset(0);
+  // }, [isKeyboardVisible, keyBoardVertical]);
+
+  const statusBackgroundColor = () => {
+    if (backgroundColor) {
+      return backgroundColor;
+    } else if (inverted) {
+      return 'transparent';
+    } else return theme.colors['background-01'];
+  };
+
+  const scrollViewRef = useRef<ScrollView>(null);
+  // const scrollY = useRef(new Animated.Value(0)).current;
+  // const [prevScrollY, setPrevScrollY] = useState(0);
+  // const headerOpacity = scrollY.interpolate({
+  //   inputRange: [0, 100], // Adjust 100 to control fade-out distance
+  //   outputRange: [1, 0],
+  //   extrapolate: 'clamp',
+  // });
+  // const handleScroll = Animated.event(
+  //   [{nativeEvent: {contentOffset: {y: scrollY}}}],
+  //   {
+  //     useNativeDriver: false, // Set to true if not animating layout properties like height/width
+  //     listener: event => {
+  //       const currentScrollY = event?.nativeEvent.contentOffset.y;
+  //       // You can add logic here to determine scroll direction if needed for more complex animations
+  //       // For simple fade based on scroll position, the interpolate handles it.
+  //       setPrevScrollY(currentScrollY);
+  //     },
+  //   },
+  // );
+
+  useEffect(() => {
+    if (onScrollRef) onScrollRef(scrollViewRef.current);
+  }, []);
+
+  /* New Shadow Scroll */
+  const {
+    scrollable,
+    topShadowOpacity,
+    bottomShadowOpacity,
+    handleScroll,
+    handleScrollHeight,
+    handleContentSizeChange,
+  } = useScrollShadow();
+
+  return (
+    <LinearContainer
+      style={[
+        {
+          backgroundColor: backgroundColor ?? theme.colors['background-01'],
+        },
+        removeBottomInsets && {paddingBottom: 0},
+      ]}
+      inverted={inverted}
+      loginPage={loginPage}
+      disableBottomSafeArea={disableBottomSafeArea}
+      circleRadiusButtomGlow={circleRadiusButtomGlow}>
+      <KeyboardAvoidingView
+        style={[styles.keyboardContainer, keyboardContainerStyle]}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        enabled={!disableKeyboardAvoidingScrollView && isKeyboardVisible}
+        keyboardVerticalOffset={keyBoardOffset}
+        contentContainerStyle={styles.keyboardContentContainer}>
+        <View
+          style={[styles.containerStyle, customContainerStyle]}
+          id={id}
+          testID={id}>
+          {showStatusBar && (
+            <StatusBar
+              translucent
+              barStyle={inverted ? 'light-content' : 'dark-content'}
+              animated
+              backgroundColor={statusBackgroundColor()}
+            />
+          )}
+          {/* This view showing extra top space in */}
+          {/* <View style={styles.safeAreaStyle}> */}
+          {/* Header Bar */}
+          <View style={[styles.headerContainerStyle, headerContainerStyle]}>
+            {/* Left Header */}
+
+            <View style={styles.leftContainerStyle}>
+              {showGoBackIcon ? (
+                <Pressable style={styles.leftContentStyle} onPress={goBack}>
+                  <ArrowBackIcon
+                    color={
+                      inverted
+                        ? theme.colors['icon-interactive-inverted-enabled']
+                        : theme.colors['icon-interactive-secondary-enabled']
+                    }
+                  />
+                </Pressable>
+              ) : (
+                leftContent && (
+                  <Pressable
+                    focusable={false}
+                    style={styles.leftContentStyle}
+                    onPress={onPressLeftContent}>
+                    {leftContent}
+                  </Pressable>
+                )
+              )}
+            </View>
+
+            {/* Middle Label */}
+            <View style={styles.centerContainerStyle}>
+              {showCenterContent && (
+                <Pressable
+                  style={styles.centerLogoStyle}
+                  onPress={onPressCenterContent}>
+                  {centerContent}
+                </Pressable>
+              )}
+            </View>
+
+            {/* Right Header */}
+            <View style={styles.rightContainerStyle}>
+              {showRightContent && (
+                <Pressable
+                  style={styles.rightLogoStyle}
+                  onPress={onPressRightContent}>
+                  {rightContent}
+                </Pressable>
+              )}
+            </View>
+            {/* </View> */}
+          </View>
+          {/* {shadowVisible && (
+            <ShadowDivider height={16} sides={{bottom: true, top: false}} />
+          )} */}
+          {stickyContent}
+
+          <View style={{flex: 1}}>
+            {shadowVisible && (
+              <Animated.View style={{opacity: topShadowOpacity, zIndex: 10}}>
+                <StickyShadows />
+              </Animated.View>
+            )}
+            <Animated.ScrollView
+              onLayout={handleScrollHeight}
+              onContentSizeChange={handleContentSizeChange}
+              onScroll={e => {
+                // scrollY.value = e.nativeEvent.contentOffset.y;
+                handleScroll(e);
+              }}
+              scrollEnabled={!disableScrollView}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={scrollViewStyle}
+              bounces={false}
+              {...scrollViewProps}
+              ref={scrollViewRef}>
+              {children}
+            </Animated.ScrollView>
+            {shadowVisible && scrollable && !isKeyboardVisible && (
+              <Animated.View
+                style={{
+                  opacity: bottomShadowOpacity,
+                  zIndex: 10,
+                }}>
+                <StickyShadows
+                  direction={StickyShadowDirections.BOTTOM_TO_TOP}
+                  containerStyle={{
+                    top: -16,
+                  }}
+                />
+              </Animated.View>
+            )}
+          </View>
+          {showCheckbox && (
+            <View style={styles.checkboxContainerStyle}>
+              <CustomCheckbox
+                id="checkbox"
+                onPress={onPressCheckbox}
+                errorText=""
+                title="Checkbox"
+                isChecked={isChecked}
+                inverted={inverted}
+                disabled={disabled}
+              />
+            </View>
+          )}
+          <View
+            style={[
+              styles.bottomScreenContentStyle,
+              customBottomScreenContentStyle,
+              // shadowVisible && !isKeyboardVisible && styles.bottomShadowStyle,
+              stickyKeyboardBottomView && isKeyboardVisible
+                ? styles.stickyKeyboardBottomView
+                : {},
+            ]}>
+            {bottomScreenContent}
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </LinearContainer>
+  );
+};
+
+export {ScreenContainer};
+
+
+###FilePath: screen/styles.ts
+
+import {StyleSheet, Dimensions, Platform} from 'react-native';
+import {ScreenContainerStypeProps} from './types';
+import DeviceInfo from 'react-native-device-info';
+import useKeyboard from 'app/hooks/useKeyboardVisible';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import useNavigationBarHeight from 'app/hooks/useNavigationBarHeight';
+
+const {width, height} = Dimensions.get('window');
+const isTab = DeviceInfo.isTablet();
+const isPadOrTab = isTab && (width >= 768 || height >= 1024);
+
+export const getStyles = (properties: ScreenContainerStypeProps) => {
+  const insets = useSafeAreaInsets();
+  const {isKeyboardVisible, keyboardHeight} = useKeyboard();
+  const {navBarHeight} = useNavigationBarHeight();
+
+  // const isKeyBoardVisible = useKeyboardVisible()?.isKeyboardVisible;
+  const {
+    theme,
+    inverted,
+    statusBarHeight,
+    customStickyBottomPadding = 24,
+  } = properties;
+  return StyleSheet.create({
+    containerStyle: {
+      flex: 1,
+      backgroundColor: inverted ? undefined : theme.colors['background-01'],
+    },
+    keyboardContainer: {
+      flex: 1,
+    },
+
+    keyboardContentContainer: {
+      paddingBottom: 150,
+      padding: 20,
+      margin: 50,
+    },
+    headerContainerStyle: {
+      height: 40,
+      width: '100%',
+      justifyContent: 'center',
+      ...Platform.select({
+        ios: {
+          paddingTop: 0,
+        },
+        android: {
+          marginTop: inverted ? statusBarHeight : 0,
+        },
+      }),
+      flexDirection: 'row',
+      marginBottom: 8,
+    },
+    leftContainerStyle: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+    },
+    centerContainerStyle: {
+      flex: 1,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    rightContainerStyle: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'flex-end',
+    },
+    centerLogoStyle: {
+      position: 'absolute',
+      alignSelf: 'center',
+      height: 40,
+      justifyContent: 'center',
+    },
+    rightLogoStyle: {
+      position: 'absolute',
+      alignSelf: 'flex-end',
+      height: 40,
+      justifyContent: 'center',
+      right: 16,
+    },
+    leftContentStyle: {
+      position: 'absolute',
+      left: 16,
+      height: 40,
+      justifyContent: 'center',
+      alignItems: 'flex-start',
+      width: 40,
+    },
+    checkboxContainerStyle: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    // bottomScreenContentStyle: {
+    //   ...Platform.select({
+    //     ios: {
+    //       paddingBottom: isKeyBoardVisible ? (height < 700 ? 24 : 62) : 24,
+    //     },
+    //     android: {
+    //       paddingBottom: 24,
+    //     },
+    //   }),
+    // },
+    bottomScreenContentStyle: {
+      ...Platform.select({
+        ios: {
+          paddingBottom: isKeyboardVisible
+            ? height < 700
+              ? 24
+              : insets.top
+            : 24,
+        }, //ios
+        android: {
+          paddingBottom: isKeyboardVisible
+            ? navBarHeight - 16 // to remove the excess padding on keyboard alive
+            : navBarHeight + 24,
+          // paddingBottom: navBarHeight + 24, // padding for CTA across the ScreenConatainer.
+        },
+      }),
+    },
+    bottomShadowStyle: {
+      boxShadow: '0 -8px 12px 0 rgba(0, 0, 0, 0.10))',
+    },
+    topBar: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 1,
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+
+    linearGradient: {
+      height: 10,
+      width: '100%',
+    },
+
+    stickyKeyboardBottomView: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: isKeyboardVisible ? keyboardHeight : 0,
+      paddingBottom: customStickyBottomPadding,
+    },
+    safeAreaStyle: {
+      paddingTop: isPadOrTab ? 25 : 0,
+    },
+    stickyShadowTop: {
+      zIndex: 1,
+      top: 0,
+      bottom: null
+    },
+    stickyShadowBottom: {
+     zIndex: 1,
+     bottom: 0,
+     top: null
+    },
+  });
+};
+
+
+###FilePath: screen/types.ts
+
+import {Theme} from 'react-core';
+import React, {ReactNode} from 'react';
+import {StyleProp, ViewStyle,ScrollView} from 'react-native';
+
+export interface ScreenContainerProperties {
+  id: string;
+  children?: ReactNode;
+  inverted?: boolean;
+  showStatusBar?: boolean;
+  circleRadiusButtomGlow?: boolean;
+  bottomScreenContent?: ReactNode;
+  stickyKeyboardBottomView?: boolean;
+  showStory?: boolean;
+  showRightContent?: boolean;
+  showCenterContent?: boolean;
+  showCheckbox?: boolean;
+  isChecked?: boolean;
+  disabled?: boolean;
+  onPressCheckbox?: () => void;
+  onPressLeftContent?: () => void;
+  onPressCenterContent?: () => void;
+  onPressRightContent?: () => void;
+  leftContent?: React.JSX.Element;
+  stickyContent?: ReactNode;
+  centerContent?: React.JSX.Element;
+  rightContent?: React.JSX.Element;
+  scrollViewStyle?: StyleProp<ViewStyle>;
+  showGoBackIcon?: boolean;
+  customContainerStyle?: StyleProp<ViewStyle>;
+  customBottomScreenContentStyle?: StyleProp<ViewStyle>;
+  headerContainerStyle?: StyleProp<ViewStyle>;
+  backgroundColor?: string;
+  disableKeyboardAvoidingScrollView?: boolean;
+  disableScrollView?: boolean;
+  showsHorizontalScrollIndicator?: boolean;
+  showsVerticalScrollIndicator?: boolean;
+  removeBottomInsets?:boolean
+  bounceOnscroll?: boolean;
+  keyboardContainerStyle?: ViewStyle;
+  disableBottomSafeArea?:boolean; //supports for iOS
+  customStickyBottomPadding?: number;
+  disableInvertedNavigationBar?: boolean;
+  shadowVisible?: boolean;
+  loginPage?: boolean;
+  onScrollRef?: (a:ScrollView) => void;
+
+}
+
+export interface ScreenContainerStypeProps {
+  theme: Theme;
+  inverted: boolean;
+  statusBarHeight: number;
+  customStickyBottomPadding?: number;
+}
+
+
+###FilePath: submit-button/index.tsx
+
+import React, {FC} from 'react';
+import {Button, ButtonProperties} from '../custom-button';
+import useKeyboardVisible from 'app/hooks/useKeyboardVisible';
+import {View, StyleSheet} from 'react-native';
+
+const SubmitButton: FC<ButtonProperties> = props => {
+  const isKeyBoardVisible = useKeyboardVisible()?.isKeyboardVisible;
+   const { paddingHorizontal, ...restProps } = props;
+  const effectivePadding = isKeyBoardVisible ? 0 : (paddingHorizontal ?? 16);
+  return (
+       <View style={[!isKeyBoardVisible &&  { paddingHorizontal: effectivePadding }]}>
+      <Button isSubmitButton={isKeyBoardVisible} {...restProps} />
+    </View>
+  );
+};
+
+
+export {SubmitButton};
+
+
+###FilePath: custom-input/index.tsx
+
+import React, {FC, useEffect, useRef, useState} from 'react';
+import {
+  Animated,
+  Easing,
+  Image,
+  Keyboard,
+  NativeSyntheticEvent,
+  Pressable,
+  Text,
+  TextInput,
+  TextInputFocusEventData,
+  View,
+} from 'react-native';
+import {
+  getCurrencyComponentStyle,
+  getFlagComponentStyle,
+  getStyle,
+} from './styles';
+import {useNewTheme, translation, Theme} from 'react-core';
+import {InputProperties} from './type';
+import {Cancel_01} from 'app/assets/svg';
+import EyeOpenComponent from '@app/assets/svg/eye-open';
+import {EyeCloseComponent} from '@app/assets/svg/eye-close';
+import {ErrorText} from '../error-text';
+import {HelperText} from '../helper-text';
+import {Label} from '../label';
+
+import {
+  ALPHA_NUMERIC_ARABIC_REGEX,
+  ALPHA_NUMERIC_ARABIC_WITH_SPACE_REGEX,
+  ALPHA_NUMERIC_REGEX,
+  ALPHA_NUMERIC_WITH_SPACE_REGEX,
+  ARABIC_REGEX,
+  EMOJI_REGEX,
+  KeyboardTypes,
+  NUMERIC_REGEX,
+} from 'app/constants';
+import {variants} from '../label/types';
+import RemoteSvg from '../remote-svg';
+import {formatIbanWithSpaces, Size} from 'app/utils';
+import {Currency} from '../Currency';
+import {isRTLLanguage} from 'app/utils/language-utils';
+
+const Input: FC<InputProperties> = (
+  properties: InputProperties,
+): JSX.Element => {
+  const {
+    id,
+    disabled = false,
+    placeholder = '',
+    errorText,
+    helperText,
+    value = '',
+    customKeyboardType = KeyboardTypes.VisiblePassword,
+    inverted = false,
+    prefix,
+    SuffixIcon,
+    clearInputValue,
+    secure = false,
+    setValue,
+    maximumLength,
+    formatAmount = false,
+    onPressOut,
+    setTouchedProperty,
+    onEndEditing,
+    onFormikBlur,
+    textInputProps,
+    onKeyboardFocus,
+    flag,
+    currency,
+    alwaysFocusOn = false,
+    isIban = false,
+    onFocus,
+    setComponentFocus,
+    specialCharactersAllowed = true,
+    spaceAllowed = false,
+    max = 200,
+    numbersAllowed = true,
+    onPressSuffixIcon,
+    arabicAllowed = false,
+    isZeroAllowed = true,
+    emojisAllowed = false,
+    suffixIconStyle,
+    isCurrencyInput = currency !== undefined,
+    isTextInputMenuShow = true,
+    errorTextStyle,
+    customRef = false,
+    truncateTail = false,
+  } = properties;
+  const [fieldActive, setFieldActive] = useState(!!value);
+  const [secureValue, setSecureValue] = useState(!!secure);
+  const [showCloseIcon, setShowCloseIcon] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [showTruncateOverlay, setShowtruncateOverlay] = useState(false);
+  const position = new Animated.Value(
+    fieldActive || value || alwaysFocusOn ? 1 : 0,
+  );
+  const isError = Boolean(errorText && errorText?.length > 0);
+  const theme: Theme = useNewTheme();
+  const inputRef = useRef<TextInput>(null);
+  const {t} = translation.useTranslation();
+  const styles = getStyle({
+    position,
+    fieldActive,
+    theme,
+    inverted,
+    focused,
+    disabled,
+    isError,
+    isCurrencyInput,
+  });
+
+  useEffect(() => {
+    // Move placeholder if the value is set from outside
+    if ((value && !fieldActive) || alwaysFocusOn) {
+      setFieldActive(true);
+      Animated.timing(position, {
+        toValue: 1,
+        duration: 1,
+        useNativeDriver: false,
+        easing: Easing.ease,
+      }).start();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  useEffect(() => {
+    //for reset to default state
+    if (!focused && !value) {
+      setComponentFocus?.(false);
+      setFieldActive(false);
+    }
+  }, [focused, value]);
+
+  useEffect(() => {
+    if (value) {
+      setTimeout(() => {
+        inputRef.current?.setSelection(0, 0);
+        setShowtruncateOverlay(truncateTail);
+      }, 5);
+    }
+    // blur on keyboard hide or out press
+    const keyboardHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      inputRef.current?.blur();
+    });
+    return () => {
+      keyboardHideListener.remove();
+    };
+  }, []);
+
+  const handleOnFocus = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
+    setFocused(true);
+    onKeyboardFocus?.();
+    setComponentFocus?.(true);
+    onFocus?.(e);
+    setShowtruncateOverlay(false);
+    if (!fieldActive) {
+      setFieldActive(true);
+      Animated.timing(position, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: false,
+        easing: Easing.ease,
+      }).start();
+    }
+
+    /* While Input Focus, Cursor Points to end of input value */
+    inputRef.current?.setSelection(value.length, value.length);
+  };
+
+  const handleOnBlur = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
+    setFocused(false);
+    setComponentFocus?.(false);
+    onFormikBlur?.(e);
+    setShowtruncateOverlay(truncateTail);
+    if (formatAmount) {
+      if (value && !value.includes('.')) {
+        setValue?.(value + '.00');
+      }
+    }
+    if (fieldActive && value === '') {
+      if (fieldActive && value === '' && !alwaysFocusOn) {
+        setFieldActive(false);
+        Animated.timing(position, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: false,
+          easing: Easing.ease,
+        }).start();
+      }
+    }
+
+    /* While Input Blur, Cursor Points to start of input value */
+    inputRef.current?.setSelection(0, 0);
+  };
+
+  const changeMode = () => {
+    setShowCloseIcon(!showCloseIcon);
+    setSecureValue(!secureValue);
+  };
+
+  const iconColor = () => {
+    if (errorText && errorText?.length > 0) {
+      return inverted ? styles.invertedIcon.color : styles.errorIcon.color;
+    }
+    if (focused) {
+      return inverted ? styles.invertedIcon.color : styles.focusedIcon.color;
+    }
+    if (disabled) {
+      return styles.disabledIcon.color;
+    } else {
+      return inverted ? styles.invertedIcon.color : styles.defaultIcon.color;
+    }
+  };
+
+  const clearInput = () => {
+    setValue?.('');
+    clearInputValue && clearInputValue();
+  };
+
+  const getFinishedText = (text: string) => {
+    let output = text;
+    //This code is not needed anymore as inputs by default changed with visible-password scheme.
+    //Thus user cant long press on special characters
+
+    // if (!specialCharactersAllowed) {
+    //   let allowed =
+    //     /[a-zA-Z0-9\u0600-\u06FF]/
+    //   if(spaceAllowed) {
+    //     allowed = /[a-zA-Z0-9\u0600-\u06FF ]/
+    //   }
+    //   for (let i = 0; i < text.length; i++) {
+    //     if (allowed.test(text[i])) {
+    //       output += text[i];
+    //     }
+    //   }
+    // } else {
+    //   output = text;
+    // } //RCM-1679
+    let finishedText = spaceAllowed ? output : output.replace(/\s+/g, '');
+    if (!emojisAllowed) {
+      finishedText = finishedText.replace(EMOJI_REGEX, '');
+    }
+    if (!specialCharactersAllowed) {
+      if (spaceAllowed) {
+        finishedText = finishedText.replace(/[^a-zA-Z0-9\u0600-\u06FF ]/, '');
+      } else {
+        finishedText = finishedText.replace(/[^a-zA-Z0-9\u0600-\u06FF]/, '');
+      }
+    }
+
+    if (!numbersAllowed) {
+      finishedText = finishedText.replace(NUMERIC_REGEX, '');
+    }
+    if (!arabicAllowed) {
+      finishedText = finishedText.replace(ARABIC_REGEX, '');
+    }
+    if (finishedText.length <= max) {
+      return finishedText;
+    } else {
+      return finishedText.slice(0, max);
+    }
+  };
+
+  const handleInputChange = (text: string) => {
+    if (formatAmount) {
+      const rawText = text.replace(/,/g, '');
+      if (rawText === '' || (!isZeroAllowed && rawText === '0')) {
+        setValue?.('');
+        return;
+      }
+      const regex = /^\d+(\.\d{0,2})?$/;
+      if (regex.test(rawText) || rawText === '') {
+        const [integer, decimal] = rawText.split('.');
+        const formattedInteger = new Intl.NumberFormat('en-US').format(
+          Number(integer || ''),
+        );
+        let formattedText =
+          decimal !== undefined
+            ? `${formattedInteger}.${decimal}`
+            : formattedInteger;
+        if (formattedText.length && integer.length > 8) {
+          return;
+        }
+        if (formattedText.length && decimal?.length > 2) {
+          return;
+        }
+        if (
+          formattedText.length &&
+          integer.length === 9 &&
+          formattedText.endsWith('.')
+        ) {
+          formattedText = formattedText.slice(0, -1);
+        }
+        setValue?.(formattedText);
+      }
+    } else if (isIban) {
+      const finishedText = getFinishedText(text) ?? '';
+      const formattedIban = formatIbanWithSpaces(finishedText);
+      setValue?.(formattedIban);
+    } else {
+      const finishedText = getFinishedText(text) ?? '';
+      setValue?.(finishedText);
+      if (finishedText.length === 1) {
+        setTouchedProperty && setTouchedProperty();
+      }
+    }
+  };
+
+  //For currency
+  const currencyInputComponent = () => {
+    return (
+      <Pressable
+        style={styles.currencyInputContainer}
+        onPress={() => {
+          inputRef.current?.focus();
+        }}>
+        <View style={styles.inputRowCurrency}>
+          {isCurrencyInput && !isRTLLanguage() && (
+            <CurrencyComponent currency={currency} fieldActive={fieldActive} />
+          )}
+          <TextInput
+            ref={inputRef}
+            contextMenuHidden={true}
+            selectTextOnFocus={false}
+            maxLength={maximumLength}
+            onFocus={handleOnFocus}
+            onBlur={handleOnBlur}
+            value={value}
+            onPressOut={onPressOut}
+            editable={!disabled}
+            keyboardType={customKeyboardType}
+            // onChangeText={value => setValue?.(value)}
+            onChangeText={handleInputChange}
+            secureTextEntry={secureValue}
+            autoCorrect={false}
+            autoComplete="off"
+            underlineColorAndroid="transparent"
+            style={[
+              styles.currencyInput,
+              disabled && styles.disabledInputStyle,
+            ]}
+            onEndEditing={onEndEditing}
+            selectionColor={
+              inverted
+                ? theme.colors['border-interactive-enabled']
+                : theme.colors['border-interactive-active']
+            }
+            {...textInputProps}
+            cursorColor={theme.colors['border-interactive-active']}
+          />
+          {isCurrencyInput && isRTLLanguage() && (
+            <CurrencyComponent currency={currency} fieldActive={fieldActive} />
+          )}
+        </View>
+      </Pressable>
+    );
+  };
+
+  useEffect(() => {
+    if (customRef === true) {
+      inputRef.current?.focus();
+    }
+  }, [customRef]);
+
+  return (
+    <View key={id} style={styles.parentContainer}>
+      <View
+        style={[
+          styles.container,
+          focused && {...styles.focusedContainer},
+          disabled && styles.disabledContainerStyle,
+          isError ? styles.errorContainerStyle : null,
+        ]}>
+        <FlagComponent flag={flag} />
+        <View style={styles.innerContainer}>
+          <Animated.Text
+            style={[
+              styles.placeholder,
+              fieldActive && styles.animatedPlacholderStyle,
+              disabled && styles.disabledPlaceholderStyle,
+            ]}
+            numberOfLines={1}>
+            {placeholder}
+          </Animated.Text>
+          <View style={styles.inputRow}>
+            {prefix &&
+              typeof prefix === 'string' &&
+              (focused || value !== '') && (
+                <Label
+                  id="custom-input"
+                  text={prefix}
+                  variant={variants.bodyRegularM}
+                  style={[
+                    styles.prefixStyle,
+                    {opacity: focused || value != '' ? 1 : 0},
+                  ]}
+                />
+              )}
+            {prefix && typeof prefix !== 'string' && (
+              <View
+                style={[
+                  styles.prefixSymbol,
+                  {opacity: focused || value != '' ? 1 : 0},
+                ]}>
+                {prefix}
+              </View>
+            )}
+            {isCurrencyInput ? (
+              currencyInputComponent()
+            ) : (
+              <>
+                <TextInput
+                  ref={inputRef}
+                  contextMenuHidden={isTextInputMenuShow}
+                  selectTextOnFocus={false}
+                  maxLength={maximumLength}
+                  onFocus={handleOnFocus}
+                  onBlur={handleOnBlur}
+                  value={value}
+                  onPressOut={onPressOut}
+                  editable={!disabled}
+                  keyboardType={
+                    secureValue ? KeyboardTypes.Default : customKeyboardType
+                  }
+                  // onChangeText={value => setValue?.(value)}
+                  onChangeText={handleInputChange}
+                  secureTextEntry={secureValue}
+                  autoCorrect={false}
+                  autoComplete="off"
+                  importantForAutofill="no"
+                  textContentType="none"
+                  spellCheck={false}
+                  underlineColorAndroid="transparent"
+                  style={[
+                    styles.input,
+                    showTruncateOverlay && {color: 'transparent'},
+                    disabled && styles.disabledInputStyle,
+                  ]}
+                  onEndEditing={onEndEditing}
+                  selectionColor={
+                    inverted
+                      ? theme.colors['border-interactive-enabled']
+                      : theme.colors['border-interactive-active']
+                  }
+                  {...textInputProps}
+                  cursorColor={theme.colors['border-interactive-active']}
+                />
+                {showTruncateOverlay && (
+                  <View style={styles.truncateOverlay}>
+                    <Label
+                      id="id"
+                      text={value ?? ''}
+                      textProps={{ellipsizeMode: 'tail', numberOfLines: 1}}
+                      style={[styles.input, {textAlign: 'left', paddingTop: 0}]} // paddingTop as per Label comp style
+                    />
+                  </View>
+                )}
+              </>
+            )}
+          </View>
+        </View>
+        {focused && value !== '' && !disabled && (
+          <Pressable style={styles.cancelContainer} onPress={clearInput}>
+            <Cancel_01 color={iconColor()} />
+          </Pressable>
+        )}
+        {secure && (focused || value !== '') && (
+          <Pressable
+            style={styles.cancelContainer}
+            onPress={disabled ? undefined : changeMode}>
+            {showCloseIcon ? (
+              <EyeCloseComponent stroke={iconColor()} />
+            ) : (
+              <EyeOpenComponent stroke={iconColor()} />
+            )}
+          </Pressable>
+        )}
+        {SuffixIcon && (
+          <Pressable onPress={onPressSuffixIcon} style={styles.cancelContainer}>
+            <View style={[styles.cancelContainer, suffixIconStyle]}>
+              <SuffixIcon />
+            </View>
+          </Pressable>
+        )}
+      </View>
+      {errorText && errorText?.length > 0 && (
+        <View style={[styles.errorTextContainer, errorTextStyle]}>
+          <ErrorText id="custom-input" errorText={t(errorText)} />
+          {/* {currency && (
+            <CurrencyComponent
+              currency={currency}
+              fieldActive={fieldActive}
+              color={theme.colors['content-semantic-error-01']}
+            />
+          )} */}
+        </View>
+      )}
+      {helperText && helperText?.length > 0 && (
+        <View style={styles.helperText}>
+          <HelperText id="custom-input" helperText={t(helperText)} />
+          {currency && (
+            <CurrencyComponent currency={currency} fieldActive={fieldActive} />
+          )}
+        </View>
+      )}
+    </View>
+  );
+};
+
+const FlagComponent = ({flag}) => {
+  const theme = useNewTheme();
+  const styles = getFlagComponentStyle({theme});
+  return flag ? (
+    <View style={styles.flagContainer}>
+      <RemoteSvg uri={flag} size={24} />
+    </View>
+  ) : null;
+};
+
+export const CurrencyComponent = ({
+  currency,
+  fieldActive,
+  color = useNewTheme().colors['content-secondary'],
+}) => {
+  const theme: Theme = useNewTheme();
+  const styles = getCurrencyComponentStyle({theme});
+  return currency && fieldActive ? (
+    <View style={styles.currencyContainer}>
+      <Currency
+        currencyType={currency ?? 'SAR'}
+        iconProps={{
+          color: color,
+          size: Size['size-01'],
+        }}
+      />
+    </View>
+  ) : null;
+};
+
+export {Input};
+
+
+###FilePath: custom-input/styles.ts
+
+import {Typography} from '@app/utils';
+import {Platform, StyleSheet} from 'react-native';
+import {CustomInputStyleParams} from './type';
+import {getForcedLTRDirection, isRTLLanguage} from 'app/utils/language-utils';
+import {getCurrentLanguage, getFontStyles, Language} from 'react-core';
+import {variants} from '../label/types';
+export const getStyle = ({
+  position,
+  fieldActive,
+  theme,
+  inverted,
+  focused,
+  disabled,
+  isError,
+  isCurrencyInput,
+}: CustomInputStyleParams) => {
+  return StyleSheet.create({
+    parentContainer: {
+      display: 'flex',
+      gap: 8,
+      width: '100%',
+      padding: 0,
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'flex-start',
+    },
+    inputRow: {
+      display: 'flex',
+      gap: 8,
+      flexDirection: getForcedLTRDirection(),
+    },
+    inputRowCurrency: {
+      display: 'flex',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    container: {
+      display: 'flex',
+      flexDirection: 'row',
+      gap: 16,
+      height: 64,
+      borderWidth: 1,
+      borderColor: '#FFFFFF00',
+      width: '100%',
+      backgroundColor: inverted
+        ? theme.colors['surface-interactive-secondary-inverted-enabled']
+        : theme.colors['surface-interactive-secondary-enabled'],
+      paddingHorizontal: 16,
+      borderRadius: 8,
+      alignItems: 'center',
+      alignSelf: 'stretch',
+    },
+    innerContainer: {
+      flex: 1,
+      display: 'flex',
+      justifyContent: fieldActive ? 'flex-end' : 'center',
+      gap: 4,
+    },
+    placeholder: {
+      ...(fieldActive ? {} : {position: 'absolute'}),
+      color: inverted
+        ? theme.colors['content-inverted-secondary']
+        : theme.colors['content-secondary'],
+      ...getFontStyles(variants.bodyRegularM, getCurrentLanguage() as Language),
+      textAlign: 'left',
+      writingDirection: 'ltr',
+    },
+
+    input: {
+      color: inverted
+        ? theme.colors['content-inverted-primary']
+        : theme.colors['content-primary'],
+      // width: isRTLLanguage() && isCurrencyInput ? 'auto' : '100%',
+      // lineHeight: Platform.OS === 'ios' ? 0 : 24, // lineHeight is overwritten
+      height: 24,
+      padding: 0,
+      flex: 1,
+      textAlignVertical: 'center',
+      // paddingHorizontal: isRTLLanguage() ? 14 : 0,
+      textAlign: isRTLLanguage() ? 'right' : 'left',
+      writingDirection: isRTLLanguage() ? 'rtl' : 'ltr',
+      // fontVariant: ['tabular-nums'],
+      ...getFontStyles(variants.bodyRegularM, getCurrentLanguage() as Language),
+      ...(isRTLLanguage()
+        ? Platform.select({ios: {lineHeight: 28}})
+        : {lineHeight: 19.5}), // changing this because it's breaking in arabic for english text
+      minWidth: 100, // added min width to fix cropping issue in smaller devices
+      fontWeight: 400,
+    },
+    currencyInput: {
+      color: inverted
+        ? theme.colors['content-inverted-primary']
+        : theme.colors['content-primary'],
+      width: isRTLLanguage() && isCurrencyInput ? 'auto' : '100%',
+      padding: 0,
+      height: 24,
+      textAlign: isRTLLanguage() ? 'right' : 'left',
+      ...getFontStyles(variants.bodyRegularM, getCurrentLanguage() as Language),
+      ...(isRTLLanguage()
+        ? Platform.select({ios: {lineHeight: 28}})
+        : {lineHeight: 19.5}),
+      //marginTop: Platform.OS === 'ios' ? 16 : 0,
+    },
+    truncateOverlay: {
+      flexDirection: getForcedLTRDirection(),
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      left: 0,
+      right: 0,
+      alignItems: 'center',
+      pointerEvents: 'none',
+    },
+    animatedPlacholderStyle: {
+      height: 16,
+      top: position.interpolate({
+        inputRange: [0, 1],
+        outputRange: [20, 0],
+      }),
+      ...getFontStyles(
+        variants.bodyRegularXS,
+        getCurrentLanguage() as Language,
+      ),
+    },
+    focusedContainer: {
+      borderWidth: 1,
+      borderColor: inverted
+        ? theme.colors['border-interactive-inverted-active']
+        : theme.colors['border-interactive-active'],
+    },
+    cancelContainer: {
+      justifyContent: 'center',
+      // alignSelf: 'center',
+      height: 24,
+      width: 24,
+      padding: 5,
+      alignItems: 'center',
+    },
+    disabledContainerStyle: {
+      backgroundColor: theme.colors['surface-interactive-secondary-disabled'],
+      borderWidth: 0,
+    },
+    disabledPlaceholderStyle: {
+      color: inverted
+        ? theme.colors['content-inverted-disabled']
+        : theme.colors['content-disabled'],
+    },
+    disabledInputStyle: {
+      color: theme.colors['content-disabled'],
+    },
+    errorContainerStyle: {
+      backgroundColor: inverted
+        ? theme.colors['surface-interactive-secondary-inverted-enabled']
+        : theme.colors['surface-semantic-error-01'],
+      borderColor: inverted
+        ? theme.colors['border-semantic-error-inverted']
+        : theme.colors['border-semantic-error'],
+      borderWidth: 1,
+    },
+    bottomContainerStyle: {
+      display: 'flex',
+      flexDirection: 'row',
+      gap: 4,
+      paddingLeft: 16,
+    },
+    errorText: {
+      color: inverted
+        ? theme.colors['content-semantic-error-inverted']
+        : theme.colors['border-semantic-error'],
+      justifyContent: 'center',
+      ...getFontStyles(
+        variants.bodyRegularXS,
+        getCurrentLanguage() as Language,
+      ),
+    },
+    alertIconContainer: {
+      width: 12,
+      height: 16,
+      justifyContent: 'center',
+    },
+    eyeOpen: {
+      color: focused
+        ? theme.colors['icon-interactive-secondary-active']
+        : theme.colors['icon-interactive-secondary-enabled'],
+    },
+    focusedIcon: {
+      color: theme.colors['icon-interactive-secondary-active'],
+    },
+    invertedIcon: {
+      color: isError
+        ? theme.colors['icon-semantic-error-01']
+        : theme.colors['icon-interactive-inverted-active'],
+    },
+    errorIcon: {
+      color: theme.colors['icon-semantic-error-01'],
+    },
+    prefixStyle: {
+      color: theme.colors['content-disabled'],
+      textAlignVertical: 'center',
+      height: 24,
+      paddingBottom: isRTLLanguage() && Platform.OS === 'ios' ? 0 : undefined,
+      paddingTop: isRTLLanguage() && Platform.OS === 'android' ? 0 : undefined,
+      ...(isRTLLanguage() ? {} : {}),
+    },
+    disabledIcon: {
+      color: theme.colors['icon-interactive-secondary-enabled'],
+    },
+    defaultIcon: {
+      color: disabled
+        ? theme.colors['icon-interactive-inverted-disabled']
+        : theme.colors['icon-interactive-secondary-enabled'],
+    },
+    prefixSymbol: {
+      justifyContent: 'center',
+      paddingRight: 10,
+      width: 15,
+    },
+    helperText: {
+      flexDirection: 'row',
+      gap: 1,
+      maxWidth: '95%',
+    },
+    errorTextContainer: {
+      flexDirection: 'row',
+      gap: 1,
+    },
+    currencyInputContainer: {
+      width: '100%',
+      height: '100%',
+    },
+  });
+};
+
+export const getFlagComponentStyle = ({theme}) => {
+  return StyleSheet.create({
+    /* Flag Component Style */
+    flagContainer: {
+      borderRadius: 999,
+      height: 24,
+      width: 24,
+      backgroundColor: theme.colors['background-01'],
+      alignSelf: 'center',
+      overflow: 'hidden',
+    },
+  });
+};
+
+export const getCurrencyComponentStyle = ({}) => {
+  return StyleSheet.create({
+    /* Currency Component Style */
+    currencyContainer: {
+      alignContent: 'center',
+      justifyContent: 'center',
+      height: 24,
+      //marginTop: Platform.OS === 'ios' ? 26 : 0,
+    },
+  });
+};
+
+
+###FilePath: custom-input/type.ts
+
+import {KeyboardTypes} from 'app/constants';
+import {Theme} from 'react-core';
+import {useRef} from 'react';
+import {
+  Animated,
+  NativeSyntheticEvent,
+  TextInput,
+  StyleProp,
+  TextInputFocusEventData,
+  TextInputProps,
+  ViewStyle,
+} from 'react-native';
+
+export type InputProperties = {
+  id: string;
+  disabled?: boolean;
+  placeholder?: string;
+  errorText?: string | false | undefined;
+  helperText?: string;
+  value?: string;
+  setValue?: (value: string) => void;
+  clearInputValue?: () => void;
+  inverted?: boolean;
+  customKeyboardType?: KeyboardTypes;
+  prefix?: React.ReactNode | string;
+  SuffixIcon?: any;
+  secure?: boolean;
+  maximumLength?: number;
+  formatAmount?: boolean;
+  onPressOut?: () => void;
+  onPressSuffixIcon?: () => void;
+  setTouchedProperty?: () => void;
+  onEndEditing?: () => void;
+  onFormikBlur?: (e: NativeSyntheticEvent<TextInputFocusEventData>) => void;
+  textInputProps?: TextInputProps;
+  onKeyboardFocus?: () => void;
+  alwaysFocusOn?: boolean;
+  isIban?: boolean;
+  setComponentFocus?: (status: boolean) => void;
+  flag?: string;
+  currency?: string;
+  onFocus?: (e: NativeSyntheticEvent<TextInputFocusEventData>) => void;
+  onBlur?: (e: NativeSyntheticEvent<TextInputFocusEventData>) => void;
+  specialCharactersAllowed?: boolean;
+  spaceAllowed?: boolean;
+  max?: number;
+  numbersAllowed?: boolean;
+  arabicAllowed?: boolean;
+  isZeroAllowed?: boolean;
+  emojisAllowed?: boolean;
+  getFocusOut?: () => void;
+  suffixIconStyle?: StyleProp<ViewStyle>;
+  isCurrencyInput?: boolean;
+  isTextInputMenuShow?: boolean;
+  customRef?: boolean;
+  errorTextStyle?: StyleProp<ViewStyle>;
+  truncateTail?: boolean;
+};
+
+export type CustomInputStyleParams = {
+  position: Animated.Value;
+  fieldActive: boolean;
+  theme: Theme;
+  inverted: boolean;
+  focused: boolean;
+  disabled: boolean;
+  isError: boolean;
+  isCurrencyInput: boolean;
+};
+
+
+###FilePath: dropdown/dropdown-utility.ts
+
+import {Animated} from 'react-native';
+import {ArrowTypeProps, AnimationProps} from './types';
+
+export const arrowType: (properties: ArrowTypeProps) => string = properties => {
+  const {theme, isDropdownFocused, errorText, disabled} = properties;
+
+  if (isDropdownFocused && errorText === undefined) {
+    return theme.colors['icon-interactive-secondary-active'];
+  } else if (disabled) {
+    return theme.colors['icon-interactive-secondary-disabled'];
+  } else if (errorText !== undefined) {
+    return theme.colors['icon-semantic-error-01'];
+  } else {
+    return theme.colors['icon-interactive-secondary-enabled'];
+  }
+};
+
+export const animatedDuration = 200;
+
+export const handleAnimation = ({
+  AnimatedValue,
+  toValue,
+  duration,
+  useNativeDriver,
+}: AnimationProps) => {
+  return Animated.timing(AnimatedValue, {
+    toValue: toValue,
+    duration: duration,
+    useNativeDriver: useNativeDriver,
+  });
+};
+
+
+###FilePath: dropdown/index.tsx
+
+import React, {
+  FC,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+  useState,
+} from 'react';
+import {Pressable, View, Animated, StatusBar} from 'react-native';
+import {translation, useNewTheme} from 'react-core';
+import {getStyle} from './styles';
+import {DropdownProps} from './types';
+import {SvgArrowIcon} from '@app/assets/svg/arrow-icon';
+import {arrowType, handleAnimation, animatedDuration} from './dropdown-utility';
+import {ErrorText} from '../error-text';
+import {HelperText} from '../helper-text';
+import {Label} from '../label';
+import {variants} from '../label/types';
+import {isRTLLanguage} from 'app/utils/language-utils';
+
+const Dropdown: FC<DropdownProps> = (properties: DropdownProps) => {
+  const {
+    id,
+    placeholder,
+    inputText,
+    helperText,
+    errorText,
+    disabled = false,
+    selectFlag,
+    BottomSheet,
+    containerStyle,
+    prefixIcon,
+    isDropDownActive = true,
+    onPress,
+    onBottomSheetClose,
+    deafultarrow = false,
+    placeHolderOutputRange = [14, 16],
+    invertedStatusBarColor
+  } = properties;
+
+  const [isDropdownFocused, setIsDropdownFocused] = useState(
+    () => ({
+      id: id,
+      value: inputText,
+      active: false,
+    }),
+    //[id, inputText],
+  );
+  const theme = useNewTheme();
+  const styles = getStyle({theme, disabled, inputText});
+  const {t} = translation.useTranslation();
+  const placeholderPosition = useRef(new Animated.Value(28)).current;
+  const placeholderFontSize = useRef(
+    new Animated.Value(inputText ? 0 : 1),
+  ).current;
+  const arrowRotation = useRef(new Animated.Value(0)).current;
+  const [arrowUp, setArrowUp] = useState(false);
+  const placeholderTransformPosition = placeholderPosition.interpolate({
+    inputRange: [0, 50],
+    outputRange: [28, 0],
+  });
+  // const placeholderTransformFontSize = placeholderFontSize.interpolate({
+  //   inputRange: [0, 16],
+  //   // outputRange: [14, 16],
+  //   outputRange: isDropdownFocused.value ? [14, 16] : placeHolderOutputRange,
+  // });
+  const animatedPlaceholderStyle = {
+    transform: [
+      {
+        translateY: placeholderTransformPosition,
+      },
+    ],
+    // fontSize: placeholderTransformFontSize,
+  };
+  // changed on a issue fix for droppdown.
+  // const animatedArrowStyle = {
+  //   transform: [
+  //     deafultarrow
+  //       ? {
+  //           rotate: arrowRotation.interpolate({
+  //             inputRange: [0, 1],
+  //             outputRange: ['-180deg', '-180deg'],
+  //           }),
+  //         }
+  //       : {
+  //           rotate: arrowRotation.interpolate({
+  //             inputRange: [0, 1],
+  //             outputRange: ['-180deg', '0deg'],
+  //           }),
+  //         },
+  //   ],
+  // };
+
+  const animatedArrowStyle = {
+    transform: [
+      {
+        rotate: arrowRotation.interpolate({
+          inputRange: [0, 1],
+          outputRange: ['0deg', '-180deg'],
+        }),
+      },
+    ],
+  };
+
+  useEffect(() => {
+    Animated.timing(arrowRotation, {
+      toValue: isDropdownFocused.active ? 1 : 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [isDropdownFocused.active]);
+
+  const inputTextValueAnimation = useCallback(() => {
+    Animated.parallel([
+      handleAnimation({
+        AnimatedValue: placeholderFontSize,
+        toValue: inputText ? 0 : 1,
+        duration: animatedDuration,
+        useNativeDriver: true,
+      }),
+      handleAnimation({
+        AnimatedValue: placeholderPosition,
+        toValue: inputText ? 50 : 25,
+        duration: animatedDuration,
+        useNativeDriver: true,
+      }),
+
+      // commented..
+
+      // handleAnimation({
+      //   AnimatedValue: arrowRotation,
+      //   toValue: isDropdownFocused.active ? 1 : 0,
+      //   duration: animatedDuration,
+      //   useNativeDriver: true,
+      // }),
+      // handleAnimation({
+      //   AnimatedValue: arrowRotation,
+      //   toValue: inputText ? 1 : 0,
+      //   duration: animatedDuration,
+      //   useNativeDriver: true,
+      // }),
+    ]).start();
+  }, [
+    placeholderFontSize,
+    inputText,
+    placeholderPosition,
+    arrowRotation,
+    arrowUp,
+  ]);
+
+  useEffect(() => {
+    if (inputText || !inputText) {
+      inputTextValueAnimation();
+    }
+    isDropdownFocused.value = inputText;
+
+    if (!isDropdownFocused.active && isDropdownFocused.value !== '') {
+      isDropdownFocused.active = false;
+    }
+  }, [
+    inputTextValueAnimation,
+    inputText,
+    isDropdownFocused,
+    isDropdownFocused.value,
+    isDropdownFocused.active,
+    isDropDownActive,
+  ]);
+
+  return (
+    <View key={id} style={styles.viewContainer}>
+      <Pressable
+        disabled={disabled}
+        onPress={() => {
+          if(invertedStatusBarColor){
+             StatusBar.setBarStyle('dark-content');
+          }
+          onPress?.();
+          if (!isDropdownFocused.active) {
+            setIsDropdownFocused(prev => ({
+              ...prev,
+              value: '',
+              active: true,
+            }));
+          }
+        }}
+        style={() => [
+          styles.pressableStyle,
+          disabled && styles.pressableDisabledState,
+          isDropdownFocused.active && styles.pressableActiveState,
+          errorText?.length !== undefined && styles.pressableErrorState,
+          containerStyle,
+        ]}>
+        {selectFlag ? (
+          <View style={styles.flagViewStyle}>{selectFlag}</View>
+        ) : null}
+        <View style={styles.textViewStyle}>
+          <Animated.Text
+            style={[styles.placeholderStyle, animatedPlaceholderStyle]}>
+            {placeholder}
+          </Animated.Text>
+
+          <View style={styles.iconContainer}>
+            {prefixIcon && !isRTLLanguage() ? (
+              <View style={styles.iconViewStyle}>{prefixIcon}</View>
+            ) : (
+              <></>
+            )}
+            <Label
+              id="dropdown"
+              text={inputText ?? ''}
+              style={styles.inputTextStyle}
+              variant={variants.bodyRegularM}
+              numberOfLines={1}
+            />
+            {prefixIcon && isRTLLanguage() ? (
+              <View style={styles.iconViewStyle}>{prefixIcon}</View>
+            ) : (
+              <></>
+            )}
+          </View>
+        </View>
+        {!disabled && (
+          <View style={styles.imageViewStyle}>
+            <Animated.View style={[styles.imageStyle, animatedArrowStyle]}>
+              <SvgArrowIcon
+                color={arrowType({
+                  isDropdownFocused: isDropdownFocused.active,
+                  errorText: errorText,
+                  disabled: disabled,
+                  theme: theme,
+                })}
+              />
+            </Animated.View>
+          </View>
+        )}
+      </Pressable>
+      {errorText || helperText ? (
+        <View style={styles.textHelperViewStyle}>
+          {(errorText && (
+            <ErrorText id="dropdown" errorText={t(errorText)} />
+          )) ||
+            (helperText && (
+              <HelperText id="dropdown" helperText={helperText} />
+            ))}
+        </View>
+      ) : null}
+      {BottomSheet &&
+        React.cloneElement(BottomSheet, {
+          onBottomSheetClose: () => {
+            BottomSheet.props?.onBottomSheetClose?.();
+            onBottomSheetClose?.();
+             if(invertedStatusBarColor){
+             StatusBar.setBarStyle('light-content');
+             }
+            setIsDropdownFocused(prev => ({...prev, active: false}));
+          },
+        })}
+    </View>
+  );
+};
+
+export {Dropdown};
+
+
+###FilePath: dropdown/styles.ts
+
+import { StyleSheet } from 'react-native';
+import { DropdownStyleProps } from './types';
+import { Typography } from 'app/utils';
+import { isRTLLanguage } from 'app/utils/language-utils';
+import { getCurrentLanguage, getFontStyles, Language } from 'react-core';
+import { variants } from '../label/types';
+
+export const getStyle = (properties: DropdownStyleProps) => {
+  const { theme, disabled, inputText } = properties;
+  return StyleSheet.create({
+    viewContainer: {
+      width: '100%',
+    },
+    pressableStyle: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      width: '100%',
+      height: 64,
+      backgroundColor: theme.colors['surface-interactive-secondary-enabled'],
+      borderRadius: 8,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      gap: 16,
+      borderWidth: disabled ? 0 : 1,
+      borderColor: theme.colors['surface-interactive-secondary-enabled'],
+    },
+    pressableActiveState: {
+      borderColor: theme.colors['border-interactive-active'],
+    },
+    pressableDisabledState: {
+      backgroundColor: theme.colors['surface-interactive-secondary-disabled'],
+    },
+    pressableErrorState: {
+      backgroundColor: theme.colors['surface-semantic-error-01'],
+      borderColor: theme.colors['border-semantic-error'],
+    },
+    textViewStyle: {
+      minHeight: 24,
+      // maxWidth: '90%',
+      flex: 1,
+      gap: 4,
+    },
+    flagViewStyle: {
+      height: 24,
+      width: 24,
+    },
+    imageViewStyle: {
+      width: 24,
+      height: 24,
+    },
+    imageStyle: {
+      // width: 12,
+      // height: 6,
+      // top: 9,
+      // left: 6,
+      // borderRadius: 0.5,
+    },
+    textHelperViewStyle: {
+      // paddingLeft: 8,
+      marginTop: 8,
+    },
+    inputTextStyle: {
+      // flex: 1, // affect symbols in arabic flow
+      color: theme.colors['content-primary'],
+    },
+    placeholderStyle: {
+      color: theme.colors['content-secondary'],
+      height: inputText ? 16 : 24,
+      alignItems: isRTLLanguage() ? 'flex-end' : 'flex-start',
+      textAlign: 'left',
+      ...getFontStyles(
+        inputText ? variants.bodyRegularXS : variants.bodyRegularM,
+        getCurrentLanguage() as Language,
+      ),
+
+      // flex:1,
+    },
+    flagAndTextContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 16,
+    },
+    iconContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    iconViewStyle: {
+      paddingRight: isRTLLanguage() ? 0 : 5,
+      paddingLeft: isRTLLanguage() ? 5 : 0,
+    },
+  });
+};
+
+
+###FilePath: dropdown/types.ts
+
+import {Animated, StyleProp, ViewStyle} from 'react-native';
+import {Theme} from 'react-core';
+import {ReactNode} from 'react';
+
+export interface DropdownProps {
+  id: string;
+  inputText?: string;
+  BottomSheet: React.JSX.Element;//ReactNode;
+  selectFlag?: React.JSX.Element;
+  disabled?: boolean;
+  placeholder?: string;
+  helperText?: string;
+  errorText?: string | false | undefined;
+  containerStyle?: StyleProp<ViewStyle>;
+  onPress?: () => void;
+  prefixIcon?: React.JSX.Element;
+  isDropDownActive?: boolean;
+  onBottomSheetClose?: () => void;
+  deafultarrow?: boolean;
+  isHandleArrowAnimation?: boolean;
+  placeHolderOutputRange?: number[] | string[];
+  invertedStatusBarColor?:boolean;
+}
+export interface SvgColorProps {
+  stroke: string;
+}
+export type AnimationProps = {
+  AnimatedValue: Animated.Value;
+  toValue:
+    | number
+    | Animated.Value
+    | Animated.ValueXY
+    | {
+        x: number;
+        y: number;
+      }
+    | Animated.AnimatedInterpolation<number>;
+  duration: number;
+  useNativeDriver: boolean;
+};
+
+export interface ArrowTypeProps {
+  theme: Theme;
+  isDropdownFocused: boolean;
+  errorText: string | undefined;
+  disabled: boolean | undefined;
+}
+
+export interface DropdownStyleProps {
+  theme: Theme;
+  disabled?: boolean;
+  inputText:string;
+}
+
+
+
+
+**Usage Instructions:**
+- Review all provided component definitions (props, types, usage patterns)
+- Match UI elements from the design to these components by type and purpose
+- Use these components instead of creating new ones
+- Follow the exact prop structures and conventions
+
+---
+
+## 3. SAMPLE WORKING CODE PATTERNS
+
+###FilePath: smart-sweep/get-started/index.tsx
+
+import {FC} from 'react';
+import {
+  SmartSweepGetStartedProps,
+  SmartSweepGetStartedScreenRouteProp,
+} from './types';
+import * as Components from '@app/components';
+import {Theme, translation, useNewTheme} from 'react-core';
+import {useRoute} from '@react-navigation/native';
+import {CoinsIcon} from 'app/assets/svg';
+import {NavigationService} from 'app/utils';
+import {AccountsRoutes} from 'app/constants';
+import {getStyles} from './styles';
+
+export const SmartSweepGetStarted: FC<SmartSweepGetStartedProps> = prop => {
+  const {navigation} = prop;
+  const theme: Theme = useNewTheme();
+  const styles = getStyles({theme});
+  const route = useRoute<SmartSweepGetStartedScreenRouteProp>();
+  const {accountNumber, branch, currency} = route.params;
+  const {t} = translation.useTranslation();
+
+  return (
+      <Components.GetStartedScreen
+        meemLogoSize={24}
+        headerTitle={t('SmartSweepLblScreenTitle')}
+        subTitle={t('SmartSweepLblTitle')}
+        description={t('SmartSweepLblDescription')}
+        BackGroundImage={CoinsIcon}
+        onClose={() => {
+          navigation.pop();
+        }}
+        onGetStarted={() => {
+          console.log('currency', currency);
+          NavigationService.navigate(AccountsRoutes.SmartSweepAmount, {
+            currency: currency,
+          });
+        }}
+        cancelIconStyle={styles.cancelIconStyle}
+      />
+  );
+};
+
+
+###FilePath: smart-sweep/get-started/styles.ts
+
+import {StyleSheet} from 'react-native';
+import {SmartSweepGetStarteStyle} from './types';
+
+export const getStyles = (props: SmartSweepGetStarteStyle) => {
+  const {theme} = props;
+
+  return StyleSheet.create({
+    cancelIconStyle: {
+      backgroundColor: theme.colors['surface-02'],
+      borderRadius: 999,
+      height: 24,
+      width: 24,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+  });
+};
+
+
+###FilePath: smart-sweep/get-started/types.ts
+
+import {RouteProp} from '@react-navigation/native';
+import {AccountsRootStackParamList} from 'app/navigator/accounts-section';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {Theme} from 'react-core';
+
+export type SmartSweepGetStartedProps = {
+  navigation: NativeStackNavigationProp<AccountsRootStackParamList>;
+};
+
+export type SmartSweepGetStartedScreenRouteProp = RouteProp<
+  AccountsRootStackParamList,
+  'SmartSweepGetStarted'
+>;
+
+export type SmartSweepGetStarteStyle = {
+  theme: Theme;
+};
+
+
+###FilePath: smart-sweep/smart-sweep-amount/index.tsx
+
+import {ArrowBackIcon, SaudiRiyalSAR} from 'app/assets/svg';
+import {FC, useEffect, useState} from 'react';
+import {
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  TextInput,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
+import {useToast} from 'app/components';
+import {variants} from 'app/components/label/types';
+import {ButtonVariants} from 'app/components/custom-button/types';
+import {translation, useNewTheme} from 'react-core';
+import {getStyles} from './styles';
+import {SmartSweepAmountProps, SmartSweepAmountScreenRouteProp} from './types';
+import {useRoute} from '@react-navigation/native';
+import * as Components from '@app/components';
+import {useAccounts} from 'app/features/accounts/hooks/use-accounts';
+import {ToastProps, ToastTypeProps} from 'app/components/toast/types';
+import AdminConfig from 'app/constants/admin-config';
+
+export const SmartSweepAmount: FC<SmartSweepAmountProps> = props => {
+  const {navigation} = props;
+  const route = useRoute<SmartSweepAmountScreenRouteProp>();
+  const {currency} = route.params;
+  const theme = useNewTheme();
+  const styles = getStyles({theme});
+  const toast = useToast();
+
+  const {sweepInstruction, callUpdateAutoSweep} = useAccounts();
+  const [sweepAmount, setSweepAmount] = useState('0');
+  const [focused, setFocused] = useState(false);
+  const [isConfirmButtonDisabled, setIsConfirmButtonDisabled] = useState(true);
+  const {t} = translation.useTranslation();
+
+  useEffect(() => {
+    if (sweepInstruction?.sweepAmount) {
+      const formattedAmount = Number(
+        sweepInstruction?.sweepAmount,
+      ).toLocaleString('en-US', {});
+      setSweepAmount(formattedAmount);
+    }
+  }, []);
+
+  useEffect(() => {
+    validateSweepAmount();
+  }, [sweepAmount]);
+
+  const getToastProps = (message: string): ToastProps => {
+    return {
+      id: 'toast_id',
+      toastMessage: message,
+      inverted: false,
+      toastType: ToastTypeProps.warning,
+    };
+  };
+
+  const validateSweepAmount = () => {
+    const sweepValue = Number(sweepAmount.replaceAll(',', ''));
+    // if (Number(sweepInstruction.sweepAmount) === sweepValue ) {
+    //   setIsConfirmButtonDisabled(true);
+    //   return;
+    // }
+    //behalf of 301847 //not needed
+    // if (sweepAmount === '') {
+    //   setSweepAmount('0');
+    //   setIsConfirmButtonDisabled(false);
+    //   return;
+    // }
+    if (Number(sweepValue) < Number(AdminConfig.AUTO_SWEEP_MIN_AMOUNT)) {
+      // const toastProps = getToastProps(t('SmartSweepLblErrorExceedLimit'));
+      // toast.showToast(toastProps);
+      setIsConfirmButtonDisabled(true);
+      return;
+    }
+
+    if (Number(sweepValue) > Number(AdminConfig.AUTO_SWEEP_MAX_AMOUNT)) {
+      const toastProps = getToastProps(t('SmartSweepLblErrorExceedLimit'));
+      toast.showToast(toastProps);
+      setIsConfirmButtonDisabled(true);
+      return;
+    }
+    setIsConfirmButtonDisabled(false);
+  };
+
+  return (
+    <Components.ScreenContainer
+      id="sweepAmount"
+      showCenterContent={true}
+      showGoBackIcon
+      // customBottomScreenContentStyle={styles.bottomContainer}
+      bottomScreenContent={
+        <Components.SubmitButton
+          onPress={() => {
+            Keyboard.dismiss();
+            callUpdateAutoSweep(sweepAmount.replace(',', ''), currency);
+          }}
+          label={t('SmartSweepBtnConfirm')}
+          id={t('SmartSweepBtnConfirm')}
+          variant={ButtonVariants.primary}
+          disabled={isConfirmButtonDisabled || sweepAmount === ''}
+          // style={focused ? styles.primaryButton : styles.unFocusedButton}
+        />
+      }>
+      <View style={styles.container}>
+        <View style={styles.contentContainer}>
+          <Components.Label
+            id="labelContentTitle"
+            text={t('SmartSweepLblScreenTitle')}
+            variant={variants.titleXL}
+            style={styles.labelContentTitle}
+          />
+          <Components.Label
+            id="labelContentDescription"
+            text={t('SmartSweepLblAddAmountDescription')}
+            variant={variants.bodyRegularM}
+            style={styles.labelContentDescription}
+          />
+        </View>
+        <View style={styles.amountInputContainer}>
+          <Components.AmountInput
+            id="amountInput"
+            value={sweepAmount}
+            setValue={(val: string) => {
+              setSweepAmount(val);
+            }}
+            maximumLength={10}
+            onFocus={() => {
+              setFocused(true);
+            }}
+            onBlur={() => {
+              setFocused(false);
+            }}
+          />
+        </View>
+      </View>
+    </Components.ScreenContainer>
+  );
+};
+
+
+###FilePath: smart-sweep/smart-sweep-amount/styles.ts
+
+import {StatusBar, StyleSheet} from 'react-native';
+import {SmartSweepAmountStyle} from './types';
+import {Typography} from 'app/utils';
+
+export const getStyles = (prop: SmartSweepAmountStyle) => {
+  const {theme} = prop;
+
+  return StyleSheet.create({
+    keyboardView: {
+      flex: 1,
+    },
+    container: {
+      flex: 1,
+      paddingHorizontal: 16,
+      gap: 32,
+    },
+    contentContainer: {
+      gap: 8,
+    },
+    labelContentTitle: {
+      color: theme.colors['content-primary'],
+    },
+    labelContentDescription: {
+      color: theme.colors['content-primary'],
+      fontSize: 16,
+    },
+    amountInputContainer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    textInput: {
+      fontFamily: Typography.fonts.figtree_regular,
+      fontSize: 56,
+    },
+    buttonContainer: {
+      position: 'absolute',
+      bottom: 0,
+      width: '100%',
+      alignSelf: 'center',
+    },
+    primaryButton: {
+      borderRadius: 0,
+    },
+    unFocusedButton: {
+      alignSelf: 'center',
+      width: '90%',
+    },
+    bottomContainer: {
+      paddingBottom: 24,
+    },
+  });
+};
+
+
+###FilePath: smart-sweep/smart-sweep-amount/types.ts
+
+import {AccountsRootStackParamList} from 'app/navigator/accounts-section';
+import {RouteProp} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {Theme} from 'node_modules/react-core/dist/exports';
+
+export type SmartSweepAmountStyle = {
+  theme: Theme;
+};
+
+export type SmartSweepAmountProps = {
+  navigation: NativeStackNavigationProp<AccountsRootStackParamList>;
+};
+
+export type SmartSweepAmountScreenRouteProp = RouteProp<
+  AccountsRootStackParamList,
+  'SmartSweepAmount'
+>;
+
+
+###FilePath: smart-sweep/sweep-success/index.tsx
+
+import {FC} from 'react';
+import {SmartSweepSuccessProps} from './types';
+import {Status} from 'app/features/beneficiaries/views/status';
+import {TickIcon} from 'app/assets/svg';
+import {Button} from 'app/components';
+import {ButtonSizes, ButtonVariants} from 'app/components/custom-button/types';
+import {translation, useNewTheme} from 'react-core';
+import {getStyles} from './styles';
+import {Background} from 'app/features/beneficiaries/views/status/components/background';
+import {ButtonAlignment} from 'app/features/beneficiaries/views/status/types';
+import {AccountsRoutes, TransferRoutes} from 'app/constants';
+import {NavigationService} from 'app/utils';
+
+const SmartSweepSuccess: FC<SmartSweepSuccessProps> = props => {
+  const theme = useNewTheme();
+  const styles = getStyles();
+  const {navigation} = props;
+  const {t} = translation.useTranslation();
+
+  return (
+    <Status
+      Background={Background}
+      icon={TickIcon}
+      title={t('SmartSweepLblStatusTitle').split("\\n").join('\n')}
+      inverted={true}
+      description={t('SmartSweepLblStatusDescription')}
+      backButtonVisible={false}
+      statusBarColor={theme.colors['background-03']}
+      primaryButton={
+        <Button
+          id="beneficiary_error_edit_button"
+          label={t('SmartSweepBtnHome')}
+          size={ButtonSizes.large}
+          variant={ButtonVariants.secondary}
+          inverted
+          onPress={() => navigation.pop(3)} //pop to transaction list
+          style={styles.button}
+        />
+      }
+      secondaryButton={
+        <Button
+          id="beneficiary_error_done_button"
+          label={t('SmartSweepBtnGoToAccounts')}
+          size={ButtonSizes.large}
+          style={styles.button}
+          inverted={true}
+          onPress={() => navigation.pop(3)}
+        />
+      }
+      buttonAlignment={ButtonAlignment.column}
+    />
+  );
+};
+
+export default SmartSweepSuccess;
+
+
+###FilePath: smart-sweep/sweep-success/styles.ts
+
+import {Theme} from 'react-core';
+import {StyleSheet} from 'react-native';
+
+export const getStyles = () => {
+  return StyleSheet.create({
+    container: {
+      flexGrow: 1,
+    },
+    button: {flex: 1},
+  });
+};
+
+###FilePath: smart-sweep/sweep-success/types.ts
+
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { AccountsRootStackParamList } from "app/navigator/accounts-section";
+
+export type SmartSweepSuccessProps = {
+    navigation: NativeStackNavigationProp<AccountsRootStackParamList>;
+}
+
+***************
+
+DropDown Sample Code
+
+          <Dropdown
+            id="sort_by_dropdown"
+            placeholder={translate('SortAndFilterDdSortBy')}
+            onPress={() => {
+              setShowSortByDropDown(true);
+            }}
+            inputText={SortAndFilterValidations.values.sortBy}
+            BottomSheet={
+              <BottomSheetOptions
+                visible={showSortByDropDown}
+                options={sortbyData}
+                showHeaderCloseIcon
+                headerTitle={translate('SortAndFilterDdSortBy')}
+                optionKey="categoryName"
+                optionLabelKey="categoryName"
+                optionSelected={sortBySelectedItem}
+                onBottomSheetClose={() => setShowSortByDropDown(false)}
+                onOptionSelect={data => setSortBy(data)}
+              />
+            }
+          />
+
+**Follow these patterns for:**
+- File structure (hooks and schemas at feature level)
+- Import statements organization (STRICT ORDER)
+- Hook implementation patterns
+- Schema validation patterns
+- Component composition
+- State management through custom hooks
+- Theme usage with `useNewTheme()`
+- Translation with `translation.useTranslation()`
+- Navigation patterns
+
+---
+
+## 4. PROJECT STRUCTURE
+
+app/
+├── assets/
+│   ├── animations/
+│   ├── fonts/
+│   ├── html/
+│   ├── images/
+│   ├── lottie/
+│   └── svg/
+│       ├── Currency/
+│       └── (150+ icons)
+
+├── common/
+│   ├── theme/
+│   └── types.ts
+
+├── components/ (120+ components – showing first 5 + one deep dive)
+│   ├── account-status/
+│   ├── accounts-bottom-list/
+│   ├── action-bottom-sheet/
+│   ├── amount-input/
+│   ├── avatar/
+│   └── ... (115+ more)
+│
+│   └─ Deep dive example: action-bottom-sheet/
+│       ├── components/
+│       │   └── BottomSheetHeaderWrapper.tsx
+│       ├── index.tsx
+│       ├── styles.ts
+│       └── types.ts
+
+├── constants/ (11 files – first 5 only)
+│   ├── admin-config.ts
+│   ├── animation-config.ts
+│   ├── api-screen-ids.ts
+│   ├── error-values.ts
+│   ├── gradient-config.ts
+│   └── ... (6 more)
+
+├── features/
+│   ├── accounts/
+│   │   ├── constants/
+│   │   ├── hooks/
+│   │   ├── schemas/
+│   │   └── views/ (17 screens – first 5 + one deep dive)
+│   │       ├── account-details/
+│   │       ├── accounts-list/
+│   │       ├── accounts-transactions/
+│   │       ├── add-money-get-started/
+│   │       ├── bank-transfers/
+│   │       └── ... (12 more)
+│   │
+│   │       └─ Deep dive example: accounts-transactions/
+│   │           ├── components/
+│   │           │   ├── transaction-list-header/
+│   │           │   │   ├── index.tsx
+│   │           │   │   ├── styles.ts
+│   │           │   │   └── types.ts
+│   │           │   └── transaction-list-item/
+│   │           │       ├── index.tsx
+│   │           │       ├── styles.ts
+│   │           │       └── types.ts
+│   │           ├── index.tsx
+│   │           ├── styles.ts
+│   │           └── types.ts
+│   │
+│   ├── authentication/
+│   ├── beneficiaries/
+│   ├── dashboard/
+│   ├── onboarding/
+│   ├── transfers/
+│   └── user-setting/
+
+├── hooks/ (14 hooks)
+├── navigator/
+├── redux/
+├── services/
+└── utils/
+    ├── rsa/
+    └── (30+ utilities)
+
+**Generate code following this structure:**
+- `app/features/{feature-name}/views/{screen-name}/index.tsx`
+- `app/features/{feature-name}/views/{screen-name}/styles.ts`
+- `app/features/{feature-name}/views/{screen-name}/types.ts`
+- `app/features/{feature-name}/views/{screen-name}/translations.ts`
+- `app/features/{feature-name}/hooks/use-{screen-name}.ts` ← **Feature level**
+- `app/features/{feature-name}/schemas/{screen-name}-schema.ts` ← **Feature level**
+
+---
+
+## 5. USER STORIES & BUSINESS LOGIC
+
+RCM-479 Existing Customer Details & Data Validation APPROVED
+ Existing Details Validation & Data Update - Application Forms
+ As an existing customer trying to apply 
+for new credit card 
+, When I Tap on Apply from Any of the 
+Card Product type
+ can Proceed with filling the forms Then, I 
+based on the application status 
+1. Data availability check and Application Redirection
+   - System should confirm the data availability based on the segment (Staff & Non-Staff) and salary details
+   - System should check for the fields available under each stage and provide the response to application
+      a. Personal Details
+         a1. System should check the  with all the fields applicable under personal details asset application
+ stage and provide all the values and status as "Personal Details Available - Asset"
+         a2. If data is not available in asset application, System should validate the details under contact and 
+provide all the values and status as "Personal Details Available - Contact"
+         a3. If data is not available in both asset & contact, System should pic e in k for the data's availabl
+ . contact and provide the values fetched from system and status as "Personal Details Missing"
+      b. Monthly Expenses
+         b1. System should check the asset application with all the fields applicable under Monthly and provide 
+all the values and status as "Monthly Details Available - Asset"
+         b2. If data is not available in Asset, status should be "Monthly Expense Details Missing".
+                           
+2. All Details Available
+    - Application to check the Status in Sequence "Personal Details -> Monthly Expenses -> Review screen"
+    - If all the details are available, Redirect the customer to Review screen and populate the fields based on 
+the status
+ 3. Missing Details   
+    - Application should validate the stage in which details are missing and redirect the customer to the 
+missing  details screen so that customer can fill the missing information 
+    - On completion of each stage, Data should be updated in asset application and next stage status should 
+be validated, If available - skip the stage, If not Available - Redirect the customer to the next stage
+    - Application should populate the fields applicable for the criteria and values accordingly 
+   
+4. SIMAH expired Scenario
+    -  Customer should be asked to fill the form from the beginning and Data should be updated in the system
+    -  Rules explained in the above section (If All data Not Available) is applicable 
+As an existing customer created an 
+application 
+, enter all the Missing Information When I
+ System have fetched all the details OR 
+can Proceed with reviewing the Then, I 
+details & Edit the Information 
+5. Edit Information from Review 
+     - System should allow the customer to edit the values for each stage.
+     - On tap of Edit, Application to display all the fields in the single screen, user should be allowed to edit 
+and save the changes.
+     - After Editing the stage, Customer should be landed to review screen. Customer doesn't have to view all 
+the stages again
+     - If customer have not reached the review screen, Customer should be allowed fill the details in 
+sequence based on the stages mentioned above
+ As an existing customer created 
+application filled in all the details AND 
+, review the filled details  When I AND
+ accept the consent tap on continue AND 
+can Proceed with reviewing the Then, I 
+details & proceed with automated CSR 
+4. Ensure the Data Availability 
+  - Application should ensure that all the applicable field values are filled before allowing customer to 
+proceed with SIMAH Validation 
+  - Refer the applicable fields validation sheet for the logics 
+  -   RCM-470 CC Application Fields APPROVED
+  - Alert the customer to fill the details, if any of the information is missing
+  
+5. Consent & Confirmation on the data
+   - Customer should accept the GOSI Consent and SIMAH Consent for application to enable the continue 
+CTA
+  -  Customer should have an option to contact customer care through "Contact a Financial Advisor"
+  - On Continue, Customer data should be updated in the asset and allow the customer to proceed with the 
+SIMAh Validation after adapting the below UI Status
+  - Based on the response received from the QARAR(Accept / Refer), CSR Case should be created in asset 
+application for authorization
+
+RCM-470 CC Application Fields APPROVED
+Stages Fields Applicable - Credit Card Field Rule Field Type No f / n-Staf
+ Staff 
+Personal 
+Information
+ Marital Status Mandatory Drop Down Applicable 
+Number of Dependents Mandatory Drop Down Applicable 
+Level of Education Mandatory Drop Down Applicable 
+Additional Monthly Income Mandatory - Atelease Yes / No should be selected Text Field - 
+Numeric
+ Applicable 
+Source of Additional Income Conditional - If Additional Income is Selected as 
+"Yes"
+ Drop Down Applicable 
+Is the income Monthly or annual? Conditional - If Additional Income is Selected as 
+"Yes"
+ Toggle Applicable
+ Additional Income Amount Range Conditional - If Additional Income is Selected as 
+"Yes"
+ Text Field - 
+Numeric
+ Applicable
+ Are you related or affiliated to a GIB board 
+member?
+ Mandatory  - At least Yes / No should be selected Text Field
+ Living Arrangements Mandatory Drop Down Applicable 
+Board Member name Conditional - If "Are you related...." is Selected as 
+"Yes"
+ Text Field Applicable
+ Reference Number Optional Text Field Applicable
+ Monthly Expenses Total Expenses Mandatory Text Field - 
+Numeric
+ Applicable
+ Financial Obligations Mandatory Text Field - 
+Numeric
+ Applicable
+ Consent - Check box Mandatory Check Box Applicable
+
+**Implement according to:**
+- Field validation rules (define in schemas)
+- Mandatory vs optional fields (Yup validation)
+- Conditional field visibility (logic in hooks)
+- Data flow and state management (centralized in hooks)
+- Form submission and navigation (handlers in hooks)
+
+---
+
+## GENERATION REQUIREMENTS
+
+### Design Analysis
+1. Analyze the attached design image carefully
+2. Identify all UI components, layouts, interactions, text content, and styling
+3. Map each visual element to existing custom components
+4. Extract exact text content, colors, spacing, and typography
+5. Identify form fields that need validation
+
+### Code Structure
+Generate files in this format:
+
+```
+###FilePath: app/features/{feature}/views/{screen-name}/index.tsx
+[View component - UI only, uses custom hook]
+
+###FilePath: app/features/{feature}/hooks/use-{screen-name}.ts
+[Custom hook - all business logic, state, handlers]
+
+###FilePath: app/features/{feature}/schemas/{screen-name}-schema.ts
+[Yup schema, initial values, types]
+
+###FilePath: app/features/{feature}/views/{screen-name}/styles.ts
+[Styles implementation]
+
+###FilePath: app/features/{feature}/views/{screen-name}/types.ts
+[Types/interfaces]
+
+###FilePath: app/features/{feature}/views/{screen-name}/translations.ts
+[Translation keys with en and ar objects]
+```
+
+### Implementation Checklist
+- [ ] **Follow STRICT import order** (React → Third-party → Custom → Theme → Assets → Feature imports → Local)
+- [ ] **Hooks at feature level:** `app/features/{feature}/hooks/use-{screen-name}.ts`
+- [ ] **Schemas at feature level:** `app/features/{feature}/schemas/{screen-name}-schema.ts`
+- [ ] **Import hooks with relative path:** `import {useScreenName} from '../../hooks/use-screen-name'`
+- [ ] **Import schemas with relative path:** `import {Schema, initialValues} from '../../schemas/screen-name-schema'`
+- [ ] **Use TitleCase ID naming:** `ComponentNameFieldName`
+- [ ] **Use translation key pattern:** `JourneyScreenNameComponentTypeFieldName`
+- [ ] **Separate business logic into custom hook**
+- [ ] **Define validation schema** using Yup
+- [ ] **View component is pure UI** (no business logic in index.tsx)
+- [ ] **All state in custom hook** (useState, useMemo, etc.)
+- [ ] **All handlers in custom hook** (onChange, onPress, etc.)
+- [ ] **Formik for form management** (in custom hook)
+- [ ] **Generate translations.ts** with en and ar objects
+- [ ] Use only existing custom components
+- [ ] Import components: `import * as Components from '@app/components'`
+- [ ] Import theme: `import {useNewTheme, Theme, translation} from 'react-core'`
+- [ ] Implement TypeScript types properly
+- [ ] Use `getStyles()` pattern with theme
+- [ ] Match design precisely
+
+### Hook Development Guidelines
+**Custom Hook Must Include:**
+1. All useState declarations for form fields and UI state
+2. Formik setup with schema and initial values
+3. useMemo for computed values (isFormValid, totals, etc.)
+4. Helper functions (parseAmount, formatData, etc.)
+5. Event handlers (onChange, onPress, onSelect, etc.)
+6. Navigation handlers (onBack, onNext, etc.)
+7. API call functions (if applicable)
+8. Return object with all state, handlers, and computed values
+
+**Hook Return Pattern:**
+```typescript
+return {
+  // State values
+  field1,
+  field2,
+  isChecked,
+
+  // Form
+  formikForm,
+
+  // Computed values
+  isFormValid,
+  totalAmount,
+
+  // Handlers
+  onChangeField1,
+  onChangeField2,
+  onCheckboxSelect,
+  handleSubmit,
+  onBackPress,
+};
+```
+
+### Schema Development Guidelines
+**Schema Must Include:**
+1. Yup validation schema with proper rules
+2. Error message keys from Errors constant
+3. Initial values object matching schema shape
+4. TypeScript type derived from initial values
+5. Validation for all required fields
+6. Custom validation rules (regex, min/max, etc.)
+
+---
+
+## OUTPUT FORMAT
+
+Provide complete, production-ready code organized by file path:
+
+1. **View component** (views/{screen-name}/index.tsx) - Pure UI using custom hook
+2. **Custom hook** (hooks/use-{screen-name}.ts) - All business logic at feature level
+3. **Schema** (schemas/{screen-name}-schema.ts) - Yup validation at feature level
+4. **Styles** (views/{screen-name}/styles.ts) - Theme-based StyleSheet
+5. **Types** (views/{screen-name}/types.ts) - TypeScript interfaces
+6. **Translations** (views/{screen-name}/translations.ts) - i18n keys
+
+**File Path Examples:**
+```
+###FilePath: app/features/credit-card/views/monthly-expenses/index.tsx
+###FilePath: app/features/credit-card/hooks/use-monthly-expenses.ts
+###FilePath: app/features/credit-card/schemas/monthly-expenses-schema.ts
+###FilePath: app/features/credit-card/views/monthly-expenses/styles.ts
+###FilePath: app/features/credit-card/views/monthly-expenses/types.ts
+###FilePath: app/features/credit-card/views/monthly-expenses/translations.ts
+```
+
+**Code must be:**
+- Ready to integrate into existing project
+- Free of mocks, placeholders, or TODOs
+- Following exact patterns from samples
+- Using only provided custom components
+- Properly separated (UI vs logic)
+- Using custom hooks for all business logic at feature level
+- Using Yup schemas for all validation at feature level
+- Properly typed with TypeScript
+- Following all naming conventions
+- Using correct import order
+- Including proper IDs for all components
+- Using translation keys for all text
+- Importing hooks and schemas from feature level with correct relative paths
+
+Generate the code now based on the attached design image, following ALL conventions and patterns above.
+

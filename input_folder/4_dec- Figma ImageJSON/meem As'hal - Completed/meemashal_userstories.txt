@@ -1,0 +1,138 @@
+RCM-522 Meem As’hal - Completed Installments APPROVED
+ MeeM Ashal - Completed Installments 
+As a Logged-in customer has the primary credit card AND 
+(Active) Completed MeeM Ashal's Cancelled AND ( OR 
+MeeM Ashal's)
+ I, tap on History tab When 
+, I should be View the completed/cancelled MeeM Then
+ Ashal Transactions
+ Completed / Cancelled Installments Display
+ - The system should list all fully paid Meem As’hal installment plans under the History tab.
+ - The system should also display for  failed cancelled transactions (Missed Payment)
+ under History tab
+ - Each completed installment should have a Completed tag, and Cancelled transaction 
+should have failed  tag Cancelled
+ Viewing Completed Installments
+ - Tapping on a completed installment should open its detailed view.
+ - The detailed view should display - Merchant Name & Logo, Total Transaction Amount, 
+Remaining Amount Progress Bar (should show 100% paid), Final installment payment 
+date
+ - Installment Breakdown
+    a The system should show the installment breakdown, similar to active plans:
+        a1. Each payment amount with its corresponding payment date.
+        a2. All payments should be marked as paid (green ticked off).
+ - Early Settlement Display (If Applicable)
+    a. If the user made an early settlement, the Installment Details Section should display - 
+Early Settlement Date, Early Settlement Amount, 
+    b. The Payments Section should reflect the prepayment with the final installment 
+updated accordingly.
+ Viewing Cancelling Installments
+ - Tapping on a cancelled installment should open its detailed view.
+ - The detailed view should display - Merchant Name & Logo, Total Transaction Amount, 
+Status(failed), Remaining Amount Progress Bar (should show X% paid), Final installment 
+payment date
+ -  All completed payments should be marked as paid (green ticked off) and Cancelled 
+Payments should be marked as Cancelled (Close mark) and pending payments should 
+be greyed out.
+
+RCM-523 Meem As’hal - Active Installments & Partial Payment APPROVED
+MeeM Ashal - Active Installments & Outstanding Payment 
+As a Logged-in customer has  AND 
+the primary credit card(Active) o AND 
+n-going MeeM Ashals
+ I, tap on Active tab When 
+, I should be View the ongoing Then
+ MeeM Ashal Transactions
+ Active Installment Display
+ - The system should list all ongoing Meem As’hal installment plans under the Active tab.
+ - Each active installment should display - Merchant Name & Logo, Total Transaction Amount, Next Payment 
+Date (displayed prominently), Remaining Balance (shown as a progress bar with percentage paid)
+ Installment Details
+ - Tapping an active installment should navigate to its detailed view.
+ -  Quick view section should display Merchant Name & Logo, Total Transaction Amount, Remaining Balance 
+(shown as a progress bar with percentage paid)
+ - The detailed view should include - From & To Dates of the installment plan, Breakdown of Installments - Each 
+installment amount with corresponding due date, Paid installments marked in green with a tick, The next 
+immediate payment highlighted, and Future payments blurred.
+ As a Logged-in customer has  AND 
+the primary credit card(Active) o AND 
+n-going MeeM Ashals
+ I, tap on Active tab When 
+, I should be View the ongoing Then
+ MeeM Ashal Transactions
+ Making a Full Payment (Pay Outstanding Balance)
+ - The user should be able to pay off the remaining balance via a “Pay Outstanding Balance” button.
+ - The user account status should be Active
+ - If the user has insufficient funds in their One-Pack account (only One-Pack account eligible), a pop-up should 
+appear stating - “Want to make a payment? You need at least X amount in your account to complete the 
+payment.”
+ - The pop-up should have an Add Money button linking to the Add Money flow.
+ - If the user has sufficient funds the system should navigate to the Payment Summary screen, displaying - 
+Merchant Name & Logo, Remaining Amount to be Paid, Fees & VAT, Payment Account (only One-Pack 
+account eligible)
+ -  Payment details section should display the "No. of months to pay" based on the unpaid paid months.
+ - . The user should be able to Swipe to Pay
+ 
+Payment Authentication
+ - The payment should require authentication depending on the amount - No authentication or OTP 
+authentication or OTP + Passcode authentication
+ - Upon successful authentication, the user should see a success message with - “Your payment was made 
+successfully.", A View Receipt button, Redirections to Home or Meem As’hal Page.
+ Success
+  - Upon successful outstanding payment, Transaction should be moved under history section
+
+RCM-524 Meem As’hal - Eligible Transactions APPROVED
+ MeeM Ashal - Eligible & Ashal Conversion 
+As a Logged-in customer has the primary credit  AND 
+card(Active)
+ I, access credit card product details screen When 
+, I should be View the MeeM Ashal option under Then
+ quick action menu
+ MeeM As’hal Option Eligibility
+ - Application should display meem ashal option, only for the primary credit cards
+ - Credit card should be Active
+ As a Logged-in customer has the primary credit  AND 
+card with eligible card transactions
+ I, tap on tap on MeeM Ashal When 
+, I should be allowed to view the eligible list of Then
+ transactions
+ Eligibility Transactions
+ - The system should display only transactions eligible for Meem As’hal installments under the 
+Eligible tab.
+ - Each eligible transaction should display a disclaimer, how long it remains eligible (e.g., 
+“Eligible for 10 days” or “Eligible for 48 hours” as it nears expiry).
+ - Once a transaction is no longer eligible, it should not appear in the Eligible tab.
+ - Transaction details in the list should be similar to the transactions section and only debit 
+transaction should be displayed 
+ As a Logged-in customer has the primary credit  AND 
+card with eligible card transactions
+ I, tap on tap on any transactions When 
+, I should be allowed to view the Eligible Then
+ installment months 
+ Installment Month
+ - The system should display only eligible months allowed for those transactions (Dynamic 
+Values, based on Merchant and Transaction amount)
+ - User should be allowed to select any of the options displayed on screen
+ - On Selection, System should get the Profit rate, Total Installment month, Monthly 
+Installment and Vees & Fat for the selected transaction and installment month
+ As a Logged-in customer has the primary credit  AND 
+card with eligible card transactions
+ I, tap on continue from installment months When 
+, I should be allowed to view the Summary Then
+ screen proceed with authentication for Ashal AND 
+conversion
+ Summary & Authentication
+ - The system should display the below details
+     a. Transaction Amount
+     b. Card Details (Card Type, Card Number ) & Name on Card
+     c. Installment Details (Number of Months, Profit Rate, Fees, Installment, Total Amount)
+     d. Consent - T&C, Commodity 
+ - User should be allowed to continue only after the consents are checked. User should be 
+able to view the T&C contents by tapping on the link 
+ - On swipe, System should get initiate OTP authentication for Ashal conversion
+ - User should be allowed to enter the OTP received to the registered mobile number and 
+upon successful verification, transaction should be converted to Ashal's
+ - System should displayed the success message as "Your Installment are all set" with Home - 
+Redirect the customer to dashboard; Go to Cards - Redirect the customer to Product screen
+ - Once the transaction is successfully converted to installments, transaction should be moved 
+under active section 

@@ -1,0 +1,20 @@
+Feature: CreditCard
+Screen Name: Review Screen
+Component           Name 
+rootdetail          Background for this screen
+Header Component    for back arrow with text
+Label               Title
+Label               Subtitle
+Label               Personal Detail
+Label               Maritial Status
+Label               Family member
+Label               Family member with fees
+Link                Edit
+Link                View More
+
+Label               Monthly expenses
+
+CustomCheckbox      I agree to allow meem to verify my information against the general organization for social Insurance
+CustomCheckbox      I accept the Disclaimer
+Link                Contact a financial advisor
+StickyButton        confirm

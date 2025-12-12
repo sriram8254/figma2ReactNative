@@ -1,0 +1,79 @@
+app/
+├── assets/
+│   ├── animations/
+│   ├── fonts/
+│   ├── html/
+│   ├── images/
+│   ├── lottie/
+│   └── svg/
+│       ├── Currency/
+│       └── (150+ icons)
+
+├── common/
+│   ├── theme/
+│   └── types.ts
+
+├── components/ (120+ components – showing first 5 + one deep dive)
+│   ├── account-status/
+│   ├── accounts-bottom-list/
+│   ├── action-bottom-sheet/
+│   ├── amount-input/
+│   ├── avatar/
+│   └── ... (115+ more)
+│
+│   └─ Deep dive example: action-bottom-sheet/
+│       ├── components/
+│       │   └── BottomSheetHeaderWrapper.tsx
+│       ├── index.tsx
+│       ├── styles.ts
+│       └── types.ts
+
+├── constants/ (11 files – first 5 only)
+│   ├── admin-config.ts
+│   ├── animation-config.ts
+│   ├── api-screen-ids.ts
+│   ├── error-values.ts
+│   ├── gradient-config.ts
+│   └── ... (6 more)
+
+├── features/
+│   ├── accounts/
+│   │   ├── constants/
+│   │   ├── hooks/
+│   │   ├── schemas/
+│   │   └── views/ (17 screens – first 5 + one deep dive)
+│   │       ├── account-details/
+│   │       ├── accounts-list/
+│   │       ├── accounts-transactions/
+│   │       ├── add-money-get-started/
+│   │       ├── bank-transfers/
+│   │       └── ... (12 more)
+│   │
+│   │       └─ Deep dive example: accounts-transactions/
+│   │           ├── components/
+│   │           │   ├── transaction-list-header/
+│   │           │   │   ├── index.tsx
+│   │           │   │   ├── styles.ts
+│   │           │   │   └── types.ts
+│   │           │   └── transaction-list-item/
+│   │           │       ├── index.tsx
+│   │           │       ├── styles.ts
+│   │           │       └── types.ts
+│   │           ├── index.tsx
+│   │           ├── styles.ts
+│   │           └── types.ts
+│   │
+│   ├── authentication/
+│   ├── beneficiaries/
+│   ├── dashboard/
+│   ├── onboarding/
+│   ├── transfers/
+│   └── user-setting/
+
+├── hooks/ (14 hooks)
+├── navigator/
+├── redux/
+├── services/
+└── utils/
+    ├── rsa/
+    └── (30+ utilities)

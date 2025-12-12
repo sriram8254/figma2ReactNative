@@ -1,0 +1,5332 @@
+
+
+
+Generate React Native screen code from the attached design image for integration into an existing project.
+
+
+**Project Configuration:**
+- React: 19.1.1
+- React Native: 0.82.1
+- Gradle: 9.0.0
+- TypeScript: Required
+- Path Aliases: Configured in babel.config.js
+
+
+---
+
+## CRITICAL INSTRUCTIONS
+
+
+**DO NOT:**
+- Create mock components or mock functions
+- Recreate any existing components
+- Generate placeholder/TODO comments
+- Create standalone App.tsx files
+- Use `import * as Components` syntax
+- Use `<Components.Label>` or any namespace-based component usage
+- Use relative imports for hooks, schemas, or shared components when a path alias exists
+- Introduce circular dependencies between files or modules
+- Use ScaledSheet or react-native-size-matters library
+- Use string-based spacing syntax (e.g., '20@vs', '16@s')
+- Use styled-components or any CSS-in-JS libraries
+- Use hardcoded color hex values
+- Use inline styles for complex styling
+- Hardcode comparison values (use Enums/constants instead)
+- Misalign flex-direction, justify-content, align-items
+- Use incorrect variant capitalization (TitleL, bodyregular, bodySemibold)
+- Use separators in variants (body_medium_s, body-medium-s)
+- Hardcode fontSize instead of using variants
+- Guess variant names without checking the format
+
+
+**DO:**
+- Use existing custom components with proper import statements
+- Use direct component imports: `import {Label, Input} from '@app/components'`
+- Use path aliases (@app, @features) for all non-local imports
+- Use direct component syntax: `<Label>` instead of `<Components.Label>`
+- Follow the existing project structure and patterns
+- Generate production-ready, integration-ready code
+- Use proper file path format: `###FilePath: app/features/{feature}/views/{screen-name}/index.tsx`
+- Separate business logic into custom hooks
+- Define validation schemas using Yup
+- Use Formik for form management
+- Match the Figma design structure, layout, spacing, and alignment as closely as possible
+- Pay careful attention to flex-direction (row vs column) based on visual design
+- Ensure all styles are correctly typed for React Native (ViewStyle, TextStyle, ImageStyle, etc.)
+- Use standard React Native StyleSheet.create() only
+- Use number literals for all spacing (paddingTop: 20, not '20@vs')
+- Keep styles in separate styles.ts file
+- Use typed StyleSheet interface (interface Styles {...})
+- Import StyleSheet from 'react-native', not third-party packages
+- Export components using the screen name as component name in index.tsx
+- Identify correct export pattern (export const vs export default) and import accordingly
+- Define Enums and typed constants in separate constants.ts file when comparisons are needed
+- Define all function arguments and object types in types.ts file
+- Verify flex layout directions match the visual design (row for horizontal, column for vertical)
+- Use correct variant type case format (variants.bodyMediumM, not variants.bodymediumm)
+- Capitalize weight in variants (Regular, Medium, SemiBold, Bold)
+- Use uppercase for size in variants (XS, S, M, L, XL)
+- Map Figma font specs to correct variant format
+- Start variant with lowercase style (titleL, bodyRegularM, not TitleL)
+
+
+---
+
+## FILE STRUCTURE & ARCHITECTURE
+
+
+**IMPORTANT:** Hooks and Schemas are at the **feature level**, NOT inside the view folder.
+
+
+app/features/{feature}/
+├── views/
+│ └── {screen-name}/
+│ ├── index.tsx # Component exported with screen name
+│ ├── styles.ts # StyleSheet definitions
+│ ├── types.ts # TypeScript interfaces/types
+│ ├── translations.ts # Translation keys (en/ar)
+│ └── constants.ts # Enums, typed constants (only if needed)
+├── hooks/
+│ └── use-{screen-name}.ts # Custom hook (business logic, state, handlers)
+├── schemas/
+│ └── {screen-name}-schema.ts # Yup validation schema & initial values
+├── queries/ # API queries/mutations (feature level)
+│ └── use-{endpoint-name}-query.ts
+├── types/ # Feature-level API types
+│ └── {endpoint-name}.types.ts
+└── constants/ # Feature-level API constants
+└── {endpoint-name}.constants.ts
+
+text
+
+
+**Example Structure:**
+
+
+app/features/credit-card/
+├── views/
+│ ├── monthly-expenses/
+│ │ ├── index.tsx
+│ │ ├── styles.ts
+│ │ ├── types.ts
+│ │ ├── translations.ts
+│ │ └── constants.ts
+│ └── personal-details/
+│ ├── index.tsx
+│ ├── styles.ts
+│ ├── types.ts
+│ └── translations.ts
+├── hooks/
+│ ├── use-monthly-expenses.ts
+│ └── use-personal-details.ts
+├── schemas/
+│ ├── monthly-expenses-schema.ts
+│ └── personal-details-schema.ts
+├── queries/
+│ └── use-profit-rate-inquiry-query.ts
+├── types/
+│ └── profit-rate-inquiry.types.ts
+└── constants/
+└── profit-rate-inquiry.constants.ts
+
+text
+
+
+### Architecture Principles:
+
+
+1. **View (views/{screen-name}/index.tsx):** Pure UI component, no business logic
+2. **Hook (hooks/use-{screen-name}.ts):** All state, logic, handlers, validation and API interaction
+3. **Schema (schemas/{screen-name}-schema.ts):** Yup validation rules, initial values, types
+4. **Styles (views/{screen-name}/styles.ts):** Theme-based StyleSheet with proper TypeScript typing
+5. **Types (views/{screen-name}/types.ts):** Component props, navigation types, function args, object types
+6. **Translations (views/{screen-name}/translations.ts):** i18n keys and values
+7. **Constants (views/{screen-name}/constants.ts):** Enums, typed constants for comparisons (only if needed)
+8. **API Queries (queries/use-{endpoint-name}-query.ts):** RTK Query endpoints for feature APIs
+9. **API Types (types/{endpoint-name}.types.ts):** Request/response types for feature APIs
+10. **API Constants (constants/{endpoint-name}.constants.ts):** API endpoints, enums, config
+
+
+---
+
+## PATH ALIASES & BABEL CONFIG
+
+
+The project uses **babel.config.js** for path alias configuration:
+
+
+alias: {
+tests: ['./tests/'],
+'@app': './app',
+}
+
+text
+
+
+**Available Path Aliases:**
+- `@app/*` → `app/*`
+- `@app/features/*` → `app/features/*`
+- `@app/components` → `app/components`
+- `@app/assets/svg` → `app/assets/svg`
+- `@app/constants` → `app/constants`
+
+
+**Import Priority Rules:**
+
+1. ✅ Use `@app/features/{feature}/hooks/use-screen-name` for hooks
+2. ✅ Use `@app/features/{feature}/schemas/screen-name-schema` for schemas
+3. ✅ Use `@app/features/{feature}/queries/use-{endpoint-name}-query` for API queries
+4. ✅ Use `@app/features/{feature}/types/{endpoint-name}.types` for API types
+5. ✅ Use `@app/features/{feature}/constants/{endpoint-name}.constants` for API constants
+6. ✅ Use `@app/components` for shared UI components
+7. ✅ Use `@app/assets/svg` for icons and SVGs
+8. ✅ Use `@app/constants` for shared app-level constants
+9. ❌ Avoid `../../hooks/use-screen-name` when a path alias is available
+10. ❌ Avoid `import * as Components from '@app/components'`
+11. ✅ Only use relative imports for local view-level files like `./styles`, `./types`, `./translations`, `./constants`
+
+
+---
+
+## EXPORT/IMPORT PATTERN IDENTIFICATION
+
+**Identify the correct export pattern from existing code and use matching imports:**
+
+### Export Patterns:
+
+**Pattern 1: Named Export**
+```typescript
+// index.tsx
+export const ScreenName: React.FC<ScreenNameProps> = ({navigation}) => {
+  // ...
+};
+
+// Import elsewhere
+import {ScreenName} from '@app/features/feature-name/views/screen-name';
+```
+
+**Pattern 2: Default Export**
+```typescript
+// index.tsx
+const ScreenName: React.FC<ScreenNameProps> = ({navigation}) => {
+  // ...
+};
+
+export default ScreenName;
+
+// Import elsewhere
+import ScreenName from '@app/features/feature-name/views/screen-name';
+```
+
+**Rules:**
+1. **Check existing code patterns** to determine which export style is used
+2. **Component name** should match the screen name in TitleCase
+3. **Use consistent export style** throughout the same feature
+4. **Import accordingly**: Named exports use `{}`, default exports don't
+
+---
+
+## ENUMS & CONSTANTS PATTERN
+
+**Create constants.ts ONLY when comparisons or typed values are needed**
+
+### When to Create constants.ts:
+- Status comparisons (e.g., 'active', 'pending', 'completed')
+- Type discriminators (e.g., 'error', 'warning', 'success')
+- Fixed dropdown options
+- Payment methods, card types, etc.
+- Any hardcoded string/number used in multiple conditions
+
+### constants.ts Pattern:
+
+```typescript
+###FilePath: app/features/{feature}/views/{screen-name}/constants.ts
+
+// Enums for type-safe comparisons
+export enum PaymentStatus {
+  PAID = 'paid',
+  FAILED = 'failed',
+  PENDING = 'pending',
+}
+
+export enum InstallmentStatus {
+  ACTIVE = 'active',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+}
+
+export enum TagType {
+  ERROR = 'error',
+  SUCCESS = 'success',
+  WARNING = 'warning',
+  INFO = 'info',
+}
+
+// Typed constants
+export const MIN_AMOUNT = 100;
+export const MAX_AMOUNT = 100000;
+
+export const PAYMENT_STATUSES = {
+  PAID: 'paid' as const,
+  FAILED: 'failed' as const,
+  PENDING: 'pending' as const,
+} as const;
+
+export type PaymentStatusType = typeof PAYMENT_STATUSES[keyof typeof PAYMENT_STATUSES];
+```
+
+### Usage in Code:
+
+**❌ WRONG - Hardcoded strings:**
+```typescript
+if (payment.status === 'paid') {  // Bad
+  return <TickIcon />;
+}
+```
+
+**✅ CORRECT - Using Enums:**
+```typescript
+import {PaymentStatus} from './constants';
+
+if (payment.status === PaymentStatus.PAID) {  // Good
+  return <TickIcon />;
+}
+```
+
+---
+
+## API INTEGRATION PATTERN (NEW)
+
+
+**Goal:** Use `api_endpoints` input to generate feature-level API types, queries, and constants, and integrate them into hooks. Use mock implementations initially, but always create placeholders for the actual endpoints.
+
+### 1. api_endpoints Input
+
+You will receive an `api_endpoints` description (for example, from OpenAPI YAML like `accounts.yaml` and `profit-rate-inquiry.yaml`) that defines:
+
+- Paths and HTTP methods (e.g., `/accounts/profit-rate-inquiry` with POST)
+- Request schemas (e.g., `profit-rate-inquiry-req`)
+- Response schemas (e.g., `profit-rate-inquiry-res`)
+- Shared field definitions (e.g., `productType`, `isSuccess`, `currencyName`, etc.)
+
+Use this information to:
+
+- Create strongly typed request/response interfaces
+- Create feature-level API constants for endpoints and enums
+- Create RTK Query endpoints in `queries` folder
+- Wire these into the feature hook
+
+
+### 2. API Types File Pattern
+
+**Location:**
+`app/features/{feature}/types/{endpoint-name}.types.ts`
+
+**Purpose:**
+Define all API request/response types derived from the `api_endpoints` specification.
+
+**Example (based on profit-rate-inquiry):**
+
+###FilePath: app/features/accounts/types/profit-rate-inquiry.types.ts
+
+export interface ProfitRateInquiryRequest {
+productType: string;
+}
+
+export interface ProfitRateItem {
+currencyCode: string;
+depositQuarter: string;
+depositRate: string;
+depositYear: string;
+fromAmount: string;
+toAmount: string;
+isRecommendedRate: boolean;
+productId: string;
+tenure: number;
+}
+
+export interface ProfitRateInquiryResponse {
+isSuccess: boolean;
+lastUpdatedOn: string;
+profitRateList: ProfitRateItem[];
+}
+
+text
+
+
+### 3. API Constants File Pattern
+
+**Location:**
+`app/features/{feature}/constants/{endpoint-name}.constants.ts`
+
+**Purpose:**
+Define API-related constants (endpoint paths, enums, config).
+
+###FilePath: app/features/accounts/constants/profit-rate-inquiry.constants.ts
+
+export const API_ENDPOINTS = {
+PROFIT_RATE_INQUIRY: '/accounts/profit-rate-inquiry', // placeholder for actual endpoint
+} as const;
+
+export enum ProductType {
+RTDEP = 'RTDEP',
+// Add other product types if present in api_endpoints
+}
+
+export const API_CONFIG = {
+BASE_URL: 'http://0.0.0.0:8080/v1/api', // placeholder base URL
+TIMEOUT: 30000,
+RETRY_COUNT: 3,
+} as const;
+
+text
+
+
+### 4. API Query File Pattern
+
+**Location:**
+`app/features/{feature}/queries/use-{endpoint-name}-query.ts`
+
+**Purpose:**
+Define RTK Query API endpoints using the types and constants.
+
+###FilePath: app/features/accounts/queries/use-profit-rate-inquiry-query.ts
+
+import {BaseQueryFn, FetchArgs, fetchBaseQuery} from '@reduxjs/toolkit/query/react';
+import {createApi} from '@reduxjs/toolkit/query/react';
+import {
+ProfitRateInquiryRequest,
+ProfitRateInquiryResponse,
+} from '@app/features/accounts/types/profit-rate-inquiry.types';
+import {API_CONFIG, API_ENDPOINTS} from '@app/features/accounts/constants/profit-rate-inquiry.constants';
+
+const baseQuery = fetchBaseQuery({
+baseUrl: API_CONFIG.BASE_URL,
+});
+
+export const accountsApi = createApi({
+reducerPath: 'accountsApi',
+baseQuery,
+endpoints: builder => ({
+profitRateInquiry: builder.mutation<ProfitRateInquiryResponse, ProfitRateInquiryRequest>({
+query: body => ({
+url: API_ENDPOINTS.PROFIT_RATE_INQUIRY, // placeholder for actual endpoint
+method: 'POST',
+body,
+// headers will be injected from hook via getHeaders wrapper
+}),
+}),
+}),
+});
+
+export const {useProfitRateInquiryMutation} = accountsApi;
+
+text
+
+
+### 5. Hook Integration Pattern
+
+**Location:**
+`app/features/{feature}/hooks/use-{screen-name}.ts`
+
+**Purpose:**
+Use the generated query and types inside the feature hook, with mock behavior initially and easy switch to real API.
+
+###FilePath: app/features/accounts/hooks/use-profit-rate-screen.ts
+
+import {useEffect, useState} from 'react';
+import {useHeaders} from '@app/features/authentication/hooks';
+import {usePostLoginHandler} from 'app/hooks/post-login-handler';
+import {
+ProfitRateInquiryRequest,
+ProfitRateInquiryResponse,
+} from '@app/features/accounts/types/profit-rate-inquiry.types';
+import {useProfitRateInquiryMutation} from '@app/features/accounts/queries/use-profit-rate-inquiry-query';
+import {ProductType} from '@app/features/accounts/constants/profit-rate-inquiry.constants';
+
+export const useProfitRateScreen = () => {
+const {getHeaders} = useHeaders();
+
+const {
+action: profitRateInquiryAction,
+data: profitRateInquiryResponse,
+error: profitRateInquiryError,
+} = usePostLoginHandler(useProfitRateInquiryMutation);
+
+const [isLoading, setIsLoading] = useState(false);
+const [profitRates, setProfitRates] = useState<ProfitRateInquiryResponse | null>(null);
+
+// Mock implementation using api_endpoints examples
+const fetchProfitRatesMock = async () => {
+setIsLoading(true);
+
+text
+const mockResponse: ProfitRateInquiryResponse = {
+  isSuccess: true,
+  lastUpdatedOn: '2025-04-28 12:06:13',
+  profitRateList: [
+    {
+      currencyCode: 'USD',
+      depositQuarter: '1',
+      depositRate: '3.5',
+      depositYear: '2025',
+      fromAmount: '5000',
+      toAmount: '50000',
+      isRecommendedRate: false,
+      productId: 'RTDEP',
+      tenure: 30,
+    },
+  ],
+};
+
+// NOTE: Currently using mock data derived from api_endpoints examples.
+// When real backend is ready, switch to fetchProfitRatesReal()
+setTimeout(() => {
+  setProfitRates(mockResponse);
+  setIsLoading(false);
+}, 500);
+};
+
+// Real API implementation using RTK Query
+const fetchProfitRatesReal = () => {
+const options: ProfitRateInquiryRequest = {
+productType: ProductType.RTDEP,
+};
+
+text
+const headers = getHeaders({screenId: 'ProfitRateScreen'});
+
+// usePostLoginHandler wraps RTK Query mutation
+profitRateInquiryAction({
+  headers,
+  request: options,
+} as any);
+};
+
+useEffect(() => {
+if (profitRateInquiryResponse?.isSuccess) {
+setProfitRates(profitRateInquiryResponse);
+}
+}, [profitRateInquiryResponse, profitRateInquiryError]);
+
+return {
+profitRates,
+isLoading,
+fetchProfitRatesMock,
+fetchProfitRatesReal,
+};
+};
+
+text
+
+
+### 6. View Integration Pattern
+
+In the view (`index.tsx`), call the hook methods and show loading/data using existing components:
+
+// inside Screen component body
+const {
+profitRates,
+isLoading,
+fetchProfitRatesMock,
+fetchProfitRatesReal,
+} = useProfitRateScreen();
+
+// example usage in JSX
+<SubmitButton
+id="SubmitButtonFetchProfitRates"
+label={t('AccountsProfitRateScreenBtnFetch')}
+onPress={fetchProfitRatesMock}
+/>
+
+// Render profitRates list using Label, InfoCard, etc.
+
+text
+
+
+### 7. API Integration Checklist
+
+- [ ] Parse `api_endpoints` to identify paths, methods, and schemas
+- [ ] Generate request/response interfaces in `types/{endpoint-name}.types.ts`
+- [ ] Generate API constants (endpoints, enums) in `constants/{endpoint-name}.constants.ts`
+- [ ] Generate RTK Query API definition in `queries/use-{endpoint-name}-query.ts`
+- [ ] Use mock implementation in hooks using example objects from `api_endpoints`
+- [ ] Provide separate real implementation that uses `usePostLoginHandler` + RTK Query
+- [ ] Always keep endpoint strings in constants (no hardcoded URLs in hooks/views)
+- [ ] Use path aliases for all API-related imports
+- [ ] Never place API types/queries/constants inside view folder
+
+
+---
+
+## TYPES.TS REQUIREMENTS
+
+**Define ALL function arguments, object types, and interfaces in types.ts**
+
+### What Goes in types.ts:
+
+```typescript
+###FilePath: app/features/{feature}/views/{screen-name}/types.ts
+
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {PaymentStatus, InstallmentStatus} from './constants';
+
+// Component props
+export interface ScreenNameProps {
+  navigation: NativeStackNavigationProp<any>;
+}
+
+// Data types
+export interface PaymentItem {
+  amount: number;
+  date: string;
+  status: PaymentStatus;  // Use enum type
+}
+
+export interface InstallmentData {
+  installmentStatus: InstallmentStatus;
+  merchantName: string;
+  merchantLogoUri: string;
+  totalAmount: number;
+  paidAmount: number;
+  remainingAmount: number;
+  startDate: string;
+  endDate: string;
+  payments: PaymentItem[];
+}
+
+// Function argument types
+export interface FormatAmountArgs {
+  amount: number;
+  currency: string;
+  locale?: string;
+}
+
+export interface CalculateTotalArgs {
+  payments: PaymentItem[];
+  includeStatus?: PaymentStatus[];
+}
+
+// Event handler types
+export type OnPaymentSelectHandler = (payment: PaymentItem) => void;
+export type OnStatusChangeHandler = (status: InstallmentStatus) => void;
+
+// Utility types
+export type AmountFormatter = (args: FormatAmountArgs) => string;
+export type TotalCalculator = (args: CalculateTotalArgs) => number;
+```
+
+**Rules:**
+1. ✅ Define all interfaces and types used in the view
+2. ✅ Define function argument object types
+3. ✅ Define event handler types
+4. ✅ Use enum types from constants.ts
+5. ✅ Export all types for use in hooks and other files
+6. ❌ Don't include StyleProp wrappers (handled by components)
+
+---
+
+## LAYOUT ALIGNMENT REQUIREMENTS
+
+**CRITICAL: Pay attention to flex-direction based on visual design**
+
+### Flex Direction Rules:
+
+**Analyze the design image to determine layout direction:**
+
+1. **Horizontal Layout** (side-by-side elements):
+   ```typescript
+   container: {
+     flexDirection: 'row',           // Elements in a row
+     justifyContent: 'space-between', // Horizontal spacing
+     alignItems: 'center',            // Vertical alignment
+   }
+   ```
+
+2. **Vertical Layout** (stacked elements):
+   ```typescript
+   container: {
+     flexDirection: 'column',         // Elements stacked (default)
+     justifyContent: 'flex-start',    // Vertical spacing
+     alignItems: 'flex-start',        // Horizontal alignment
+   }
+   ```
+
+### Common Layout Patterns:
+
+**Two-column layout (side-by-side):**
+```typescript
+<View style={styles.rowContainer}>
+  <View style={styles.leftColumn}>
+    <Label text="From" />
+    <Label text="23 Dec, 2024" />
+  </View>
+  <View style={styles.rightColumn}>
+    <Label text="To" />
+    <Label text="08 Jul, 2025" />
+  </View>
+</View>
+
+// Styles
+rowContainer: {
+  flexDirection: 'row',              // ← CRITICAL: row for side-by-side
+  justifyContent: 'space-between',
+  gap: 16,
+}
+```
+
+**Vertical list (stacked items):**
+```typescript
+<View style={styles.listContainer}>
+  <View style={styles.listItem}>
+    <Label text="Item 1" />
+  </View>
+  <View style={styles.listItem}>
+    <Label text="Item 2" />
+  </View>
+</View>
+
+// Styles
+listContainer: {
+  flexDirection: 'column',           // ← CRITICAL: column for stacking
+  gap: 12,
+}
+```
+
+### Layout Checklist:
+- [ ] Analyze if elements are side-by-side (row) or stacked (column)
+- [ ] Set flexDirection correctly based on visual layout
+- [ ] Use justifyContent for main axis spacing
+- [ ] Use alignItems for cross axis alignment
+- [ ] Test that layout matches Figma design structure
+
+---
+
+## NAMING CONVENTIONS & STANDARDS
+
+# NAMING CONVENTIONS & STANDARDS
+# This file contains all code conventions for React Native generation
+# =============================================================================
+# 1. IMPORT ORDER & PATH ALIASES
+# =============================================================================
+### 1. Import Order
+**STRICT ORDER - Must follow this sequence:**
+**IMPORTANT: Use path aliases (@app/...) instead of deep relative imports where possible.**
+// 1. React imports (always first)
+import React, {FC, useState, useEffect, useMemo} from 'react';
+import {View, Text, StyleSheet} from 'react-native';
+// 2. Third-party library imports
+import {useNavigation} from '@react-navigation/native';
+import {useFormik} from 'formik';
+// 3. Custom component imports - USE DIRECT IMPORTS (no Components.Label syntax)
+// Import each component directly by name
+import {
+ScreenContainer,
+Label,
+Input,
+SubmitButton,
+CustomCheckbox,
+InfoCard,
+} from '@app/components';
+// 4. Theme and utilities
+import {useNewTheme, Theme, translation, ContextualType} from 'react-core';
+// 5. Assets (SVG icons, images)
+import {IconName} from '@app/assets/svg';
+// 6. Feature-level imports (hooks, schemas) - USE PATH ALIASES
+import {useScreenName} from '@app/features/{feature}/hooks/use-screen-name';
+import {
+ScreenNameSchema,
+screenNameInitialValues,
+} from '@app/features/{feature}/schemas/screen-name-schema';
+// 7. Local view imports (types, styles, constants) - only these use relative paths
+import {getStyles} from './styles';
+import {ScreenNameProps} from './types';
+import {variants} from '@app/components/label/types';
+import {PaymentStatus} from './constants';
+### Path Aliases Configuration (from babel.config.js)
+alias: {
+'@app': './app',
+}
+**Import Mapping Examples:**
+- `@app/features/...` → `app/features/...`
+- `@app/components` → `app/components`
+- `@app/assets/svg` → `app/assets/svg`
+- `@app/constants` → `app/constants`
+**Import Rules:**
+1. ✅ Use `@app/features/{feature}/hooks/use-screen-name` instead of `../../hooks/use-screen-name`
+2. ✅ Use `@app/features/{feature}/schemas/screen-name-schema` instead of `../../schemas/screen-name-schema`
+3. ✅ Use `@app/components` for shared UI components
+4. ✅ Use `@app/assets/svg` for SVG icons
+5. ✅ Use `@app/constants` for shared application constants (if any)
+6. ❌ Avoid namespace imports: `import * as Components from '@app/components'`
+7. ❌ Avoid deep relative imports for features/hooks/components when alias exists
+8. ✅ Use relative imports ONLY for local view-level files (`./styles`, `./types`, `./translations`, `./constants`)
+**Export/Import Consistency:**
+- If a component is exported as:
+export const ScreenName = () => { ... }
+then import with:
+import {ScreenName} from '@app/features/...';
+- If a component is exported as:
+export default ScreenName;
+then import with:
+import ScreenName from '@app/features/...';
+# =============================================================================
+# 2. COMPONENT ID NAMING CONVENTION
+# =============================================================================
+### 2. Component ID Naming Convention
+**Pattern:** `<<ComponentName>><<FieldName>>`
+- Use **TitleCase** for both component name and field name
+- No spaces, no underscores, just concatenated TitleCase
+**Examples:**
+// Input components
+id="InputTotalExpenses"
+id="InputFinancialObligations"
+id="InputNickname"
+// Label components
+id="LabelTitle"
+id="LabelDescription"
+id="LabelScreenTitle"
+id="LabelScreenSubtitle"
+// Button components
+id="ButtonNext"
+id="SubmitButtonNextButton"
+// Checkbox components
+id="CustomCheckboxDisclosureCheckbox"
+id="CheckboxAcknowledgement"
+// Screen containers
+id="ScreenContainerMonthlyExpensesScreen"
+# =============================================================================
+# 3. TRANSLATION KEY PATTERN
+# =============================================================================
+### 3. Translation Key Pattern
+**Pattern:** `<<Journey>><<ScreenName>><<ComponentAbbreviation>><<FieldName>>`
+- All parts in TitleCase, no separators
+- Component abbreviation must be in proper case
+**Component Abbreviations:**
+- `Lbl` = Label
+- `Btn` = Button
+- `Txt` = Text input value
+- `Plc` = Placeholder
+- `Chk` = Checkbox
+- `Info` = Info/help text
+- `Error` = Error message
+**Examples:**
+// Labels
+title={t('CreditCardApplicationMonthlyExpensesLblTitle')}
+text={t('OnboardingMonthlyExpensesLblSubtitle')}
+// Buttons
+label={t('OnboardingMonthlyExpensesNextBtnLbl')}
+// Placeholders
+placeholder={t('OnboardingMonthlyExpensesPlcTotalExpenses')}
+placeholder={t('OnboardingMonthlyExpensesPlcFinancialOblgn')}
+// Checkboxes
+title={t('OnboardingMonthlyExpensesChkTitle')}
+linkTitle={t('OnboardingMonthlyExpensesChkLinkTitle')}
+// Info text
+text={t('OnboardingMonthlyExpensesInfoFinancialOblgn')}
+// Total/Summary
+text={t('OnboardingMonthlyExpensesLblTotalAmt')}
+# =============================================================================
+# 4. HOOKS & SCHEMAS PATTERNS
+# =============================================================================
+## CUSTOM HOOKS PATTERN
+### Hook File Structure: `app/features/{feature}/hooks/use-{screen-name}.ts`
+**Location:** At feature level, NOT inside view folder.
+**Purpose:** Centralize all business logic, state management, form handling, and event handlers.
+**Must Include:**
+1. All useState declarations
+2. Formik form management
+3. useMemo for computed values
+4. All event handlers (onChange, onPress, etc.)
+5. Validation logic
+6. Navigation logic
+7. API calls (if any)
+**Example Pattern:**
+###FilePath: app/features/{feature}/hooks/use-{screen-name}.ts
+import {useState, useMemo} from 'react';
+import {useFormik} from 'formik';
+import {useNavigation} from '@react-navigation/native';
+import {
+ScreenNameSchema,
+screenNameInitialValues,
+} from '@app/features/{feature}/schemas/screen-name-schema';
+import {
+ScreenNameInitialValuesType,
+} from '@app/features/{feature}/schemas/screen-name-schema';
+import {
+CalculateTotalArgs,
+OnPaymentSelectHandler,
+} from '@app/features/{feature}/views/{screen-name}/types';
+import {PaymentStatus} from '@app/features/{feature}/views/{screen-name}/constants';
+export const useScreenName = () => {
+// 1. State declarations
+const [fieldOne, setFieldOne] = useState<string>('');
+const [fieldTwo, setFieldTwo] = useState<string>('');
+const [isChecked, setIsChecked] = useState<boolean>(false);
+const navigation = useNavigation();
+// 2. Formik form management
+const formikForm = useFormik<ScreenNameInitialValuesType>({
+validateOnChange: true,
+validateOnBlur: true,
+initialValues: screenNameInitialValues,
+validationSchema: ScreenNameSchema,
+onSubmit: async (values) => {
+// Submit logic here
+console.log('Form submitted:', values);
+},
+});
+// 3. Helper functions (if needed)
+const parseAmount = (amountString: string): number => {
+return parseFloat(amountString.replace(/,/g, '') || '0');
+};
+// 4. Computed values with useMemo
+const isFormValid = useMemo(() => {
+return fieldOne !== '' && fieldTwo !== '' && isChecked;
+}, [fieldOne, fieldTwo, isChecked]);
+// 5. Event handlers
+const onChangeFieldOne = (text: string) => {
+setFieldOne(text);
+};
+const onChangeFieldTwo = (text: string) => {
+setFieldTwo(text);
+};
+const onCheckboxSelect = () => {
+setIsChecked(!isChecked);
+};
+const handleNext = () => {
+formikForm.handleSubmit();
+};
+const onBackButtonPress = () => {
+navigation.goBack();
+};
+// 6. Return all state, handlers, and computed values
+return {
+// State
+fieldOne,
+fieldTwo,
+isChecked,
+// Form
+formikForm,
+// Computed
+isFormValid,
+// Handlers
+onChangeFieldOne,
+onChangeFieldTwo,
+onCheckboxSelect,
+handleNext,
+onBackButtonPress,
+};
+};
+**Hook Development Guidelines:**
+Custom hook must include:
+1. All useState declarations for form fields and UI state
+2. Formik setup with schema and initial values
+3. useMemo for computed values (isFormValid, totals, etc.)
+4. Helper functions (parseAmount, formatData, etc.)
+5. Event handlers (onChange, onPress, onSelect, etc.)
+6. Navigation handlers (onBack, onNext, etc.)
+7. API call functions (if applicable)
+8. Return object with all state, handlers, and computed values
+## VALIDATION SCHEMAS PATTERN
+### Schema File Structure: `app/features/{feature}/schemas/{screen-name}-schema.ts`
+**Location:** At feature level, NOT inside view folder.
+**Purpose:** Define Yup validation rules, initial values, and form types.
+**Must Include:**
+1. Yup validation schema
+2. Initial values object
+3. TypeScript type for form values
+4. Import error message keys from constants (if used).
+**Example Pattern:**
+###FilePath: app/features/{feature}/schemas/{screen-name}-schema.ts
+import * as yup from 'yup';
+// import {Errors} from '@app/constants';
+export const ScreenNameSchema = yup.object().shape({
+fieldOne: yup
+.string()
+.min(3)
+.max(50)
+.required(),
+fieldTwo: yup
+.string()
+.matches(/^[0-9]+$/)
+.required(),
+});
+export const screenNameInitialValues = {
+fieldOne: '',
+fieldTwo: '',
+};
+export type ScreenNameInitialValuesType = {
+fieldOne: string;
+fieldTwo: string;
+};
+# =============================================================================
+# 5. TYPESCRIPT STYLE PROP TYPING
+# =============================================================================
+### TypeScript Style Prop Guidelines
+**CRITICAL: Proper style typing prevents circular dependencies and type errors.**
+- Do NOT define StyleProps interface in types.ts wrapping styles in `StyleProp<T>`.
+- Styles are defined as raw React Native style types in styles.ts.
+### ❌ WRONG APPROACH:
+// DON'T DO THIS in types.ts
+export interface StyleProps {
+container: StyleProp<ViewStyle>;
+screenTitle: StyleProp<TextStyle>;
+}
+### ✅ CORRECT APPROACH:
+**In types.ts – only define component props and data types:**
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+export interface ScreenNameProps {
+navigation: NativeStackNavigationProp<any>;
+// Add other non-style props as needed
+}
+export interface CalculateArgs {
+amount: number;
+percentage: number;
+}
+export interface UserData {
+name: string;
+email: string;
+age: number;
+}
+**In styles.ts – return raw style types:**
+import {StyleSheet, ViewStyle, TextStyle, ImageStyle} from 'react-native';
+import {Theme} from 'react-core';
+interface Styles {
+container: ViewStyle;
+headerContainer: ViewStyle;
+sectionTitle: TextStyle;
+datesContainer: ViewStyle;
+dateItem: ViewStyle;
+dateLabel: TextStyle;
+screenTitle: TextStyle;
+subTitle: TextStyle;
+image: ImageStyle;
+}
+export const getStyles = ({theme}: {theme: Theme}): Styles => {
+return StyleSheet.create<Styles>({
+container: {
+flex: 1,
+paddingHorizontal: 20,
+},
+headerContainer: {
+marginBottom: 16,
+},
+sectionTitle: {
+marginBottom: 12,
+},
+datesContainer: {
+flexDirection: 'row',
+justifyContent: 'space-between',
+},
+dateItem: {
+flex: 1,
+alignItems: 'center',
+},
+dateLabel: {
+fontSize: 14,
+color: theme.colors['content-secondary'],
+},
+screenTitle: {
+fontSize: 24,
+fontWeight: 'bold',
+color: theme.colors['content-primary'],
+},
+subTitle: {
+fontSize: 16,
+color: theme.colors['content-secondary'],
+marginBottom: 20,
+},
+});
+};
+**In index.tsx – use styles directly:**
+const styles = getStyles({theme});
+<Label
+id="LabelInstallmentFrom"
+text={t('MeemAshalInstallmentsLblFrom')}
+variant={variants.bodyRegularS}
+style={styles.dateLabel}
+/>
+<View style={styles.container}> {/* content */} </View> ```
+=============================================================================
+6. VIEW COMPONENT PATTERN WITH CORRECT IMPORTS
+=============================================================================
+View File: app/features/{feature}/views/{screen-name}/index.tsx
+Purpose: Pure UI component – only rendering, no business logic.
+Component Name Rule: The component exported from index.tsx MUST use the screen name (folder name) in TitleCase.
+Correct Pattern:
+###FilePath: app/features/{feature}/views/{screen-name}/index.tsx
+// 1. React imports
+import React from 'react';
+import {View} from 'react-native';
+// 2. Third-party imports
+// (if needed)
+// 3. Direct component imports
+import {
+  ScreenContainer,
+  Label,
+  Input,
+  SubmitButton,
+  CustomCheckbox,
+} from '@app/components';
+// 4. Theme and utilities
+import {useNewTheme, translation} from 'react-core';
+// 5. Assets
+import {IconName} from '@app/assets/svg';
+// 6. Feature-level imports with PATH ALIASES
+import {useScreenName} from '@app/features/{feature}/hooks/use-screen-name';
+// 7. Local view imports
+import {getStyles} from './styles';
+import {ScreenNameProps} from './types';
+import {variants} from '@app/components/label/types';
+// Component name matches screen folder name
+const ScreenName: React.FC<ScreenNameProps> = ({navigation}) => {
+  const theme = useNewTheme();
+  const styles = getStyles({theme});
+  const {t} = translation.useTranslation();
+  const {
+    fieldOne,
+    fieldTwo,
+    isChecked,
+    formikForm,
+    isFormValid,
+    onChangeFieldOne,
+    onChangeFieldTwo,
+    onCheckboxSelect,
+    handleNext,
+    onBackButtonPress,
+  } = useScreenName();
+  return (
+    <ScreenContainer
+      id="ScreenContainerScreenName"
+      showGoBackIcon
+      onPressLeftContent={onBackButtonPress}
+      bottomScreenContent={
+        <View style={styles.bottomContentContainer}>
+          <SubmitButton
+            id="SubmitButtonNext"
+            label={t('JourneyScreenNameBtnNext')}
+            onPress={handleNext}
+            disabled={!isFormValid}
+          />
+        </View>
+      }>
+      <View style={styles.container}>
+        <View style={styles.headerContainer}>
+          <Label
+            id="LabelScreenTitle"
+            text={t('JourneyScreenNameLblTitle')}
+            variant={variants.titleL}
+            style={styles.screenTitle}
+          />
+          <Label
+            id="LabelScreenSubtitle"
+            text={t('JourneyScreenNameLblSubtitle')}
+            variant={variants.bodyRegularM}
+            style={styles.subTitle}
+          />
+        </View>
+        <View style={styles.formSection}>
+          <Input
+            id="InputFieldOne"
+            placeholder={t('JourneyScreenNamePlcFieldOne')}
+            value={fieldOne}
+            setValue={onChangeFieldOne}
+            errorText={
+              formikForm.touched.fieldOne ? formikForm.errors.fieldOne : ''
+            }
+          />
+          <Input
+            id="InputFieldTwo"
+            placeholder={t('JourneyScreenNamePlcFieldTwo')}
+            value={fieldTwo}
+            setValue={onChangeFieldTwo}
+            errorText={
+              formikForm.touched.fieldTwo ? formikForm.errors.fieldTwo : ''
+            }
+          />
+        </View>
+        <View style={styles.checkboxContainer}>
+          <CustomCheckbox
+            id="CustomCheckboxConsent"
+            isChecked={isChecked}
+            onPress={onCheckboxSelect}
+            title={t('JourneyScreenNameChkTitle')}
+          />
+        </View>
+      </View>
+    </ScreenContainer>
+  );
+};
+export default ScreenName;
+// or: export const ScreenName = (props: ScreenNameProps) => { ... };
+=============================================================================
+7. ENUMS AND CONSTANTS
+=============================================================================
+File: app/features/{feature}/views/{screen-name}/constants.ts
+Rule: Create this file ONLY if there are comparisons or fixed typed values (statuses, types, options, etc.).
+When to Create constants.ts:
+Status comparisons (e.g., 'active', 'pending', 'completed')
+Tag types: error/success/info
+Payment status values
+Fixed dropdown options
+Any repeated magic strings/numbers used in conditions
+Example constants.ts:
+###FilePath: app/features/{feature}/views/{screen-name}/constants.ts
+export enum PaymentStatus {
+  PAID = 'paid',
+  FAILED = 'failed',
+  PENDING = 'pending',
+}
+export enum InstallmentStatus {
+  ACTIVE = 'active',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+}
+export const PAYMENT_STATUSES = {
+  PAID: 'paid' as const,
+  FAILED: 'failed' as const,
+  PENDING: 'pending' as const,
+} as const;
+export type PaymentStatusType =
+  (typeof PAYMENT_STATUSES)[keyof typeof PAYMENT_STATUSES];
+Usage:
+import {PaymentStatus} from './constants';
+if (payment.status === PaymentStatus.PAID) {
+  // ...
+}
+Rule:
+❌ Do NOT compare against raw literals like 'paid', 'failed' directly in conditions.
+✅ Use enums or typed constants from constants.ts.
+=============================================================================
+8. TYPES.TS COVERAGE
+=============================================================================
+File: app/features/{feature}/views/{screen-name}/types.ts
+Rules:
+All function arguments used in hooks or views must have interfaces/types defined here.
+All data objects (e.g., PaymentItem, InstallmentData) must be defined here.
+Event handlers must have explicit types.
+Example:
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {PaymentStatus, InstallmentStatus} from './constants';
+export interface ScreenNameProps {
+  navigation: NativeStackNavigationProp<any>;
+}
+export interface PaymentItem {
+  amount: number;
+  date: string;
+  status: PaymentStatus;
+}
+export interface InstallmentData {
+  installmentStatus: InstallmentStatus;
+  merchantName: string;
+  merchantLogoUri: string;
+  totalAmount: number;
+  paidAmount: number;
+  remainingAmount: number;
+  startDate: string;
+  endDate: string;
+  payments: PaymentItem[];
+}
+export interface CalculateTotalArgs {
+  payments: PaymentItem[];
+  includeStatuses?: PaymentStatus[];
+}
+export type OnPaymentSelectHandler = (payment: PaymentItem) => void;
+export type OnStatusChangeHandler = (status: InstallmentStatus) => void;
+=============================================================================
+9. STYLING REQUIREMENTS & FLEX LAYOUT
+=============================================================================
+StyleSheet Usage
+ALWAYS use React Native's standard StyleSheet.create():
+import {StyleSheet, ViewStyle, TextStyle} from 'react-native';
+import {Theme} from 'react-core';
+interface Styles {
+  container: ViewStyle;
+  title: TextStyle;
+}
+export const getStyles = ({theme}: {theme: Theme}): Styles => {
+  return StyleSheet.create<Styles>({
+    container: {
+      paddingHorizontal: 16,
+      paddingTop: 20,
+      backgroundColor: theme.colors['background-01'],
+    },
+    title: {
+      color: theme.colors['content-primary'],
+      marginBottom: 24,
+    },
+  });
+};
+DO NOT use third-party styling libraries:
+// ❌ WRONG - Do not use ScaledSheet
+import {ScaledSheet} from 'react-native-size-matters';
+// ❌ WRONG - Do not use string-based syntax
+paddingTop: '20@vs';
+paddingHorizontal: '16@s';
+// ❌ WRONG - Do not use styled-components
+import styled from 'styled-components/native';
+Rules:
+Use StyleSheet.create() from react-native only.
+All spacing values must be numbers, not strings.
+No ScaledSheet, styled-components, or CSS-in-JS libraries.
+Keep styles in separate styles.ts file with a typed Styles interface.
+Use theme colors for all color values (no hardcoded hex).
+Flex Layout Alignment
+Goal: Match Figma layout structure, spacing, and alignment – especially flex-direction.
+Use flexDirection: 'row' when elements are visually side-by-side (horizontal).
+Use flexDirection: 'column' when elements are stacked vertically.
+Use justifyContent for main-axis spacing.
+Use alignItems for cross-axis alignment.
+Horizontal (row) example:
+rowContainer: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: 16,
+},
+Vertical (column) example:
+columnContainer: {
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  gap: 12,
+},
+Layout Checklist:
+Identify if a group is horizontal (row) or vertical (column) from Figma.
+Set flexDirection accordingly.
+Ensure text and icons align as per design using alignItems.
+Use consistent spacing (margin, padding, gap) to match the design.
+# =============================================================================
+# 10. VARIANT TYPE CASE AWARENESS
+# =============================================================================
+**CRITICAL:** Use exact variant names from the `ContextualType` enum.
+### Variant Format Pattern
+**Pattern:** `{style}{Weight}{Size}`
+- **Style:** `title` or `body` (lowercase)
+- **Weight:** `Semibold`, `Medium`, `Regular` (capitalized) - only for body
+- **Size:** `XL`, `L`, `M`, `S`, `XS` (uppercase)
+### Available Variants
+import {variants} from '@app/components/label/types';
+// Title variants (no weight)
+variants.titleXL
+variants.titleL
+variants.titleM
+variants.titleS
+variants.titleXS
+// Body variants (with weight)
+variants.bodySemiBoldL
+variants.bodyMediumL
+variants.bodyRegularL
+variants.bodySemiBoldM
+variants.bodyMediumM
+variants.bodyRegularM
+variants.bodySemiBoldS
+variants.bodyMediumS
+variants.bodyRegularS
+variants.bodySemiboldXS // Note: lowercase 'bold' in XS
+variants.bodyMediumXS
+variants.bodyRegularXS
+### ⚠️ Special Case: bodySemiboldXS
+// Note the lowercase 'b' in 'bold' for XS size only
+variants.bodySemiboldXS // ✅ Correct (lowercase 'b')
+variants.bodySemiBoldXS // ❌ Wrong
+### Common Usage Examples
+// Figma: 24px / 600 → Title L
+<Label variant={variants.titleL} />
+// Figma: 16px / 500 → Body Medium M
+<Label variant={variants.bodyMediumM} />
+// Figma: 14px / 400 → Body Regular S
+<Label variant={variants.bodyRegularS} />
+// Figma: 12px / 600 → Body Semibold XS (note lowercase 'b')
+<Label variant={variants.bodySemiboldXS} />
+### Quick Figma Mapping
+| Figma | Variant |
+|-------|---------|
+| 28px+ / Any | `titleXL` |
+| 24px / Any | `titleL` |
+| 20px / Any | `titleM` |
+| 16px / 600 | `bodySemiBoldM` |
+| 16px / 500 | `bodyMediumM` |
+| 16px / 400 | `bodyRegularM` |
+| 14px / 600 | `bodySemiBoldS` |
+| 14px / 500 | `bodyMediumS` |
+| 14px / 400 | `bodyRegularS` |
+| 12px / 600 | `bodySemiboldXS` ⚠️ |
+| 12px / 500 | `bodyMediumXS` |
+| 12px / 400 | `bodyRegularXS` |
+**Weight mapping:** 400=Regular, 500=Medium, 600=Semibold
+### Common Mistakes
+// ❌ WRONG
+variants.TitleL // Capital T
+variants.bodyRegularm // Lowercase size
+variants.bodySemiBoldXS // Should be bodySemiboldXS
+variants.body_medium_s // Underscores
+// ✅ CORRECT
+variants.titleL
+variants.bodyRegularM
+variants.bodySemiboldXS // Special case
+variants.bodyMediumS
+=============================================================================
+11. DESIGN MATCHING REQUIREMENTS
+=============================================================================
+Replicate the component hierarchy (containers, sections, cards, rows, etc.).
+Match margins, paddings, gaps, and spacing between elements.
+Preserve horizontal and vertical alignments.
+Respect typography styles (font size, weight, color).
+Use theme colors instead of hardcoded values.
+Match widths, heights, and flex behavior visible in Figma.
+Maintain visual hierarchy and grouping.
+# =============================================================================
+# 12. API INTEGRATION STRUCTURE
+# =============================================================================
+### API File Organization (Feature Level)
+**All API-related files at feature level, NOT inside view folder.**
+app/features/{feature}/
+├── queries/ # RTK Query definitions
+│ └── use-{endpoint-name}-query.ts
+├── types/ # API type definitions
+│ └── {endpoint-name}.types.ts
+└── constants/ # API constants
+└── {endpoint-name}.constants.ts
+text
+### Import Pattern for API Files
+// In hooks: use-screen-name.ts
+import {usePostLoginHandler} from 'app/hooks/post-login-handler';
+import {useProfitRateInquiryMutation} from '@app/features/{feature}/queries/use-profit-rate-inquiry-query';
+import {
+ProfitRateInquiryRequest,
+ProfitRateInquiryResponse,
+} from '@app/features/{feature}/types/profit-rate-inquiry.types';
+import {API_ENDPOINTS} from '@app/features/{feature}/constants/profit-rate-inquiry.constants';
+text
+### Query File Pattern
+**Purpose:** RTK Query API endpoint definitions
+###FilePath: app/features/{feature}/queries/use-{endpoint-name}-query.ts
+import {createApi, fetchBaseQuery} from '@reduxjs/toolkit/query/react';
+import {RequestType, ResponseType} from '@app/features/{feature}/types/{endpoint}.types';
+export const endpointApi = createApi({
+reducerPath: 'endpointApi',
+baseQuery: fetchBaseQuery({baseUrl: '/v1/api'}),
+endpoints: (builder) => ({
+mutationName: builder.mutation<ResponseType, RequestType>({
+query: (body) => ({
+url: '/path/to/endpoint',
+method: 'POST',
+body,
+}),
+}),
+}),
+});
+export const {useMutationNameMutation} = endpointApi;
+text
+### Types File Pattern
+**Purpose:** API request/response TypeScript interfaces
+###FilePath: app/features/{feature}/types/{endpoint-name}.types.ts
+export interface RequestTypeName {
+field1: string;
+field2: number;
+}
+export interface ResponseTypeName {
+isSuccess: boolean;
+data: DataType[];
+}
+export interface DataType {
+id: string;
+value: string;
+}
+text
+### Constants File Pattern
+**Purpose:** API endpoints, enums, configuration
+###FilePath: app/features/{feature}/constants/{endpoint-name}.constants.ts
+export const API_ENDPOINTS = {
+ENDPOINT_NAME: '/path/to/endpoint',
+} as const;
+export enum ApiStatus {
+SUCCESS = 'success',
+FAILED = 'failed',
+}
+text
+### Hook Integration Pattern
+**Mock API (Initial Development):**
+// TODO: Replace with actual API
+const mockData: ResponseType = {
+isSuccess: true,
+data: [],
+};
+text
+**Actual API Integration:**
+const {
+action: apiAction,
+data: apiResponse,
+error: apiError,
+} = usePostLoginHandler(useApiMutation);
+const callApi = () => {
+const options = {
+headers: getHeaders({screenId: 'ScreenID'}),
+request: requestBody,
+};
+apiAction(options);
+};
+useEffect(() => {
+if (apiResponse?.isSuccess) {
+// Handle success
+}
+}, [apiResponse, apiError]);
+text
+### Rules
+1. ✅ All queries in `queries/` folder at feature level
+2. ✅ All API types in `types/` folder at feature level
+3. ✅ All API constants in `constants/` folder at feature level
+4. ✅ Use mock data initially with TODO comments
+5. ✅ Use path aliases for imports (`@app/features/...`)
+6. ✅ Follow RTK Query patterns from sample code
+7. ✅ Use `usePostLoginHandler` for API calls
+8. ✅ Handle loading, success, and error states in hooks
+9. ❌ Do NOT put queries/types/constants inside view folder
+10. ❌ Do NOT use relative imports for feature-level files
+
+(Above content includes: strict import order, component ID naming, translation key patterns, hook & schema patterns, TypeScript style guidelines, and proper export patterns.)
+
+---
+
+## TYPESCRIPT & STYLE PROP REQUIREMENTS
+
+**Goal:** Ensure correct typing of all styles and style props for React Native components.
+
+### General Rules
+
+- Do **not** define a `StyleProps` interface in `types.ts` that wraps styles in `StyleProp<T>`.
+- Define raw styles (ViewStyle, TextStyle, ImageStyle) in `styles.ts` and type `StyleSheet.create` with a `Styles` interface.
+- Component props that accept styles (like `Label.style`) should be typed as `StyleProp<TextStyle>` etc. in the component definition (already done in existing components).
+- Passing `styles.someTextStyle` (type `TextStyle`) into a prop of type `StyleProp<TextStyle>` is valid and expected.
+
+### In types.ts
+
+```typescript
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+
+export interface ScreenNameProps {
+  navigation: NativeStackNavigationProp<any>;
+  // Add other non-style props if needed
+}
+
+// Define all function argument types
+export interface CalculateArgs {
+  amount: number;
+  percentage: number;
+}
+
+// Define all object types used in the component
+export interface UserData {
+  name: string;
+  email: string;
+  age: number;
+}
+```
+
+### In styles.ts
+
+```typescript
+import {StyleSheet, ViewStyle, TextStyle} from 'react-native';
+import {Theme} from 'react-core';
+
+interface Styles {
+  container: ViewStyle;
+  headerContainer: ViewStyle;
+  rowContainer: ViewStyle;           // For flex-row layouts
+  columnContainer: ViewStyle;        // For flex-column layouts
+  sectionTitle: TextStyle;
+  dateLabel: TextStyle;
+}
+
+export const getStyles = ({theme}: {theme: Theme}): Styles => {
+  return StyleSheet.create<Styles>({
+    container: {
+      flex: 1,
+      paddingHorizontal: 20,
+    },
+    headerContainer: {
+      marginBottom: 16,
+    },
+    rowContainer: {
+      flexDirection: 'row',          // Horizontal layout
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: 16,
+    },
+    columnContainer: {
+      flexDirection: 'column',       // Vertical layout
+      gap: 12,
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.colors['content-primary'],
+    },
+    dateLabel: {
+      fontSize: 14,
+      color: theme.colors['content-secondary'],
+    },
+  });
+};
+```
+
+**Example usage in View:**
+
+```typescript
+<Label
+  id="LabelInstallmentFrom"
+  text={t('MeemAshalInstallmentsLblFrom')}
+  variant={variants.bodyRegularS}
+  style={styles.dateLabel}  // Label.style is StyleProp<TextStyle>
+/>
+```
+
+---
+
+## DESIGN MATCHING REQUIREMENTS
+
+**CRITICAL: Match the Figma design structure, layout, spacing, and alignment as closely as possible.**
+
+When analyzing the attached Figma design image:
+
+1. **Layout Structure:** Replicate the exact component hierarchy (containers, sections, cards, rows, etc.).
+2. **Flex Direction:** Identify if elements are side-by-side (row) or stacked (column) and set flexDirection accordingly.
+3. **Spacing:** Match margins, paddings, gaps, and spacing between elements.
+4. **Alignment:** Preserve all horizontal and vertical alignments (justifyContent, alignItems).
+5. **Typography:** Respect font size, weight, color, and line-height.
+6. **Colors:** Use theme colors that correspond to the design palette.
+7. **Sizing:** Match widths, heights, and flex settings where visible.
+8. **Visual Hierarchy:** Maintain the same grouping and emphasis as the design.
+
+**Layout Checklist:**
+
+- [ ] Main container type identified (e.g., ScreenContainer, ScrollView, etc.)
+- [ ] Header and title areas structured correctly
+- [ ] Form sections grouped as in design
+- [ ] Flex-direction set correctly (row vs column) for each container
+- [ ] Buttons placed correctly (bottom fixed, inline, etc.)
+- [ ] Any decorative or informational components (cards, tags, chips) mapped to existing components
+- [ ] Icons and images placed and sized as in Figma
+- [ ] Spacing matches design (margins, paddings, gaps)
+
+---
+
+## 1. COMPONENT MAPPING
+
+Feature:
+Screen Name:
+Component Name
+screen | ScreenContainer Component | inverted container + backbutton + title
+label | Label | Header
+label | Label | Subtitle
+nan | Figma Asset Svg Icons | icons
+nan | nan | nan
+nan | View | Container for table view
+dropdown | Dropdown accordian | us dollar accordian
+options-lists | ActionList Component | navigation action list
+nan | nan | nan
+submit-button | SubmitButton Component | open murabaha account bottom button
+FeatureName: murabaha | nan | nan
+ScreenName(Viewname):murabaha-deposit | nan | nan
+
+FeatureName:
+ScreenName(ViewName):
+AdditionalContext:
+
+---
+
+## 2. EXISTING CUSTOM COMPONENTS
+
+
+// COMPONENT: dropdown
+// dropdown/dropdown-utility.ts
+import {Animated} from 'react-native';
+import {ArrowTypeProps, AnimationProps} from './types';
+export const arrowType: (properties: ArrowTypeProps) => string = properties => {
+  const {theme, isDropdownFocused, errorText, disabled} = properties;
+  if (isDropdownFocused && errorText === undefined) {
+    return theme.colors['icon-interactive-secondary-active'];
+  } else if (disabled) {
+    return theme.colors['icon-interactive-secondary-disabled'];
+  } else if (errorText !== undefined) {
+    return theme.colors['icon-semantic-error-01'];
+  } else {
+    return theme.colors['icon-interactive-secondary-enabled'];
+  }
+};
+export const animatedDuration = 200;
+export const handleAnimation = ({
+  AnimatedValue,
+  toValue,
+  duration,
+  useNativeDriver,
+}: AnimationProps) => {
+  return Animated.timing(AnimatedValue, {
+    toValue: toValue,
+    duration: duration,
+    useNativeDriver: useNativeDriver,
+  });
+};
+
+// dropdown/index.tsx
+import React, {
+  FC,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+  useState,
+} from 'react';
+import { Pressable, View, Animated, StatusBar } from 'react-native';
+import { translation, useNewTheme } from 'react-core';
+import { getStyle } from './styles';
+import { DropdownProps } from './types';
+import { SvgArrowIcon } from '@app/assets/svg/arrow-icon';
+import { arrowType, handleAnimation, animatedDuration } from './dropdown-utility';
+import { ErrorText } from '../error-text';
+import { HelperText } from '../helper-text';
+import { Label } from '../label';
+import { variants } from '../label/types';
+import { isRTLLanguage } from 'app/utils/language-utils';
+const Dropdown: FC<DropdownProps> = (properties: DropdownProps) => {
+  const {
+    id,
+    placeholder,
+    inputText,
+    helperText,
+    errorText,
+    disabled = false,
+    selectFlag,
+    BottomSheet,
+    containerStyle,
+    prefixIcon,
+    isDropDownActive = true,
+    onPress,
+    onBottomSheetClose,
+    deafultarrow = false,
+    placeHolderOutputRange = [14, 16],
+    invertedStatusBarColor,
+  } = properties;
+  const [isDropdownFocused, setIsDropdownFocused] = useState(
+    () => ({
+      id: id,
+      value: inputText,
+      active: false,
+    }),
+    //[id, inputText],
+  );
+  const theme = useNewTheme();
+  const styles = getStyle({ theme, disabled, inputText });
+  const { t } = translation.useTranslation();
+  const placeholderPosition = useRef(new Animated.Value(28)).current;
+  const placeholderFontSize = useRef(
+    new Animated.Value(inputText ? 0 : 1),
+  ).current;
+  const arrowRotation = useRef(new Animated.Value(0)).current;
+  const [arrowUp, setArrowUp] = useState(false);
+  const placeholderTransformPosition = placeholderPosition.interpolate({
+    inputRange: [0, 50],
+    outputRange: [28, 0],
+  });
+  // const placeholderTransformFontSize = placeholderFontSize.interpolate({
+  //   inputRange: [0, 16],
+  //   // outputRange: [14, 16],
+  //   outputRange: isDropdownFocused.value ? [14, 16] : placeHolderOutputRange,
+  // });
+  const animatedPlaceholderStyle = {
+    transform: [
+      {
+        translateY: placeholderTransformPosition,
+      },
+    ],
+    // fontSize: placeholderTransformFontSize,
+  };
+  // changed on a issue fix for droppdown.
+  // const animatedArrowStyle = {
+  //   transform: [
+  //     deafultarrow
+  //       ? {
+  //           rotate: arrowRotation.interpolate({
+  //             inputRange: [0, 1],
+  //             outputRange: ['-180deg', '-180deg'],
+  //           }),
+  //         }
+  //       : {
+  //           rotate: arrowRotation.interpolate({
+  //             inputRange: [0, 1],
+  //             outputRange: ['-180deg', '0deg'],
+  //           }),
+  //         },
+  //   ],
+  // };
+  const animatedArrowStyle = {
+    transform: [
+      {
+        rotate: arrowRotation.interpolate({
+          inputRange: [0, 1],
+          outputRange: ['0deg', '-180deg'],
+        }),
+      },
+    ],
+  };
+  useEffect(() => {
+    Animated.timing(arrowRotation, {
+      toValue: isDropdownFocused.active ? 1 : 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [isDropdownFocused]);
+  const inputTextValueAnimation = useCallback(() => {
+    Animated.parallel([
+      handleAnimation({
+        AnimatedValue: placeholderFontSize,
+        toValue: inputText ? 0 : 1,
+        duration: animatedDuration,
+        useNativeDriver: true,
+      }),
+      handleAnimation({
+        AnimatedValue: placeholderPosition,
+        toValue: inputText ? 50 : 25,
+        duration: animatedDuration,
+        useNativeDriver: true,
+      }),
+      // commented..
+      // handleAnimation({
+      //   AnimatedValue: arrowRotation,
+      //   toValue: isDropdownFocused.active ? 1 : 0,
+      //   duration: animatedDuration,
+      //   useNativeDriver: true,
+      // }),
+      // handleAnimation({
+      //   AnimatedValue: arrowRotation,
+      //   toValue: inputText ? 1 : 0,
+      //   duration: animatedDuration,
+      //   useNativeDriver: true,
+      // }),
+    ]).start();
+  }, [
+    placeholderFontSize,
+    inputText,
+    placeholderPosition,
+    arrowRotation,
+    arrowUp,
+  ]);
+  useEffect(() => {
+    if (inputText || !inputText) {
+      inputTextValueAnimation();
+    }
+    isDropdownFocused.value = inputText;
+    if (!isDropdownFocused.active && isDropdownFocused.value !== '') {
+      isDropdownFocused.active = false;
+    }
+  }, [
+    inputTextValueAnimation,
+    inputText,
+    isDropdownFocused,
+    isDropdownFocused.value,
+    isDropdownFocused.active,
+    isDropDownActive,
+  ]);
+  return (
+    <View key={id} style={styles.viewContainer}>
+      <Pressable
+        disabled={disabled}
+        onPress={() => {
+          if (invertedStatusBarColor) {
+            StatusBar.setBarStyle('dark-content');
+          }
+          onPress?.();
+          if (!isDropdownFocused.active) {
+            setIsDropdownFocused(prev => ({
+              ...prev,
+              value: '',
+              active: true,
+            }));
+          } else {
+            setIsDropdownFocused(prev => ({
+              ...prev,
+              value: '',
+              active: false,
+            }));
+          }
+        }}
+        style={() => [
+          styles.pressableStyle,
+          disabled && styles.pressableDisabledState,
+          isDropdownFocused.active && styles.pressableActiveState,
+          errorText?.length !== undefined && styles.pressableErrorState,
+          containerStyle,
+        ]}>
+        {selectFlag ? (
+          <View style={styles.flagViewStyle}>{selectFlag}</View>
+        ) : null}
+        <View style={styles.textViewStyle}>
+          <Animated.Text
+            style={[styles.placeholderStyle, animatedPlaceholderStyle]}
+            numberOfLines={1}
+            ellipsizeMode="tail">
+            {placeholder}
+          </Animated.Text>
+          <View style={styles.iconContainer}>
+            {prefixIcon && !isRTLLanguage() ? (
+              <View style={styles.iconViewStyle}>{prefixIcon}</View>
+            ) : (
+              <></>
+            )}
+            <Label
+              id="dropdown"
+              text={inputText ?? ''}
+              style={styles.inputTextStyle}
+              variant={variants.bodyRegularM}
+              numberOfLines={1}
+            />
+            {prefixIcon && isRTLLanguage() ? (
+              <View style={styles.iconViewStyle}>{prefixIcon}</View>
+            ) : (
+              <></>
+            )}
+          </View>
+        </View>
+        {!disabled && (
+          <View style={styles.imageViewStyle}>
+            <Animated.View style={[styles.imageStyle, animatedArrowStyle]}>
+              <SvgArrowIcon
+                color={arrowType({
+                  isDropdownFocused: isDropdownFocused.active,
+                  errorText: errorText,
+                  disabled: disabled,
+                  theme: theme,
+                })}
+              />
+            </Animated.View>
+          </View>
+        )}
+      </Pressable>
+      {errorText || helperText ? (
+        <View style={styles.textHelperViewStyle}>
+          {(errorText && (
+            <ErrorText id="dropdown" errorText={t(errorText)} />
+          )) ||
+            (helperText && (
+              <HelperText id="dropdown" helperText={helperText} />
+            ))}
+        </View>
+      ) : null}
+      {BottomSheet &&
+        React.cloneElement(BottomSheet, {
+          onBottomSheetClose: () => {
+            BottomSheet.props?.onBottomSheetClose?.();
+            onBottomSheetClose?.();
+            if (invertedStatusBarColor) {
+              StatusBar.setBarStyle('light-content');
+            }
+            console.log("Bottomsheet closed");
+            setIsDropdownFocused(prev => ({ ...prev, active: false }));
+          },
+        })}
+    </View>
+  );
+};
+export { Dropdown };
+
+// dropdown/styles.ts
+import {StyleSheet} from 'react-native';
+import {DropdownStyleProps} from './types';
+import {Typography} from 'app/utils';
+import {isRTLLanguage} from 'app/utils/language-utils';
+import {getCurrentLanguage, getFontStyles, Language} from 'react-core';
+import {variants} from '../label/types';
+export const getStyle = (properties: DropdownStyleProps) => {
+  const {theme, disabled, inputText} = properties;
+  return StyleSheet.create({
+    viewContainer: {
+      width: '100%',
+    },
+    pressableStyle: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      width: '100%',
+      height: 64,
+      backgroundColor: theme.colors['surface-interactive-secondary-enabled'],
+      borderRadius: 8,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      gap: 16,
+      borderWidth: disabled ? 0 : 1,
+      borderColor: theme.colors['surface-interactive-secondary-enabled'],
+    },
+    pressableActiveState: {
+      borderColor: theme.colors['border-interactive-active'],
+    },
+    pressableDisabledState: {
+      backgroundColor: theme.colors['surface-interactive-secondary-disabled'],
+    },
+    pressableErrorState: {
+      backgroundColor: theme.colors['surface-semantic-error-01'],
+      borderColor: theme.colors['border-semantic-error'],
+    },
+    textViewStyle: {
+      minHeight: 24,
+      // maxWidth: '90%',
+      flex: 1,
+      gap: 4,
+    },
+    flagViewStyle: {
+      height: 24,
+      width: 24,
+    },
+    imageViewStyle: {
+      width: 24,
+      height: 24,
+    },
+    imageStyle: {
+      // width: 12,
+      // height: 6,
+      // top: 9,
+      // left: 6,
+      // borderRadius: 0.5,
+    },
+    textHelperViewStyle: {
+      // paddingLeft: 8,
+      marginTop: 8,
+    },
+    inputTextStyle: {
+      // flex: 1, // affect symbols in arabic flow
+      color: theme.colors['content-primary'],
+    },
+    placeholderStyle: {
+      color: theme.colors['content-secondary'],
+      height: inputText ? 16 : 24,
+      alignItems: isRTLLanguage() ? 'flex-end' : 'flex-start',
+      textAlign: 'left',
+      ...getFontStyles(
+        inputText ? variants.bodyRegularXS : variants.bodyRegularM,
+        getCurrentLanguage() as Language,
+      ),
+      width: '90%',
+      // flex:1,
+    },
+    flagAndTextContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 16,
+    },
+    iconContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    iconViewStyle: {
+      paddingRight: isRTLLanguage() ? 0 : 5,
+      paddingLeft: isRTLLanguage() ? 5 : 0,
+    },
+  });
+};
+
+// dropdown/types.ts
+import {Animated, StyleProp, ViewStyle} from 'react-native';
+import {Theme} from 'react-core';
+import {ReactNode} from 'react';
+export interface DropdownProps {
+  id: string;
+  inputText?: string;
+  BottomSheet: React.JSX.Element;//ReactNode;
+  selectFlag?: React.JSX.Element;
+  disabled?: boolean;
+  placeholder?: string;
+  helperText?: string;
+  errorText?: string | false | undefined;
+  containerStyle?: StyleProp<ViewStyle>;
+  onPress?: () => void;
+  prefixIcon?: React.JSX.Element;
+  isDropDownActive?: boolean;
+  onBottomSheetClose?: () => void;
+  deafultarrow?: boolean;
+  isHandleArrowAnimation?: boolean;
+  placeHolderOutputRange?: number[] | string[];
+  invertedStatusBarColor?:boolean;
+}
+export interface SvgColorProps {
+  stroke: string;
+}
+export type AnimationProps = {
+  AnimatedValue: Animated.Value;
+  toValue:
+    | number
+    | Animated.Value
+    | Animated.ValueXY
+    | {
+        x: number;
+        y: number;
+      }
+    | Animated.AnimatedInterpolation<number>;
+  duration: number;
+  useNativeDriver: boolean;
+};
+export interface ArrowTypeProps {
+  theme: Theme;
+  isDropdownFocused: boolean;
+  errorText: string | undefined;
+  disabled: boolean | undefined;
+}
+export interface DropdownStyleProps {
+  theme: Theme;
+  disabled?: boolean;
+  inputText:string;
+}
+
+
+// COMPONENT: label
+// label/index.tsx
+import React, {FC} from 'react';
+import {Text} from 'react-native';
+import {getStyles} from './styles';
+import {LabelProperties} from './types';
+import {
+  getCurrentLanguage,
+  useNewTheme,
+  Language,
+  ContextualType,
+} from 'react-core';
+import Animated from 'react-native-reanimated';
+const Label: FC<LabelProperties> = (properties: LabelProperties) => {
+  const {
+    id,
+    variant = ContextualType.bodyRegularM,
+    text,
+    style,
+    numberOfLines,
+    textProps,
+  } = properties;
+  const theme = useNewTheme();
+  const language = getCurrentLanguage() as Language;
+  const styles = getStyles({theme, language, variant});
+  return (
+    <Animated.Text
+      key={id}
+      numberOfLines={numberOfLines}
+      style={[styles.labelStyle, style]}
+      {...textProps}>
+      {text}
+    </Animated.Text>
+  );
+};
+export {Label};
+
+// label/styles.ts
+import {Platform, StyleSheet} from 'react-native';
+import {LabelStyleProperties} from './types';
+import {getFontStyles, Language} from 'react-core';
+export const getStyles = (props: LabelStyleProperties) => {
+  const {theme, language, variant} = props;
+  const fontStyles = getFontStyles(variant, language);
+  return StyleSheet.create({
+    labelStyle: {
+      color: theme.colors['content-primary'],
+      textAlign: 'left',
+      textAlignVertical: 'center',
+      // ...Platform.select({
+      //   ios: {
+      //     transform: [{ translateY: 10 }]
+      //   }
+      // }),
+      // transform: [{ translateY: -25 }],
+      // height: 32,
+      ...(language === Language.Arabic ? {paddingTop: 5} : {}),
+      // backgroundColor: 'red',
+      ...fontStyles,
+      ...Platform.select({
+        android: {
+          // fontFamily: 'Vazirmatn-Medium',
+          // fontFamily: 'Vazirmatn-Regular',
+          // fontFamily: 'Vazirmatn-SemiBold',
+          // fontWeight: undefined
+        },
+        // ios: {
+        //   // fontFamily: 'Vazirmatn'
+        //   fontFamily: 'Vazirmatn-SemiBold',
+        //   fontWeight: undefined
+        // }
+      }),
+      // ...Platform.select({
+      //   android: {
+      //     fontFamily: fontStyles.fontFamily.replaceAll(' ', '')
+      //   },
+      // }),
+    },
+  });
+};
+
+// label/types.ts
+import type { ReactNode } from 'react';
+import { Language, ContextualType, Theme } from 'react-core';
+import { StyleProp, TextProps, TextStyle } from 'react-native';
+// export enum variants {
+//   titleXL = 'titleXL',
+//   titleL = 'titleL',
+//   titleM = 'titleM',
+//   titleS = 'titleS',
+//   titleXS = 'titleXS',
+//   bodySemiBoldL = 'bodySemiBoldL',
+//   bodyMediumL = 'bodyMediumL',
+//   bodyRegularL = 'bodyRegularL',
+//   bodySemiBoldM = 'bodySemiBoldM',
+//   bodyMediumM = 'bodyMediumM',
+//   bodyRegularM = 'bodyRegularM',
+//   bodySemiBoldS = 'bodySemiBoldS',
+//   bodyMediumS = 'bodyMediumS',
+//   bodyRegularS = 'bodyRegularS',
+//   bodySemiboldXS = 'bodySemiboldXS',
+//   bodyMediumXS = 'bodyMediumXS',
+//   bodyRegularXS = 'bodyRegularXS',
+// }
+export { ContextualType as variants }
+export interface LabelProperties {
+  id: string;
+  text: string | ReactNode;
+  variant?: ContextualType;
+  style?: StyleProp<TextStyle>;
+  numberOfLines?: number;
+  textProps?: TextProps;
+}
+export interface LabelStyleProperties {
+  theme: Theme;
+  language: Language;
+  variant: ContextualType;
+}
+
+
+// COMPONENT: options-lists
+// options-lists/action-list-option/index.tsx
+import React from 'react';
+import { Image, View } from 'react-native';
+import { getStyles } from './styles';
+import { variants } from 'app/components/label/types';
+import { ProductCardComponentProps } from './types';
+import { Label } from 'app/components';
+import { ArrowRight01 } from 'app/assets/svg';
+import { useNewTheme } from 'react-core';
+const ExploreMeemProductCardListItemComponent = (props: ProductCardComponentProps) => {
+  const { imageUrl, listName } = props;
+  const theme = useNewTheme();
+  const styles = getStyles(theme);
+  return (
+    <View style={styles.container}>
+      <View style={styles.iconAndLabelContainer}>
+        {imageUrl && <View style={styles.iconContainer}>
+          <Image source={{ uri: imageUrl }} style={styles.imageStyle} />
+        </View>}
+        <Label
+          id="titleDiscover"
+          variant={variants.bodyMediumM}
+          text={listName ?? ''}
+        />
+      </View>
+      <ArrowRight01 color={theme.colors['icon-interactive-secondary-enabled']} />
+    </View>
+  );
+};
+export { ExploreMeemProductCardListItemComponent };
+
+// options-lists/action-list-option/styles.ts
+import { StyleSheet } from 'react-native';
+import { Theme } from 'react-core';
+export const getStyles = (theme: Theme) => {
+  return StyleSheet.create({
+    container: {
+      backgroundColor: theme.colors['surface-02'],
+      padding: 12,
+      borderRadius: 8,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center'
+    },
+    iconAndLabelContainer: {
+      flexDirection: 'row',
+      gap: 16
+    },
+    iconContainer: {
+      backgroundColor: theme.colors['surface-03'],
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 8,
+      height: 32,
+      width: 32,
+    },
+    imageStyle: {
+      width: 20,
+      height: 20,
+      resizeMode: 'cover'
+    }
+  });
+};
+
+// options-lists/action-list-option/types.ts
+import type { ReactNode } from "react";
+export interface ActionListOptionComponentProps {
+  imageUrl?: string
+  listName: string;
+}
+
+
+// COMPONENT: screen
+// screen/index.tsx
+import React, {FC, useEffect, useLayoutEffect, useRef, useState} from 'react';
+import {
+  View,
+  Pressable,
+  Platform,
+  StatusBar,
+  ScrollView,
+  KeyboardAvoidingView,
+  Dimensions,
+  Keyboard,
+  Animated,
+  Text,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+} from 'react-native';
+import {useNewTheme, Theme} from 'react-core';
+import {CustomCheckbox} from '../custom-checkbox-button';
+import LinearContainer from '../linear-gradient';
+import {getStyles} from './styles';
+import {ScreenContainerProperties} from './types';
+import {ArrowBackIcon} from '@app/assets/svg';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
+import useKeyboardVisible from 'app/hooks/useKeyboardVisible';
+import useStatusBarheight from 'app/hooks/useStatusBarHeight';
+import useAppColourScheme from 'app/hooks/useAppColourScheme';
+import {ShadowDivider} from '../shadow-divider';
+import LinearGradient from 'react-native-linear-gradient';
+import {
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+} from 'react-native-reanimated';
+import {SCROLL_SHADOW_OFFSET, SCROLL_SHADOW_OPACITY_MAX} from 'app/constants';
+import {StickyShadows} from '../sticky-shadows';
+import {StickyShadowDirections} from '../sticky-shadows/types';
+import {useScrollShadow} from 'app/hooks/use-scroll-shadow';
+const ScreenContainer: FC<ScreenContainerProperties> = ({
+  id,
+  children,
+  inverted = false,
+  circleRadiusButtomGlow = false,
+  showStatusBar = true,
+  showRightContent = false,
+  showCenterContent = false,
+  bottomScreenContent,
+  stickyKeyboardBottomView = false,
+  showCheckbox = false,
+  isChecked = false,
+  disabled = false,
+  onPressLeftContent,
+  onPressCenterContent,
+  onPressRightContent,
+  leftContent,
+  centerContent,
+  rightContent,
+  scrollViewStyle,
+  onPressCheckbox,
+  showGoBackIcon = false,
+  customContainerStyle,
+  customBottomScreenContentStyle,
+  headerContainerStyle,
+  backgroundColor,
+  disableKeyboardAvoidingScrollView = false,
+  disableScrollView = false,
+  removeBottomInsets = false,
+  bounceOnscroll = true,
+  keyboardContainerStyle,
+  stickyContent = null,
+  disableBottomSafeArea = false,
+  customStickyBottomPadding = 24,
+  disableInvertedNavigationBar = false,
+  shadowVisible = true,
+  loginPage = false,
+  onScrollRef = null,
+  customNavBarColor,
+  notInvertedNavBar = false,
+  ...scrollViewProps
+}) => {
+  const theme: Theme = useNewTheme();
+  const navigation = useNavigation();
+  const statusBarHeight = useStatusBarheight();
+  // const keyBoardVertical =
+  //   (statusBarHeight ?? 24) - (Platform.OS === 'ios' ? 16 : 24);
+  const styles = getStyles({
+    theme,
+    inverted,
+    statusBarHeight,
+    customStickyBottomPadding,
+  });
+  // const isKeyboardVisible = useKeyboardVisible().isKeyboardVisible;
+  const [keyBoardOffset, setKeyBoardOffset] = useState(keyBoardVertical);
+  const {navigationBarColor, navigationBarColorInverted} = useAppColourScheme();
+  // const scrollViewEnabled = disableScrollView
+  //   ? false
+  //   : Dimensions.get('window').height > 700
+  //   ? true
+  //   : false;
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [keyBoardVertical, setKeyBoardVertical] = useState(0);
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', e => {
+      setIsKeyboardVisible(true);
+      setKeyBoardVertical(e.endCoordinates.height);
+    });
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+      setIsKeyboardVisible(false);
+      setKeyBoardVertical(0);
+    });
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+  const goBack = () => {
+    navigation?.goBack();
+  };
+  useFocusEffect(() => {
+    if (Platform.OS === 'android' && customNavBarColor && notInvertedNavBar) {
+      //for 3 button navigation bar color
+      navigation.setOptions({
+        navigationBarColor: customNavBarColor,
+      });
+      return () => {
+        navigation.setOptions({
+          navigationBarColor: navigationBarColor,
+        });
+      };
+    } else if (Platform.OS === 'android') {
+      //for 3 button navigation bar color
+      navigation.setOptions({
+        navigationBarColor:
+          inverted && !disableInvertedNavigationBar
+            ? navigationBarColorInverted
+            : navigationBarColor,
+      });
+      return () => {
+        navigation.setOptions({
+          navigationBarColor: navigationBarColor,
+        });
+      };
+    }
+  });
+  // useEffect(() => {
+  //   isKeyboardVisible
+  //     ? setKeyBoardOffset(keyBoardVertical)
+  //     : setKeyBoardOffset(0);
+  // }, [isKeyboardVisible, keyBoardVertical]);
+  const statusBackgroundColor = () => {
+    if (backgroundColor) {
+      return backgroundColor;
+    } else if (inverted) {
+      return 'transparent';
+    } else return theme.colors['background-01'];
+  };
+  const scrollViewRef = useRef<ScrollView>(null);
+  // const scrollY = useRef(new Animated.Value(0)).current;
+  // const [prevScrollY, setPrevScrollY] = useState(0);
+  // const headerOpacity = scrollY.interpolate({
+  //   inputRange: [0, 100], // Adjust 100 to control fade-out distance
+  //   outputRange: [1, 0],
+  //   extrapolate: 'clamp',
+  // });
+  // const handleScroll = Animated.event(
+  //   [{nativeEvent: {contentOffset: {y: scrollY}}}],
+  //   {
+  //     useNativeDriver: false, // Set to true if not animating layout properties like height/width
+  //     listener: event => {
+  //       const currentScrollY = event?.nativeEvent.contentOffset.y;
+  //       // You can add logic here to determine scroll direction if needed for more complex animations
+  //       // For simple fade based on scroll position, the interpolate handles it.
+  //       setPrevScrollY(currentScrollY);
+  //     },
+  //   },
+  // );
+  useEffect(() => {
+    if (onScrollRef) onScrollRef(scrollViewRef.current);
+  }, []);
+  /* New Shadow Scroll */
+  const {
+    scrollable,
+    topShadowOpacity,
+    bottomShadowOpacity,
+    handleScroll,
+    handleScrollHeight,
+    handleContentSizeChange,
+  } = useScrollShadow();
+  return (
+    <LinearContainer
+      style={[
+        {
+          backgroundColor: backgroundColor ?? theme.colors['background-01'],
+        },
+        removeBottomInsets && {paddingBottom: 0},
+      ]}
+      inverted={inverted}
+      loginPage={loginPage}
+      disableBottomSafeArea={disableBottomSafeArea}
+      circleRadiusButtomGlow={circleRadiusButtomGlow}>
+      <KeyboardAvoidingView
+        style={[styles.keyboardContainer, keyboardContainerStyle]}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        enabled={!disableKeyboardAvoidingScrollView && isKeyboardVisible}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : keyBoardOffset}
+        contentContainerStyle={styles.keyboardContentContainer}>
+        <View
+          style={[styles.containerStyle, customContainerStyle]}
+          id={id}
+          testID={id}>
+          {showStatusBar && (
+            <StatusBar
+              translucent
+              barStyle={inverted ? 'light-content' : 'dark-content'}
+              animated
+              backgroundColor={statusBackgroundColor()}
+            />
+          )}
+          {/* This view showing extra top space in */}
+          {/* <View style={styles.safeAreaStyle}> */}
+          {/* Header Bar */}
+          <View style={[styles.headerContainerStyle, headerContainerStyle]}>
+            {/* Left Header */}
+            <View style={styles.leftContainerStyle}>
+              {showGoBackIcon ? (
+                <Pressable style={styles.leftContentStyle} onPress={goBack}>
+                  <ArrowBackIcon
+                    color={
+                      inverted
+                        ? theme.colors['icon-interactive-inverted-enabled']
+                        : theme.colors['icon-interactive-secondary-enabled']
+                    }
+                  />
+                </Pressable>
+              ) : (
+                leftContent && (
+                  <Pressable
+                    focusable={false}
+                    style={styles.leftContentStyle}
+                    onPress={onPressLeftContent}>
+                    {leftContent}
+                  </Pressable>
+                )
+              )}
+            </View>
+            {/* Middle Label */}
+            <View style={styles.centerContainerStyle}>
+              {showCenterContent && (
+                <Pressable
+                  style={styles.centerLogoStyle}
+                  onPress={onPressCenterContent}>
+                  {centerContent}
+                </Pressable>
+              )}
+            </View>
+            {/* Right Header */}
+            <View style={styles.rightContainerStyle}>
+              {showRightContent && (
+                <Pressable
+                  style={styles.rightLogoStyle}
+                  onPress={onPressRightContent}>
+                  {rightContent}
+                </Pressable>
+              )}
+            </View>
+            {/* </View> */}
+          </View>
+          {/* {shadowVisible && (
+            <ShadowDivider height={16} sides={{bottom: true, top: false}} />
+          )} */}
+          {stickyContent}
+          <View style={{flex: 1}}>
+            {shadowVisible && (
+              <Animated.View style={{opacity: topShadowOpacity, zIndex: 10}}>
+                <StickyShadows />
+              </Animated.View>
+            )}
+            <Animated.ScrollView
+              onLayout={handleScrollHeight}
+              onContentSizeChange={handleContentSizeChange}
+              onScroll={e => {
+                // scrollY.value = e.nativeEvent.contentOffset.y;
+                handleScroll(e);
+              }}
+              scrollEnabled={!disableScrollView}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={scrollViewStyle}
+              bounces={false}
+              {...scrollViewProps}
+              ref={scrollViewRef}>
+              {children}
+            </Animated.ScrollView>
+            {shadowVisible && scrollable && !isKeyboardVisible && (
+              <Animated.View
+                style={{
+                  opacity: bottomShadowOpacity,
+                  zIndex: 10,
+                }}>
+                <StickyShadows
+                  direction={StickyShadowDirections.BOTTOM_TO_TOP}
+                  containerStyle={{
+                    top: -16,
+                  }}
+                />
+              </Animated.View>
+            )}
+          </View>
+          {showCheckbox && (
+            <View style={styles.checkboxContainerStyle}>
+              <CustomCheckbox
+                id="checkbox"
+                onPress={onPressCheckbox}
+                errorText=""
+                title="Checkbox"
+                isChecked={isChecked}
+                inverted={inverted}
+                disabled={disabled}
+              />
+            </View>
+          )}
+          <View
+            style={[
+              styles.bottomScreenContentStyle,
+              customBottomScreenContentStyle,
+              // shadowVisible && !isKeyboardVisible && styles.bottomShadowStyle,
+              stickyKeyboardBottomView && isKeyboardVisible
+                ? styles.stickyKeyboardBottomView
+                : {},
+            ]}>
+            {bottomScreenContent}
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </LinearContainer>
+  );
+};
+export {ScreenContainer};
+
+// screen/styles.ts
+import {StyleSheet, Dimensions, Platform} from 'react-native';
+import {ScreenContainerStypeProps} from './types';
+import DeviceInfo from 'react-native-device-info';
+import useKeyboard from 'app/hooks/useKeyboardVisible';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import useNavigationBarHeight from 'app/hooks/useNavigationBarHeight';
+const {width, height} = Dimensions.get('window');
+const isTab = DeviceInfo.isTablet();
+const isPadOrTab = isTab && (width >= 768 || height >= 1024);
+export const getStyles = (properties: ScreenContainerStypeProps) => {
+  const insets = useSafeAreaInsets();
+  const {isKeyboardVisible, keyboardHeight} = useKeyboard();
+  const {navBarHeight} = useNavigationBarHeight();
+  // const isKeyBoardVisible = useKeyboardVisible()?.isKeyboardVisible;
+  const {
+    theme,
+    inverted,
+    statusBarHeight,
+    customStickyBottomPadding = 24,
+  } = properties;
+  return StyleSheet.create({
+    containerStyle: {
+      flex: 1,
+      backgroundColor: inverted ? undefined : theme.colors['background-01'],
+    },
+    keyboardContainer: {
+      flex: 1,
+    },
+    keyboardContentContainer: {
+      paddingBottom: 150,
+      padding: 20,
+      margin: 50,
+    },
+    headerContainerStyle: {
+      height: 40,
+      width: '100%',
+      justifyContent: 'center',
+      ...Platform.select({
+        ios: {
+          paddingTop: 0,
+        },
+        android: {
+          marginTop: inverted ? statusBarHeight : 0,
+        },
+      }),
+      flexDirection: 'row',
+      marginBottom: 8,
+    },
+    leftContainerStyle: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+    },
+    centerContainerStyle: {
+      flex: 1,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    rightContainerStyle: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'flex-end',
+    },
+    centerLogoStyle: {
+      position: 'absolute',
+      alignSelf: 'center',
+      height: 40,
+      justifyContent: 'center',
+    },
+    rightLogoStyle: {
+      position: 'absolute',
+      alignSelf: 'flex-end',
+      height: 40,
+      justifyContent: 'center',
+      right: 16,
+    },
+    leftContentStyle: {
+      position: 'absolute',
+      left: 16,
+      height: 40,
+      justifyContent: 'center',
+      alignItems: 'flex-start',
+      width: 40,
+    },
+    checkboxContainerStyle: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    // bottomScreenContentStyle: {
+    //   ...Platform.select({
+    //     ios: {
+    //       paddingBottom: isKeyBoardVisible ? (height < 700 ? 24 : 62) : 24,
+    //     },
+    //     android: {
+    //       paddingBottom: 24,
+    //     },
+    //   }),
+    // },
+    bottomScreenContentStyle: {
+      ...Platform.select({
+        ios: {
+          paddingBottom: isKeyboardVisible
+            ? height < 700
+              ? 24
+              : insets.top
+            : 24,
+        }, //ios
+        android: {
+          paddingBottom: isKeyboardVisible
+            ? navBarHeight - 16 // to remove the excess padding on keyboard alive
+            : navBarHeight + 24,
+          // paddingBottom: navBarHeight + 24, // padding for CTA across the ScreenConatainer.
+        },
+      }),
+    },
+    bottomShadowStyle: {
+      boxShadow: '0 -8px 12px 0 rgba(0, 0, 0, 0.10))',
+    },
+    topBar: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 1,
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+    linearGradient: {
+      height: 10,
+      width: '100%',
+    },
+    stickyKeyboardBottomView: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: isKeyboardVisible ? keyboardHeight : 0,
+      paddingBottom: customStickyBottomPadding,
+    },
+    safeAreaStyle: {
+      paddingTop: isPadOrTab ? 25 : 0,
+    },
+    stickyShadowTop: {
+      zIndex: 1,
+      top: 0,
+      bottom: null
+    },
+    stickyShadowBottom: {
+     zIndex: 1,
+     bottom: 0,
+     top: null
+    },
+  });
+};
+
+// screen/types.ts
+import {Theme} from 'react-core';
+import React, {ReactNode} from 'react';
+import {StyleProp, ViewStyle, ScrollView} from 'react-native';
+export interface ScreenContainerProperties {
+  id: string;
+  children?: ReactNode;
+  inverted?: boolean;
+  showStatusBar?: boolean;
+  circleRadiusButtomGlow?: boolean;
+  bottomScreenContent?: ReactNode;
+  stickyKeyboardBottomView?: boolean;
+  showStory?: boolean;
+  showRightContent?: boolean;
+  showCenterContent?: boolean;
+  showCheckbox?: boolean;
+  isChecked?: boolean;
+  disabled?: boolean;
+  onPressCheckbox?: () => void;
+  onPressLeftContent?: () => void;
+  onPressCenterContent?: () => void;
+  onPressRightContent?: () => void;
+  leftContent?: React.JSX.Element;
+  stickyContent?: ReactNode;
+  centerContent?: React.JSX.Element;
+  rightContent?: React.JSX.Element;
+  scrollViewStyle?: StyleProp<ViewStyle>;
+  showGoBackIcon?: boolean;
+  customContainerStyle?: StyleProp<ViewStyle>;
+  customBottomScreenContentStyle?: StyleProp<ViewStyle>;
+  headerContainerStyle?: StyleProp<ViewStyle>;
+  backgroundColor?: string;
+  disableKeyboardAvoidingScrollView?: boolean;
+  disableScrollView?: boolean;
+  showsHorizontalScrollIndicator?: boolean;
+  showsVerticalScrollIndicator?: boolean;
+  removeBottomInsets?: boolean;
+  bounceOnscroll?: boolean;
+  keyboardContainerStyle?: ViewStyle;
+  disableBottomSafeArea?: boolean; //supports for iOS
+  customStickyBottomPadding?: number;
+  disableInvertedNavigationBar?: boolean;
+  shadowVisible?: boolean;
+  loginPage?: boolean;
+  onScrollRef?: (a: ScrollView) => void;
+  customNavBarColor?: string;
+  notInvertedNavBar?: boolean;
+}
+export interface ScreenContainerStypeProps {
+  theme: Theme;
+  inverted: boolean;
+  statusBarHeight: number;
+  customStickyBottomPadding?: number;
+}
+
+
+// COMPONENT: submit-button
+// submit-button/index.tsx
+import React, {FC} from 'react';
+import {Button, ButtonProperties} from '../custom-button';
+import useKeyboardVisible from 'app/hooks/useKeyboardVisible';
+import {View, StyleSheet} from 'react-native';
+const SubmitButton: FC<ButtonProperties> = props => {
+  const isKeyBoardVisible = useKeyboardVisible()?.isKeyboardVisible;
+   const { paddingHorizontal, ...restProps } = props;
+  const effectivePadding = isKeyBoardVisible ? 0 : (paddingHorizontal ?? 16);
+  return (
+       <View style={[!isKeyBoardVisible &&  { paddingHorizontal: effectivePadding }]}>
+      <Button isSubmitButton={isKeyBoardVisible} {...restProps} />
+    </View>
+  );
+};
+export {SubmitButton};
+
+
+
+**Usage Instructions:**
+- Review all provided component definitions (props, types, usage patterns).
+- Match each Figma element to the closest existing component by purpose and behavior.
+- Use these components instead of creating new ones.
+- Import components directly: `import {ScreenContainer, Label, Input, SubmitButton} from '@app/components'`.
+- Use direct JSX usage, e.g., `<Label />` rather than `<Components.Label />`.
+- Follow the exact prop structures and conventions from the provided components.
+
+---
+
+## 3. SAMPLE WORKING CODE PATTERNS
+
+/ app\features\credit-card\view\supplementary-card\view\supplementary-card-holderdetails\index.tsx
+Index.tsx
+```
+/**
+Author: Haseeb Muhsin
+Date Created: 7/10/2025
+* Screen for displaying the supplementary card holder details and
+validating it for create journey
+*/
+import React, {useMemo} from 'react';
+import {
+ CARD_HOLDER_RELATION,
+ SupplementaryCardHolderDetailsProps,
+} from './types';
+import {ScrollView, TouchableOpacity, View} from 'react-native';
+import {useNewTheme} from 'react-core';
+import {getStyles} from './styles';
+import {Header} from 'app/components/header';
+import {LeftContentType} from 'app/components/header/left-content/types';
+import {RightContentType} from 'app/components/header/rightcontent/types';
+import {
+ CustomCheckbox,
+ CustomRadioButton,
+ Divider,
+ Dropdown,
+ Input,
+ Label,
+ SubmitButton,
+} from 'app/components';
+import {variants} from 'app/components/label/types';
+import DynamicBottomSheet from 'app/components/dynamic-bottom-sheet';
+import {RightContent} from 'app/components/header/right-content';
+import {useCreateSupplementaryCard} from '../../hooks/use-createsupplementary-card';
+import {Object} from 'app/features/onboarding/hooks';
+import {Tick02} from 'app/assets/svg';
+import {
+ COUNTRY_CODE_SA_DISPLAY,
+ KeyboardTypes,
+ MinimumInputLength,
+ PhoneNumberLength9,
+} from 'app/constants';
+import Animated, {
+ Extrapolation,
+ interpolate,
+ LinearTransition,
+ useAnimatedStyle,
+} from 'react-native-reanimated';
+import useKeyboardVisible from 'app/hooks/useKeyboardVisible';
+export const SupplementaryCardHolderDetails: React.FC<
+ SupplementaryCardHolderDetailsProps
+> = props => {
+ const {navigation} = props;
+ const theme = useNewTheme();
+ const styleProps = {theme};
+ const style = getStyles(styleProps);
+ const {
+ showRelationshipDropdown,
+ setShowRelationshipDropdown,
+ relationshipTypes,
+ selectedRelationship,
+ setSelectedRelationShip,
+ cardHolderDetails,
+ supplementaryCardHolderDetailsValidation,
+ initiateScreeningCheck,
+ dependentInfoValidated,
+ translate,
+ dependentName,
+ termsChecked,
+ setTermsChecked,
+ userDetail,
+ } = useCreateSupplementaryCard();
+ const bottomSheet = () => (
+ <DynamicBottomSheet visible={showRelationshipDropdown}>
+ <View style={style.dropDownRoot}>
+ <View style={style.dropDownHeader}>
+ <Label
+ id=""
+ text={translate(
+ 'CreateSupplementaryCardHolderDetailsDdRelationship',
+ )}
+ style={style.dropDownTitle}
+ variant={variants.titleS}></Label>
+ <View>
+ <RightContent
+ type={RightContentType.CLOSE_CANCEL}
+ onCloseCancelClick={() => {
+ setShowRelationshipDropdown(false);
+ }}></RightContent>
+ </View>
+ </View>
+ <View>
+ {relationshipTypes?.map((item: Object, index: number) => (
+ <>
+ <TouchableOpacity
+ onPress={() => {
+ setSelectedRelationShip(item);
+ setShowRelationshipDropdown(false);
+ supplementaryCardHolderDetailsValidation.validateField(
+ 'idNumber',
+ );
+ }}
+ style={style.dropDownItemRoot}>
+ <Label
+ id=""
+ text={item.value}
+ style={style.dropDownTitle}></Label>
+ <CustomRadioButton
+ id=""
+ isChecked={selectedRelationship?.code === item.code}
+ errorText=""
+ icon={<Tick02 />}
+ onPress={() => {
+ setSelectedRelationShip(item);
+ setShowRelationshipDropdown(false);
+ }}></CustomRadioButton>
+ </TouchableOpacity>
+ {relationshipTypes?.length - 1 !== index &&
+<Divider></Divider>}
+ </>
+ ))}
+ </View>
+ </View>
+ </DynamicBottomSheet>
+ );
+ const {keyboardOffset, keyboardHeight} = useKeyboardVisible();
+ const paddingStyle = useAnimatedStyle(() => {
+ const paddingBottom = interpolate(
+ keyboardOffset.value,
+ [0, keyboardHeight, 0],
+ [24, keyboardHeight, 24],
+ Extrapolation.CLAMP,
+ );
+ return {
+ paddingBottom,
+ };
+ });
+ const isSubmitButtonDisabled = useMemo(() => {
+ return (
+ (selectedRelationship?.code === CARD_HOLDER_RELATION.FAMILY_MEMBER
+&&
+ dependentInfoValidated === false) ||
+ selectedRelationship?.code === undefined ||
+ (selectedRelationship?.code === CARD_HOLDER_RELATION.FAMILY_MEMBER
+&&
+ !supplementaryCardHolderDetailsValidation?.isValid) ||
+ !termsChecked
+ );
+ }, [
+ supplementaryCardHolderDetailsValidation?.isValid,
+ termsChecked,
+ selectedRelationship?.code,
+ dependentInfoValidated,
+ ]);
+ return (
+ <View style={style.container}>
+ <Header
+ showCenterContent={false}
+ leftContentType={LeftContentType.BACK}
+ onLeftContentClick={() => {
+ navigation.goBack();
+ }}
+ onRightContentClick={() => {
+ navigation.pop(3);
+ }}
+ rightContentType={RightContentType.CLOSE_CANCEL}></Header>
+ <View style={style.mainContainer}>
+ <ScrollView
+ style={style.scroll}
+ showsVerticalScrollIndicator={false}
+ keyboardShouldPersistTaps
+ contentContainerStyle={style.contentContainer}>
+ <View style={style.titleContainer}>
+ <Label
+ id="idCreateSupplementaryCardHolderDetailsTitle"
+text={translate('CreateSupplementaryCardHolderDetailsLblTitle')}
+ variant={variants.titleXL}
+ style={style.title}></Label>
+ <Label
+ id="idCreateSupplementaryCardHolderDetailsDescription"
+ text={translate(
+ 'CreateSupplementaryCardHolderDetailsLblDescription',
+ )}
+ variant={variants.bodyRegularM}
+ style={style.description}></Label>
+ </View>
+ <View style={style.inputContainer}>
+ <Dropdown
+ id="idCreateSupplementaryCardHolderDetailsRelationship"
+ placeholder={translate(
+ 'CreateSupplementaryCardHolderDetailsDdRelationship',
+ )}
+ inputText={selectedRelationship?.value}
+ onPress={() =>
+ setShowRelationshipDropdown(!showRelationshipDropdown)
+ }
+ BottomSheet={bottomSheet()}
+ />
+ {selectedRelationship?.code === CARD_HOLDER_RELATION.MYSELF ?
+(
+ <View style={style.hiddenInputContainer}>
+ <Input
+ id="idCreateSupplementaryCardHolderDetailsIdNumberSelf"
+ placeholder={translate(
+ 'CreateSupplementaryCardHolderDetailsTxtIdNumber',
+ )}
+ value={cardHolderDetails?.idNumber}
+ disabled></Input>
+ <Input
+ id="idCreateSupplementaryCardHolderDetailsNameSelf"
+ placeholder={translate(
+ 'CreateSupplementaryCardHolderDetailsTxtName',
+ )}
+ value={cardHolderDetails?.name}
+ disabled></Input>
+ <Input
+id="idCreateSupplementaryCardHolderDetailsMobileNumberSelf"
+ placeholder={translate(
+ 'CreateSupplementaryCardHolderDetailsTxtMobileNumber',
+ )}
+ value={userDetail?.phone?.slice(-9)}
+ prefix={COUNTRY_CODE_SA_DISPLAY}
+ disabled></Input>
+ </View>
+ ) : selectedRelationship?.code ===
+ CARD_HOLDER_RELATION.FAMILY_MEMBER ? (
+ <View style={style.hiddenInputContainer}>
+ <Input
+id="idCreateSupplementaryCardHolderDetailsIdNumberFamily"
+ placeholder={translate(
+ 'CreateSupplementaryCardHolderDetailsTxtIdNumber',
+ )}
+ value={
+supplementaryCardHolderDetailsValidation.values.idNumber
+ }
+setValue={supplementaryCardHolderDetailsValidation.handleChange(
+ 'idNumber',
+ )}
+onFormikBlur={supplementaryCardHolderDetailsValidation.handleBlur(
+ 'idNumber',
+ )}
+ customKeyboardType={KeyboardTypes.NumberPad}
+ maximumLength={MinimumInputLength}
+ specialCharactersAllowed={false}
+ errorTextStyle={style.errorIdStyle}
+ errorText={
+supplementaryCardHolderDetailsValidation.touched.idNumber &&
+supplementaryCardHolderDetailsValidation.errors.idNumber
+ ?
+supplementaryCardHolderDetailsValidation.errors.idNumber
+ : undefined
+ }></Input>
+ {dependentInfoValidated && (
+ <>
+ <Input
+id="idCreateSupplementaryCardHolderDetailsNameFamily"
+ placeholder={translate(
+ 'CreateSupplementaryCardHolderDetailsTxtName',
+ )}
+value={dependentName}
+ disabled></Input>
+ <Input
+id="idCreateSupplementaryCardHolderDetailsMobileNumberFamily"
+ placeholder={translate(
+'CreateSupplementaryCardHolderDetailsTxtMobileNumber',
+ )}
+ value={
+ supplementaryCardHolderDetailsValidation.values
+ .mobileNumber
+ }
+setValue={supplementaryCardHolderDetailsValidation.handleChange(
+ 'mobileNumber',
+ )}
+onFormikBlur={supplementaryCardHolderDetailsValidation.handleBlur(
+ 'mobileNumber',
+ )}
+prefix={COUNTRY_CODE_SA_DISPLAY}
+ maximumLength={PhoneNumberLength9}
+ specialCharactersAllowed={false}
+customKeyboardType={KeyboardTypes.NumberPad}
+ errorText={
+ supplementaryCardHolderDetailsValidation.touched
+ .mobileNumber &&
+ supplementaryCardHolderDetailsValidation.errors
+ .mobileNumber
+?
+supplementaryCardHolderDetailsValidation.errors
+ .mobileNumber
+ : undefined
+ }></Input>
+ </>
+ )}
+ </View>
+ ) : null}
+ </View>
+ </ScrollView>
+ <Animated.View
+ style={[style.stickyBarContainer, paddingStyle]}
+ layout={LinearTransition}>
+ <View style={style.checkContainer}>
+ <CustomCheckbox
+ id="idCreateSupplementaryCardHolderDetailsCheckbox"
+ isChecked={termsChecked}
+ onPress={() => {
+ setTermsChecked(!termsChecked);
+ }}></CustomCheckbox>
+ <Label
+ style={style.checkText}
+ id="idCreateSupplementaryCardHolderDetailsCheckbox text"
+ text={translate(
+ 'CreateSupplementaryCardTermsLblCheckbox',
+ )}></Label>
+ </View>
+ <SubmitButton
+ id="idCreateSupplementaryCardHolderDetailsSubmit"
+ label={translate('CreateSupplementaryCardBtnNext')}
+ disabled={isSubmitButtonDisabled}
+ onPress={() => {
+ initiateScreeningCheck();
+ }}></SubmitButton>
+ </Animated.View>
+ </View>
+ </View>
+ );
+};
+```
+// styles.ts
+// app\features\credit-card\view\supplementary-card\view\supplementary-card-holderdetails\styles.ts
+```
+/**
+Author: Haseeb Muhsin
+Date Created: 7/10/2025
+* Stylesheet for maintaining screen and component styles for create
+supplementary card holder details screen
+*/
+import {ScaledSheet} from 'react-native-size-matters';
+import {SupplementaryCardHolderDetailsStyleProps} from './types';
+import useNavigationBarHeight from 'app/hooks/useNavigationBarHeight';
+export const getStyles = (props: SupplementaryCardHolderDetailsStyleProps)
+=> {
+ const {theme} = props;
+ const {navBarHeight} = useNavigationBarHeight();
+ return ScaledSheet.create({
+ container: {
+ flex: 1,
+ backgroundColor: theme.colors['background-01'],
+ paddingBottom: navBarHeight,
+ },
+ mainContainer: {
+ flex: 1,
+ },
+ scroll: {
+ flexGrow: 1,
+ },
+ contentContainer: {
+ gap: 24,
+ },
+ stickyBarContainer: {
+ paddingTop: 24,
+ gap: 24,
+ },
+ titleContainer: {
+ gap: 8,
+ paddingHorizontal: 16,
+ },
+ title: {
+ color: theme.colors['content-primary'],
+ },
+ description: {
+ color: theme.colors['content-secondary'],
+ },
+ inputContainer: {
+ paddingHorizontal: 16,
+ gap: 16,
+ },
+ hiddenInputContainer: {
+ gap: 16,
+ },
+ dropDownRoot: {
+ paddingHorizontal: 16,
+ gap: 16,
+ },
+ dropDownHeader: {
+ flexDirection: 'row',
+ },
+ dropDownTitle: {
+ flex: 1,
+ color: theme.colors['content-primary'],
+ },
+ dropDownItemRoot: {
+ paddingVertical: 16,
+ flexDirection: 'row',
+ },
+ checkContainer: {
+ flexDirection: 'row',
+ gap: 8,
+ paddingHorizontal: 16,
+ },
+ acceptButtonContainer: {
+ flexDirection: 'row',
+ gap: 8,
+ },
+ checkText: {
+ flex: 1,
+ },
+ errorIdStyle: {
+ left: 16,
+ },
+ });
+};
+```
+// app\features\credit-card\view\supplementary-card\view\supplementary-card-holderdetails\types.ts
+// types.ts
+```
+/**
+Author: Haseeb Muhsin
+Date Created: 7/10/2025
+* Properties for configuring the create supplementary card holder screen
+and styles
+*/
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {CreditCardRootStackParamList} from 'app/navigator/credit-cardsection';
+import {Theme} from 'react-core';
+export type SupplementaryCardHolderDetailsProps = {
+ navigation: NativeStackNavigationProp<CreditCardRootStackParamList>;
+};
+export type SupplementaryCardHolderDetailsStyleProps = {
+ theme: Theme;
+};
+export type CardHolderDetails = {
+ idNumber?: string;
+ name?: string;
+ mobileNumber?: string;
+ monthlyCreditLimit?: string;
+ currency?: string;
+};
+export enum CARD_HOLDER_RELATION {
+ MYSELF = '1',
+ FAMILY_MEMBER = '2',
+}
+```
+Woking Example:
+// app\features\credit-card\utils\formatter.ts
+import {ReferenceData} from 'app/services/app-global';
+const convertReferenceData = (referenceData: ReferenceData[]) => {
+ if (referenceData) {
+ const menu = referenceData.map((listItem: ReferenceData, index:
+number) => {
+ return {
+ id: (index + 1).toString(),
+ value: isArabic ? listItem.ValueAr : listItem.valueEn,
+ code: listItem?.code,
+ };
+ });
+ return menu;
+ } else {
+ return [];
+ }
+};
+// app\services\app-global\gobal-slice.ts
+export type ReferenceData = {
+ referenceDataGroup: string;
+ referenceDataType: string;
+ code: string;
+ valueEn: string;
+ ValueAr: string;
+ calculationValue: string;
+ sortorder: 1;
+};
+Woking Example:
+// app\features\authentication\view\credentials-disabled\types.ts
+export type CredentialsDisabledProps = {
+ navigation: NativeStackNavigationProp<RootStackParamList>;
+};
+// app\navigator\auth-section.tsx
+export type RootStackParamList = {
+CredentialsDisabled: undefined;
+AuthenticationMenu: undefined;
+ CredentialDisableInfo: undefined;
+CredentialsDisable: undefined;
+};
+###FilePath: ui-code-guide/hooks/use-create-supplementary-card.ts
+/**
+Author: Haseeb Muhsin
+Date Created:  7/10/2025
+ * Hook for handling all the usecases in create supplementary card journey.
+ * API calls and redux persistance and fetching logics are added.
+ */
+import {
+  AuthRoutes,
+  CreditCardRoutes,
+  Errors,
+  isArabic,
+  PhoneNumberLength9,
+  TransferRoutes,
+} from 'app/constants';
+import {useHeaders} from 'app/features/authentication/hooks';
+import {Object} from 'app/features/onboarding/hooks';
+import {EntityTypes} from 'app/features/onboarding/hooks/types';
+import {usePostLoginHandler} from 'app/hooks/post-login-handler';
+import {useAppDispatch, useAppSelector} from 'app/redux/hooks';
+import {
+  AuthServices,
+  CreditCardsManagementApi,
+  SharedServicesApi,
+  useRetrieveLookupMutation,
+} from 'app/redux/toolkit-store';
+import {setDependentDetails, setSupplementaryCardDetails} from 'app/services';
+import {
+  ReferenceData,
+  setLookupRetriveData,
+  UserDetails,
+} from 'app/services/app-global';
+import {
+  CreditCardType,
+  SupplementaryCardDetail,
+} from 'app/services/credit-cards/types';
+import {format, NavigationService} from 'app/utils';
+import {useEffect, useState} from 'react';
+import {
+  CARD_HOLDER_RELATION,
+  CardHolderDetails,
+} from '../view/supplementary-card-holder-details/types';
+import {useFormik} from 'formik';
+import {
+  SupplementaryCardHolderDetailsSchema,
+  SupplementaryCardHolderDetailsSchemaInitialValues,
+} from '../schemas/supplementary-card-holder-details-schema';
+import {
+  SupplementaryCardLimitSchema,
+  SupplementaryCardLimitSchemaInitialValues,
+} from '../schemas/supplementary-card-limit-schema';
+import {Keyboard} from 'react-native';
+import {useToast} from 'app/components';
+import {ToastTypeProps} from 'app/components/toast/types';
+import {translation} from 'react-core';
+import {MonthlyCardLimit} from '../view/supplementary-card-limit/types';
+import {generateSha1} from 'app/utils/generate-sha';
+import {AccountStatusTypes} from 'app/components/account-status/types';
+import {AccountsListDetails} from 'app/services/accounts/types';
+import {CustomStatusScreenProps} from 'app/features/common/custom-status-screen/types';
+import {
+  APPLY_CARD_TRANSACTION_NAME,
+  DEPENDENT_RELATIONSHIP_SELF,
+  SUPPLEMENTARY_LIMIT_FIXED_AMOUNT,
+} from '../constants';
+import {
+  ReferenceDataGroup,
+  ReferenceDataType,
+} from 'app/constants/reference-data-values';
+import {useAllCards} from 'app/features/home/components/home-dashboard-cards/hooks/use-all-cards';
+import {BFFErrorCode} from 'app/features/authentication/utils';
+export const useCreateSupplementaryCard = (selectedCard?: string) => {
+  const {getHeaders} = useHeaders();
+  const dispatch = useAppDispatch();
+  const {t: translate} = translation.useTranslation();
+  const [termsChecked, setTermsChecked] = useState(false);
+  const [showRelationshipDropdown, setShowRelationshipDropdown] =
+    useState(false);
+  const [relationshipTypes, setRelationshipTypes] = useState<Object[]>([]);
+  const [cardLimitTypes, setCardLimitTypes] = useState<Object[]>([]);
+  const [showMonthlyCardLimitDropdown, setShowMonthlyCardLimitDropdown] =
+    useState(false);
+  const [selectedRelationship, setSelectedRelationShip] = useState<
+    Object | undefined
+  >(undefined);
+  const [cardHolderDetails, setCardHolderDetails] = useState<CardHolderDetails>(
+    {},
+  );
+  const [enableOtp, setEnableOtp] = useState(false);
+  const [otpError, setOtpError] = useState<string | undefined>();
+  const [referenceNumber, setReferenceNumber] = useState<string | undefined>();
+  const [maskedMobileNumber, setMaskedMobileNumber] = useState<
+    string | undefined
+  >();
+  const [selectedCardLimitType, setSelectedCardLimitType] = useState<
+    Object | undefined
+  >(undefined);
+  const {showToast} = useToast();
+  const [dependentInfoValidated, setDependentInfoValidated] = useState(false);
+  const [dependentName, setDependentName] = useState('');
+  const {retrieveCreditCards} = useAllCards();
+  const {
+    action: retrieveLookupAction,
+    data: retrieveLookupResponse,
+    error: retrieveLookupError,
+  } = usePostLoginHandler(useRetrieveLookupMutation);
+  const {
+    action: initiateScreeningCheckAction,
+    data: initiateScreeningCheckResponse,
+    error: initiateScreeningCheckError,
+  } = usePostLoginHandler(
+    CreditCardsManagementApi.useInitiateScreeningCheckMutation,
+  );
+  const {
+    action: validateDependentDetailsAction,
+    data: validateDependentDetailsResponse,
+    error: validateDependentDetailsError,
+  } = usePostLoginHandler(
+    SharedServicesApi.useValidateDependentDetailsMutation,
+  );
+  const {
+    action: triggerOtpAction,
+    data: triggerOtpResponse,
+    error: triggerOtpError,
+  } = usePostLoginHandler(AuthServices.usePreLoginOtpMutation);
+  const {
+    action: applyCreditCardAction,
+    data: applyCreditCardResponse,
+    error: applyCreditCardError,
+  } = usePostLoginHandler(CreditCardsManagementApi.useApplyCreditCardMutation);
+  const getSupplementaryRelationshipTypes = () => {
+    const params = {
+      entityKey: [EntityTypes.DRI],
+    };
+    retrieveLookupAction(params);
+  };
+  useEffect(() => {
+    if (retrieveLookupResponse) {
+      dispatch(setLookupRetriveData(retrieveLookupResponse));
+      const supplementaryCardDetails: SupplementaryCardDetail = {
+        selectedCardNumber: selectedCard ?? '',
+      };
+      dispatch(setSupplementaryCardDetails(supplementaryCardDetails));
+      NavigationService.navigate(
+        CreditCardRoutes.SupplementaryCardHolderDetails,
+      );
+    }
+  }, [retrieveLookupResponse, retrieveLookupError]);
+  const supplementaryCardDetails = useAppSelector(
+    state => state.creditCards.supplementaryCard,
+  ) as SupplementaryCardDetail;
+  const supplementaryRelationShipTypes = useAppSelector(
+    state => state.global.lookupRetriveData,
+  )?.find((item: any) => item.entityKey === EntityTypes.DRI)
+    ?.objects as Object[];
+  const cardDetail = useAppSelector(
+    state => state.creditCards.creditCardsData,
+  )?.find(
+    (item: any) =>
+      item.creditCardNumber === supplementaryCardDetails?.selectedCardNumber,
+  ) as CreditCardType;
+  const userDetail = useAppSelector(
+    state => state.global.userDetails,
+  ) as UserDetails;
+  const onePackAccount = useAppSelector(
+    state => state.accounts.accountsList,
+  )?.find(
+    (item: any) =>
+      item.isOnepackAccount === true &&
+      item.accountStatus !== AccountStatusTypes.AccountClosed,
+    // item.accountStatus === AccountStatusTypes.AccountActive,
+  ) as AccountsListDetails;
+  const referenceRecords = useAppSelector(
+    state => state.global.referenceRecord,
+  );
+  const productCodeValue = referenceRecords[
+    ReferenceDataGroup.PRODUCT_CODES
+  ]?.find(
+    (item: ReferenceData) =>
+      item.referenceDataType === ReferenceDataType.CREDIT_CARD,
+  )?.calculationValue;
+  useEffect(() => {
+    if (supplementaryRelationShipTypes) {
+      setRelationshipTypes(supplementaryRelationShipTypes);
+    }
+  }, [supplementaryRelationShipTypes]);
+  useEffect(() => {
+    if (referenceRecords[ReferenceDataGroup.CARD_LIMITS]?.length > 0) {
+      const listOfLimitTypes: Object[] = [];
+      const supplementaryCardLimits = referenceRecords[
+        ReferenceDataGroup.CARD_LIMITS
+      ]?.filter(
+        (item: ReferenceData) =>
+          item.referenceDataType ===
+          ReferenceDataType.SUPPLEMENTARY_CARD_LIMITS,
+      );
+      supplementaryCardLimits?.map((item: ReferenceData) => {
+        const object: Object = {
+          id: '',
+          code: item.code,
+          value: isArabic ? item.ValueAr : item.valueEn,
+        };
+        listOfLimitTypes.push(object);
+      });
+      setCardLimitTypes(listOfLimitTypes);
+      setSelectedCardLimitType(
+        listOfLimitTypes?.find(
+          item => item.code === MonthlyCardLimit.SHARED_LIMIT,
+        ),
+      );
+    }
+  }, [referenceRecords]);
+  useEffect(() => {
+    if (cardDetail && userDetail) {
+      setCardHolderDetails({
+        idNumber: userDetail?.customernumber,
+        mobileNumber: cardDetail?.dependentMobileNumber
+          .trim()
+          ?.slice(-PhoneNumberLength9),
+        name: cardDetail?.embossedName,
+        monthlyCreditLimit: cardDetail?.cardLimit,
+        currency: cardDetail?.cardCurrency ?? 'SAR',
+      });
+    }
+  }, [cardDetail, userDetail]);
+  const supplementaryCardHolderDetailsValidation = useFormik({
+    validateOnChange: true,
+    validateOnBlur: true,
+    initialValues: SupplementaryCardHolderDetailsSchemaInitialValues,
+    validationSchema: SupplementaryCardHolderDetailsSchema,
+    onSubmit: values => {},
+  });
+  const supplementaryCardLimitValidation = useFormik({
+    validateOnChange: true,
+    validateOnBlur: true,
+    initialValues: SupplementaryCardLimitSchemaInitialValues,
+    validationSchema: SupplementaryCardLimitSchema(
+      cardDetail?.cardLimit,
+      translate,
+    ),
+    onSubmit: values => {},
+  });
+  useEffect(() => {
+    if (
+      supplementaryCardHolderDetailsValidation?.values?.idNumber &&
+      supplementaryCardHolderDetailsValidation?.values?.idNumber.length ===
+        10 &&
+      supplementaryCardHolderDetailsValidation?.errors?.idNumber === undefined
+    ) {
+      Keyboard.dismiss();
+      validateDependentDetails();
+    }
+  }, [
+    supplementaryCardHolderDetailsValidation?.values?.idNumber,
+    supplementaryCardHolderDetailsValidation?.errors?.idNumber,
+  ]);
+  const validateDependentDetails = () => {
+    const options = {
+      headers: getHeaders({screenId: 'Screen1'}),
+      request: {
+        dependentID: supplementaryCardHolderDetailsValidation?.values?.idNumber,
+      },
+    };
+    validateDependentDetailsAction(options);
+  };
+  useEffect(() => {
+    if (validateDependentDetailsResponse?.isSuccess === true) {
+      dispatch(setDependentDetails(validateDependentDetailsResponse));
+      setDependentInfoValidated(true);
+      setDependentName(validateDependentDetailsResponse?.dependentNameEnglish);
+      return;
+    } else if (validateDependentDetailsResponse?.isSuccess === false) {
+      setDependentInfoValidated(false);
+      supplementaryCardHolderDetailsValidation?.setFieldError(
+        'idNumber',
+        translate(Errors.CreateSupplementaryCardInvalidIqama),
+      );
+    }
+  }, [validateDependentDetailsResponse, validateDependentDetailsError]);
+  useEffect(() => {
+    if (initiateScreeningCheckResponse?.isSuccess === true) {
+      const updatedSupplementaryCardDetails: SupplementaryCardDetail = {
+        ...supplementaryCardDetails,
+        dependentId: supplementaryCardHolderDetailsValidation?.values?.idNumber,
+        relationshipType: selectedRelationship?.code,
+        mobileNumber:
+          selectedRelationship?.code === CARD_HOLDER_RELATION.FAMILY_MEMBER
+            ? supplementaryCardHolderDetailsValidation?.values?.mobileNumber
+            : cardDetail?.dependentMobileNumber,
+      };
+      dispatch(setSupplementaryCardDetails(updatedSupplementaryCardDetails));
+      NavigationService.navigate(CreditCardRoutes.SupplementaryCardLimit);
+    } else if (initiateScreeningCheckResponse?.isSuccess === false) {
+    }
+  }, [initiateScreeningCheckResponse, initiateScreeningCheckError]);
+  const initiateScreeningCheck = () => {
+    if (selectedRelationship?.code === CARD_HOLDER_RELATION.FAMILY_MEMBER) {
+      const options = {
+        headers: getHeaders({screenId: 'Screen1'}),
+        request: {
+          custName:
+            supplementaryCardDetails?.dependentDetails?.dependentNameEnglish,
+        },
+      };
+      initiateScreeningCheckAction(options);
+    } else {
+      const updatedSupplementaryCardDetails: SupplementaryCardDetail = {
+        ...supplementaryCardDetails,
+        dependentId: userDetail?.customernumber,
+        relationshipType: selectedRelationship?.code,
+        mobileNumber: cardDetail?.dependentMobileNumber,
+      };
+      dispatch(setSupplementaryCardDetails(updatedSupplementaryCardDetails));
+      NavigationService.navigate(CreditCardRoutes.SupplementaryCardLimit);
+    }
+  };
+  const triggerInitiateOtp = () => {
+    const updatedSupplementaryCardDetails: SupplementaryCardDetail = {
+      ...supplementaryCardDetails,
+      cardLimit:
+        selectedCardLimitType?.code === MonthlyCardLimit.SHARED_LIMIT
+          ? cardDetail?.cardLimit
+          : supplementaryCardLimitValidation.values?.cardLimit
+              ?.replace(',', '')
+              .split('.')[0],
+      cardLimitType: selectedCardLimitType?.code,
+    };
+    dispatch(setSupplementaryCardDetails(updatedSupplementaryCardDetails));
+    const triggerOtpOptions = {
+      request: {
+        transactionName: APPLY_CARD_TRANSACTION_NAME,
+      },
+      headers: getHeaders({screenId: 'Screen1'}),
+    };
+    triggerOtpAction(triggerOtpOptions);
+  };
+  useEffect(() => {
+    if (
+      triggerOtpResponse?.isSuccess === 'true' ||
+      triggerOtpResponse?.isSuccess === true
+    ) {
+      if (triggerOtpResponse?.referenceNumber) {
+        setReferenceNumber(triggerOtpResponse?.referenceNumber);
+        setMaskedMobileNumber(triggerOtpResponse?.maskedMobileNumber);
+        setOtpError('');
+        setEnableOtp(true);
+      }
+    } else if (
+      triggerOtpResponse?.isSuccess === 'false' ||
+      triggerOtpResponse?.isSuccess === false
+    ) {
+      showToast({
+        id: 'toast',
+        toastMessage: 'Something went wrong',
+        inverted: false,
+        toastType: ToastTypeProps.error,
+      });
+    }
+  }, [triggerOtpResponse, triggerOtpError]);
+  const createSupplementaryCard = (otp: string) => {
+    const options = {
+      headers: getHeaders({screenId: 'Screen1'}),
+      request: getApplyCardRequest(otp),
+    };
+    applyCreditCardAction(options);
+  };
+  const getApplyCardRequest = (otp?: string) => {
+    const tempOTP = generateSha1(otp ?? '');
+    const formattedCardLimit = supplementaryCardDetails?.cardLimit
+      ?.replace(',', '')
+      .split('.')[0];
+    const applyCardRequest = {
+      verificationData: {
+        otp: {
+          otpHash: tempOTP,
+          transactionName: APPLY_CARD_TRANSACTION_NAME,
+          referenceNumber: referenceNumber,
+        },
+      },
+      supplementaryMobileNo: Number(supplementaryCardDetails?.mobileNumber),
+      applyForCardData: {
+        autoDebit: {
+          autoDebitAccountBranch: onePackAccount?.branch,
+          autoDebitAccountNo: onePackAccount?.accountNumber,
+        },
+        cashLimit: formattedCardLimit,
+        creditLimit: formattedCardLimit,
+        creditLimitCurrency: cardDetail?.cardCurrency,
+        deliveryCompany: onePackAccount?.branch,
+        primaryCardNumber: cardDetail?.primaryCardNumber,
+        suppCardLimitType: supplementaryCardDetails?.cardLimitType,
+        suppLimitFixedAmount: SUPPLEMENTARY_LIMIT_FIXED_AMOUNT,
+        documentIdNo:
+          supplementaryCardDetails?.relationshipType ===
+          CARD_HOLDER_RELATION.MYSELF
+            ? userDetail?.customernumber
+            : supplementaryCardDetails?.dependentId,
+        cashLimitCurrency: cardDetail?.cardCurrency,
+        cardProductCode: productCodeValue,
+        accountNumber: onePackAccount?.accountNumber,
+        accCreditLimitCurrency: '',
+        accSettlementCurrency: '',
+        accBranchCode: '',
+        embossedName:
+          supplementaryCardDetails?.relationshipType ===
+          CARD_HOLDER_RELATION.MYSELF
+            ? cardDetail?.embossedName
+            : supplementaryCardDetails?.dependentDetails?.dependentNameEnglish,
+      },
+      cardTypeInternal: cardDetail?.cardTypeInternal,
+      dependentRelationship:
+        supplementaryCardDetails?.dependentDetails?.dependentRelationshipCode ??
+        DEPENDENT_RELATIONSHIP_SELF,
+    };
+    return applyCardRequest;
+  };
+  useEffect(() => {
+    if (applyCreditCardResponse?.isSuccess === true) {
+      setOtpError('');
+      setEnableOtp(false);
+      const updatedSupplementaryCardDetails: SupplementaryCardDetail = {
+        ...supplementaryCardDetails,
+        callbackID: applyCreditCardResponse?.callBackID,
+      };
+      dispatch(setSupplementaryCardDetails(updatedSupplementaryCardDetails));
+      NavigationService.navigate(CreditCardRoutes.ActivateSupplementaryCard);
+    } else if (applyCreditCardResponse?.errors?.length > 0) {
+      switch (applyCreditCardResponse?.errors?.[0]?.errorCode) {
+        case BFFErrorCode.OTP_INVALID:
+          setOtpError(applyCreditCardResponse?.errors?.[0]?.errorDescription);
+          break;
+        case BFFErrorCode.OTP_EXPIRED:
+          setOtpError(applyCreditCardResponse?.errors?.[0]?.errorDescription);
+          break;
+        default:
+          break;
+      }
+    }
+  }, [applyCreditCardResponse, applyCreditCardError]);
+  const handleOnIvrCallbackSuccess = (response: any) => {
+    const addressIs = `${response?.buildingNumber} ${response?.unitNumber} ${response?.additionalNumber} ${response?.streetName} ${response?.city} ${response?.district} ${response?.region} ${response?.zipCode}`
+    retrieveCreditCards();
+    const customScreenProps: CustomStatusScreenProps = {
+      title: translate('CreateSupplementaryCardSuccessLblTitle'),
+      description: format(
+        translate('CreateSupplementaryCardSuccessLblDescription'),
+        addressIs,
+      ),
+      primaryButton: translate('CreateSupplementaryCardSuccessBtnPrimary'),
+      secondaryButton: translate('CreateSupplementaryCardSuccessBtnSecondary'),
+      onPrimaryButtonClick: () => {
+        NavigationService.reset({
+          routes: [
+            {
+              name: CreditCardRoutes.CreditCardTransaction,
+              params: {
+                selectedCCAccountNumber:
+                  supplementaryCardDetails?.selectedCardNumber,
+              },
+            },
+          ],
+        });
+      },
+      onSecondaryButtonClick: () => {
+        NavigationService.reset({
+          routes: [{name: TransferRoutes.BottomNavigation}],
+        });
+      },
+    };
+    NavigationService.navigate(
+      AuthRoutes.CustomStatusScreen,
+      customScreenProps,
+    );
+  };
+  const handleOnIvrCallbackFailure = () => {
+    NavigationService.goBack();
+    showToast({
+      id: '',
+      toastMessage: translate('Failed!!!'),
+      inverted: false,
+      toastType: ToastTypeProps.success,
+    });
+  };
+  return {
+    getSupplementaryRelationshipTypes,
+    showRelationshipDropdown,
+    setShowRelationshipDropdown,
+    relationshipTypes,
+    showMonthlyCardLimitDropdown,
+    setShowMonthlyCardLimitDropdown,
+    selectedRelationship,
+    setSelectedRelationShip,
+    cardHolderDetails,
+    termsChecked,
+    setTermsChecked,
+    cardLimitTypes,
+    selectedCardLimitType,
+    setSelectedCardLimitType,
+    supplementaryCardHolderDetailsValidation,
+    supplementaryCardLimitValidation,
+    dependentInfoValidated,
+    initiateScreeningCheck,
+    translate,
+    enableOtp,
+    setEnableOtp,
+    maskedMobileNumber,
+    triggerInitiateOtp,
+    otpError,
+    createSupplementaryCard,
+    dependentName,
+    callbackID: supplementaryCardDetails?.callbackID,
+    handleOnIvrCallbackSuccess,
+    handleOnIvrCallbackFailure,
+    userDetail,
+  };
+};
+###FilePath: ui-code-guide/supplementary-card-holder-details/index.tsx
+/**
+Author: Haseeb Muhsin
+Date Created:  7/10/2025
+ * Screen for displaying the supplementary card holder details and validating it for create journey
+ */
+import React, {useMemo} from 'react';
+import {
+  CARD_HOLDER_RELATION,
+  SupplementaryCardHolderDetailsProps,
+} from './types';
+import {ScrollView, TouchableOpacity, View} from 'react-native';
+import {useNewTheme} from 'react-core';
+import {getStyles} from './styles';
+import {Header} from 'app/components/header';
+import {LeftContentType} from 'app/components/header/left-content/types';
+import {RightContentType} from 'app/components/header/right-content/types';
+import {
+  CustomCheckbox,
+  CustomRadioButton,
+  Divider,
+  Dropdown,
+  Input,
+  Label,
+  SubmitButton,
+} from 'app/components';
+import {variants} from 'app/components/label/types';
+import DynamicBottomSheet from 'app/components/dynamic-bottom-sheet';
+import {RightContent} from 'app/components/header/right-content';
+import {useCreateSupplementaryCard} from '../../hooks/use-create-supplementary-card';
+import {Object} from 'app/features/onboarding/hooks';
+import {Tick02} from 'app/assets/svg';
+import {
+  COUNTRY_CODE_SA_DISPLAY,
+  KeyboardTypes,
+  MinimumInputLength,
+  PhoneNumberLength9,
+} from 'app/constants';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  LinearTransition,
+  useAnimatedStyle,
+} from 'react-native-reanimated';
+import useKeyboardVisible from 'app/hooks/useKeyboardVisible';
+export const SupplementaryCardHolderDetails: React.FC<
+  SupplementaryCardHolderDetailsProps
+> = props => {
+  const {navigation} = props;
+  const theme = useNewTheme();
+  const styleProps = {theme};
+  const style = getStyles(styleProps);
+  const {
+    showRelationshipDropdown,
+    setShowRelationshipDropdown,
+    relationshipTypes,
+    selectedRelationship,
+    setSelectedRelationShip,
+    cardHolderDetails,
+    supplementaryCardHolderDetailsValidation,
+    initiateScreeningCheck,
+    dependentInfoValidated,
+    translate,
+    dependentName,
+    termsChecked,
+    setTermsChecked,
+    userDetail,
+  } = useCreateSupplementaryCard();
+  const bottomSheet = () => (
+    <DynamicBottomSheet visible={showRelationshipDropdown}>
+      <View style={style.dropDownRoot}>
+        <View style={style.dropDownHeader}>
+          <Label
+            id=""
+            text={translate(
+              'CreateSupplementaryCardHolderDetailsDdRelationship',
+            )}
+            style={style.dropDownTitle}
+            variant={variants.titleS}></Label>
+          <View>
+            <RightContent
+              type={RightContentType.CLOSE_CANCEL}
+              onCloseCancelClick={() => {
+                setShowRelationshipDropdown(false);
+              }}></RightContent>
+          </View>
+        </View>
+        <View>
+          {relationshipTypes?.map((item: Object, index: number) => (
+            <>
+              <TouchableOpacity
+                onPress={() => {
+                  setSelectedRelationShip(item);
+                  setShowRelationshipDropdown(false);
+                  supplementaryCardHolderDetailsValidation.validateField(
+                    'idNumber',
+                  );
+                }}
+                style={style.dropDownItemRoot}>
+                <Label
+                  id=""
+                  text={item.value}
+                  style={style.dropDownTitle}></Label>
+                <CustomRadioButton
+                  id=""
+                  isChecked={selectedRelationship?.code === item.code}
+                  errorText=""
+                  icon={<Tick02 />}
+                  onPress={() => {
+                    setSelectedRelationShip(item);
+                    setShowRelationshipDropdown(false);
+                  }}></CustomRadioButton>
+              </TouchableOpacity>
+              {relationshipTypes?.length - 1 !== index && <Divider></Divider>}
+            </>
+          ))}
+        </View>
+      </View>
+    </DynamicBottomSheet>
+  );
+  const {keyboardOffset, keyboardHeight} = useKeyboardVisible();
+  const paddingStyle = useAnimatedStyle(() => {
+    const paddingBottom = interpolate(
+      keyboardOffset.value,
+      [0, keyboardHeight, 0],
+      [24, keyboardHeight, 24],
+      Extrapolation.CLAMP,
+    );
+    return {
+      paddingBottom,
+    };
+  });
+  const isSubmitButtonDisabled = useMemo(() => {
+    return (
+      (selectedRelationship?.code === CARD_HOLDER_RELATION.FAMILY_MEMBER &&
+        dependentInfoValidated === false) ||
+      selectedRelationship?.code === undefined ||
+      (selectedRelationship?.code === CARD_HOLDER_RELATION.FAMILY_MEMBER &&
+        !supplementaryCardHolderDetailsValidation?.isValid) ||
+      !termsChecked
+    );
+  }, [
+    supplementaryCardHolderDetailsValidation?.isValid,
+    termsChecked,
+    selectedRelationship?.code,
+    dependentInfoValidated,
+  ]);
+  return (
+    <View style={style.container}>
+      <Header
+        showCenterContent={false}
+        leftContentType={LeftContentType.BACK}
+        onLeftContentClick={() => {
+          navigation.goBack();
+        }}
+        onRightContentClick={() => {
+          navigation.pop(3);
+        }}
+        rightContentType={RightContentType.CLOSE_CANCEL}></Header>
+      <View style={style.mainContainer}>
+        <ScrollView
+          style={style.scroll}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps
+          contentContainerStyle={style.contentContainer}>
+          <View style={style.titleContainer}>
+            <Label
+              id="idCreateSupplementaryCardHolderDetailsTitle"
+              text={translate('CreateSupplementaryCardHolderDetailsLblTitle')}
+              variant={variants.titleXL}
+              style={style.title}></Label>
+            <Label
+              id="idCreateSupplementaryCardHolderDetailsDescription"
+              text={translate(
+                'CreateSupplementaryCardHolderDetailsLblDescription',
+              )}
+              variant={variants.bodyRegularM}
+              style={style.description}></Label>
+          </View>
+          <View style={style.inputContainer}>
+            <Dropdown
+              id="idCreateSupplementaryCardHolderDetailsRelationship"
+              placeholder={translate(
+                'CreateSupplementaryCardHolderDetailsDdRelationship',
+              )}
+              inputText={selectedRelationship?.value}
+              onPress={() =>
+                setShowRelationshipDropdown(!showRelationshipDropdown)
+              }
+              BottomSheet={bottomSheet()}
+            />
+            {selectedRelationship?.code === CARD_HOLDER_RELATION.MYSELF ? (
+              <View style={style.hiddenInputContainer}>
+                <Input
+                  id="idCreateSupplementaryCardHolderDetailsIdNumberSelf"
+                  placeholder={translate(
+                    'CreateSupplementaryCardHolderDetailsTxtIdNumber',
+                  )}
+                  value={cardHolderDetails?.idNumber}
+                  disabled></Input>
+                <Input
+                  id="idCreateSupplementaryCardHolderDetailsNameSelf"
+                  placeholder={translate(
+                    'CreateSupplementaryCardHolderDetailsTxtName',
+                  )}
+                  value={cardHolderDetails?.name}
+                  disabled></Input>
+                <Input
+                  id="idCreateSupplementaryCardHolderDetailsMobileNumberSelf"
+                  placeholder={translate(
+                    'CreateSupplementaryCardHolderDetailsTxtMobileNumber',
+                  )}
+                  value={userDetail?.phone?.slice(-9)}
+                  prefix={COUNTRY_CODE_SA_DISPLAY}
+                  disabled></Input>
+              </View>
+            ) : selectedRelationship?.code ===
+              CARD_HOLDER_RELATION.FAMILY_MEMBER ? (
+              <View style={style.hiddenInputContainer}>
+                <Input
+                  id="idCreateSupplementaryCardHolderDetailsIdNumberFamily"
+                  placeholder={translate(
+                    'CreateSupplementaryCardHolderDetailsTxtIdNumber',
+                  )}
+                  value={
+                    supplementaryCardHolderDetailsValidation.values.idNumber
+                  }
+                  setValue={supplementaryCardHolderDetailsValidation.handleChange(
+                    'idNumber',
+                  )}
+                  onFormikBlur={supplementaryCardHolderDetailsValidation.handleBlur(
+                    'idNumber',
+                  )}
+                  customKeyboardType={KeyboardTypes.NumberPad}
+                  maximumLength={MinimumInputLength}
+                  specialCharactersAllowed={false}
+                  errorTextStyle={style.errorIdStyle}
+                  errorText={
+                    supplementaryCardHolderDetailsValidation.touched.idNumber &&
+                    supplementaryCardHolderDetailsValidation.errors.idNumber
+                      ? supplementaryCardHolderDetailsValidation.errors.idNumber
+                      : undefined
+                  }></Input>
+                {dependentInfoValidated && (
+                  <>
+                    <Input
+                      id="idCreateSupplementaryCardHolderDetailsNameFamily"
+                      placeholder={translate(
+                        'CreateSupplementaryCardHolderDetailsTxtName',
+                      )}
+                      value={dependentName}
+                      disabled></Input>
+                    <Input
+                      id="idCreateSupplementaryCardHolderDetailsMobileNumberFamily"
+                      placeholder={translate(
+                        'CreateSupplementaryCardHolderDetailsTxtMobileNumber',
+                      )}
+                      value={
+                        supplementaryCardHolderDetailsValidation.values
+                          .mobileNumber
+                      }
+                      setValue={supplementaryCardHolderDetailsValidation.handleChange(
+                        'mobileNumber',
+                      )}
+                      onFormikBlur={supplementaryCardHolderDetailsValidation.handleBlur(
+                        'mobileNumber',
+                      )}
+                      prefix={COUNTRY_CODE_SA_DISPLAY}
+                      maximumLength={PhoneNumberLength9}
+                      specialCharactersAllowed={false}
+                      customKeyboardType={KeyboardTypes.NumberPad}
+                      errorText={
+                        supplementaryCardHolderDetailsValidation.touched
+                          .mobileNumber &&
+                        supplementaryCardHolderDetailsValidation.errors
+                          .mobileNumber
+                          ? supplementaryCardHolderDetailsValidation.errors
+                              .mobileNumber
+                          : undefined
+                      }></Input>
+                  </>
+                )}
+              </View>
+            ) : null}
+          </View>
+        </ScrollView>
+        <Animated.View
+          style={[style.stickyBarContainer, paddingStyle]}
+          layout={LinearTransition}>
+          <View style={style.checkContainer}>
+            <CustomCheckbox
+              id="idCreateSupplementaryCardHolderDetailsCheckbox"
+              isChecked={termsChecked}
+              onPress={() => {
+                setTermsChecked(!termsChecked);
+              }}></CustomCheckbox>
+            <Label
+              style={style.checkText}
+              id="idCreateSupplementaryCardHolderDetailsCheckbox text"
+              text={translate(
+                'CreateSupplementaryCardTermsLblCheckbox',
+              )}></Label>
+          </View>
+          <SubmitButton
+            id="idCreateSupplementaryCardHolderDetailsSubmit"
+            label={translate('CreateSupplementaryCardBtnNext')}
+            disabled={isSubmitButtonDisabled}
+            onPress={() => {
+              initiateScreeningCheck();
+            }}></SubmitButton>
+        </Animated.View>
+      </View>
+    </View>
+  );
+};
+###FilePath: ui-code-guide/supplementary-card-holder-details/styles.ts
+/**
+Author: Haseeb Muhsin
+Date Created:  7/10/2025
+ * Stylesheet for maintaining screen and component styles for create supplementary card holder details screen
+ */
+import {ScaledSheet} from 'react-native-size-matters';
+import {SupplementaryCardHolderDetailsStyleProps} from './types';
+import useNavigationBarHeight from 'app/hooks/useNavigationBarHeight';
+export const getStyles = (props: SupplementaryCardHolderDetailsStyleProps) => {
+  const {theme} = props;
+  const {navBarHeight} = useNavigationBarHeight();
+  return ScaledSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors['background-01'],
+      paddingBottom: navBarHeight,
+    },
+    mainContainer: {
+      flex: 1,
+    },
+    scroll: {
+      flexGrow: 1,
+    },
+    contentContainer: {
+      gap: 24,
+    },
+    stickyBarContainer: {
+      paddingTop: 24,
+      gap: 24,
+    },
+    titleContainer: {
+      gap: 8,
+      paddingHorizontal: 16,
+    },
+    title: {
+      color: theme.colors['content-primary'],
+    },
+    description: {
+      color: theme.colors['content-secondary'],
+    },
+    inputContainer: {
+      paddingHorizontal: 16,
+      gap: 16,
+    },
+    hiddenInputContainer: {
+      gap: 16,
+    },
+    dropDownRoot: {
+      paddingHorizontal: 16,
+      gap: 16,
+    },
+    dropDownHeader: {
+      flexDirection: 'row',
+    },
+    dropDownTitle: {
+      flex: 1,
+      color: theme.colors['content-primary'],
+    },
+    dropDownItemRoot: {
+      paddingVertical: 16,
+      flexDirection: 'row',
+    },
+    checkContainer: {
+      flexDirection: 'row',
+      gap: 8,
+      paddingHorizontal: 16,
+    },
+    acceptButtonContainer: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    checkText: {
+      flex: 1,
+    },
+    errorIdStyle: {
+      left: 16,
+    },
+  });
+};
+###FilePath: ui-code-guide/supplementary-card-holder-details/types.ts
+/**
+Author: Haseeb Muhsin
+Date Created:  7/10/2025
+ * Properties for configuring the create supplementary card holder screen and styles
+ */
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {CreditCardRootStackParamList} from 'app/navigator/credit-card-section';
+import {Theme} from 'react-core';
+export type SupplementaryCardHolderDetailsProps = {
+  navigation: NativeStackNavigationProp<CreditCardRootStackParamList>;
+};
+export type SupplementaryCardHolderDetailsStyleProps = {
+  theme: Theme;
+};
+export type CardHolderDetails = {
+  idNumber?: string;
+  name?: string;
+  mobileNumber?: string;
+  monthlyCreditLimit?: string;
+  currency?: string;
+};
+export enum CARD_HOLDER_RELATION {
+  MYSELF = '1',
+  FAMILY_MEMBER = '2',
+}
+###FilePath: core-code/credit-cards/index.ts
+export * from './queries/credit-cards-management';
+export * from './queries';
+###FilePath: core-code/credit-cards/constants/card-management.ts
+export const CreditCardManagementEndpoints = {
+  retrievePaymentType: '/retrieve-payment-type',
+  updatePaymentType: '/update-payment-type',
+  retrievePaymentChannels: '/retrieve-payment-channels',
+  updatePaymentChannels: '/evaluate-otp-and-update-payment-channels',
+  updateAvatarAndNickName: '/update-cc-supplementary-avatar-details',
+  updatePhoneNumber: '/update-cc-supplementary-cardholder-phone-number',
+  blockAndReissueIvrCallback:
+    '/evaluate-otp-and-initiate-credit-card-block-reissuance',
+  resetCreditCardPin: '/evaluate-otp-and-initiate-credit-card-pin-reset',
+  retrieveDebitCardTransactions: '/retrieve-debit-card-transactions',
+  retrieveDebitCardSecureInfo: '/retrieve-debit-card-secure-info',
+};
+###FilePath: core-code/credit-cards/constants/index.ts
+export * from './card-management';
+###FilePath: core-code/credit-cards/queries/credit-cards-management.ts
+import {
+  BaseQueryFn,
+  createApi,
+  FetchArgs,
+  fetchBaseQuery,
+} from '@reduxjs/toolkit/query/react';
+import { validateAPIStatus } from '../../common/utils/validateStatus';
+import {
+  RetrieveCardsResponse,
+  RetrieveCardsOptions,
+  RetrieveLinkedCardsResponse,
+  RetrieveLinkedCardsOptions,
+  InitiateLinkCardsResponse,
+  InitiateLinkCardsOptions,
+  InitiateDelinkCardsResponse,
+  InitiateDelinkCardsOptions,
+  InitiateOtpCreditCardsResponse,
+  InitiateOtpCreditCardsOptions,
+  RetrieveCreditCardEmbossingInfoOTPResponse,
+  RetrieveCreditCardEmbossingInfoOTPOptions,
+  RetrieveCreditCardEmbossingInfoBiometricResponse,
+  RetrieveCreditCardEmbossingInfoBiometricOptions,
+  RetrieveCreditCardUpgradeEligibilityResponse,
+  RetrieveCreditCardUpgradeEligibilityOptions,
+  RetrieveCreditCardDetailsResponse,
+  RetrieveCreditCardDetailsOptions,
+  RetrieveCreditCardTransactionsResponse,
+  RetrieveCreditCardTransactionsOptions,
+  InitiateScreeningCheckResponse,
+  InitiateScreeningCheckOptions,
+  RetrieveCcSupplementaryCardUsageRestrictionResponse,
+  RetrieveCcSupplementaryCardUsageRestrictionOptions,
+  UpdateCcSupplementaryLimitAndUsageRestrictionResponse,
+  UpdateCcSupplementaryLimitAndUsageRestrictionOptions,
+  EvaluateOtpAndInitiateCreditCardActivationResponse,
+  EvaluateOtpAndInitiateCreditCardActivationOptions,
+  ApplyCreditCardResponse,
+  ApplyCreditCardOptions,
+  RetrieveCreditCardStatementsResponse,
+  RetrieveCreditCardStatementsOptions,
+  InitiateCreditCardFreezeOptions,
+  InitiateCreditCardFreezeResponse,
+  InitiateCreditCardUnFreezeResponse,
+  InitiateCreditCardUnFreezeOptions,
+  ResetCreditCardPINResponse,
+  ResetCreditCardPINOptions,
+} from '../types/credit-cards-management-types';
+import { CreditCardManagementEndpoints } from '../constants';
+export const creditCardsManagementApi = (baseUrl: string) => {
+  const customBaseQuery: BaseQueryFn<FetchArgs, unknown, unknown> = async (
+    args,
+    api,
+    extraOptions,
+  ) => {
+    console.log('creditCardsManagementApi', {
+      endpoint: args?.url,
+      method: args?.method,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      body: args?.body,
+      headers: args?.headers,
+    });
+    return fetchBaseQuery({
+      baseUrl: baseUrl,
+    })(args, api, extraOptions);
+  };
+  return createApi({
+    baseQuery: customBaseQuery,
+    reducerPath: 'creditCardsManagementApi',
+    endpoints: (builder) => ({
+      retrieveCards: builder.mutation<
+        RetrieveCardsResponse,
+        RetrieveCardsOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/retrieve-cards',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+            validateStatus: validateAPIStatus,
+          };
+        },
+      }),
+      retrieveLinkedCards: builder.mutation<
+        RetrieveLinkedCardsResponse,
+        RetrieveLinkedCardsOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/retrieve-linked-cards',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+      initiateLinkCards: builder.mutation<
+        InitiateLinkCardsResponse,
+        InitiateLinkCardsOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/initiate-link-cards',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+      initiateDelinkCards: builder.mutation<
+        InitiateDelinkCardsResponse,
+        InitiateDelinkCardsOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/initiate-delink-cards',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+      initiateOtpCreditCards: builder.mutation<
+        InitiateOtpCreditCardsResponse,
+        InitiateOtpCreditCardsOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/initiate-otp',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+      retrieveCreditCardEmbossingInfoOTP: builder.mutation<
+        RetrieveCreditCardEmbossingInfoOTPResponse,
+        RetrieveCreditCardEmbossingInfoOTPOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/retrieve-credit-card-embossing-info',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+      retrieveCreditCardEmbossingInfoBiometric: builder.mutation<
+        RetrieveCreditCardEmbossingInfoBiometricResponse,
+        RetrieveCreditCardEmbossingInfoBiometricOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/retrieve-credit-card-embossing-info',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+      retrieveCreditCardUpgradeEligibility: builder.mutation<
+        RetrieveCreditCardUpgradeEligibilityResponse,
+        RetrieveCreditCardUpgradeEligibilityOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/retrieve-credit-card-upgrade-eligibility',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+      retrieveCreditCardDetails: builder.mutation<
+        RetrieveCreditCardDetailsResponse,
+        RetrieveCreditCardDetailsOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/retrieve-credit-card-details',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+      retrieveCreditCardTransactionsDetails: builder.mutation<
+        RetrieveCreditCardTransactionsResponse,
+        RetrieveCreditCardTransactionsOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/retrieve-credit-card-transactions-v1',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+      retrieveCreditCardStatements: builder.mutation<
+        RetrieveCreditCardStatementsResponse,
+        RetrieveCreditCardStatementsOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/retrieve-credit-card-statements',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+      initiateCreditCardFreeze: builder.mutation<
+        InitiateCreditCardFreezeResponse,
+        InitiateCreditCardFreezeOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/initiate-credit-card-freeze',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+      initiateScreeningCheck: builder.mutation<
+        InitiateScreeningCheckResponse,
+        InitiateScreeningCheckOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/initiate-screening-check',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+       retrieveCcSupplementaryCardUsageRestriction: builder.mutation<
+        RetrieveCcSupplementaryCardUsageRestrictionResponse,
+        RetrieveCcSupplementaryCardUsageRestrictionOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/retrieve-cc-supplementary-card-usage-restriction',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+        updateCcSupplementaryLimitAndUsageRestriction: builder.mutation<
+        UpdateCcSupplementaryLimitAndUsageRestrictionResponse,
+        UpdateCcSupplementaryLimitAndUsageRestrictionOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/update-cc-supplementary-limit-and-usage-restriction',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+        evaluateOtpAndInitiateCreditCardActivation: builder.mutation<
+        EvaluateOtpAndInitiateCreditCardActivationResponse,
+        EvaluateOtpAndInitiateCreditCardActivationOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/evaluate-otp-and-initiate-credit-card-activation',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+       initiateCreditCardUnFreeze: builder.mutation<
+        InitiateCreditCardUnFreezeResponse,
+        InitiateCreditCardUnFreezeOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/initiate-credit-card-unfreeze',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+      applyCreditCard: builder.mutation<
+        ApplyCreditCardResponse,
+        ApplyCreditCardOptions
+      >({
+        query: (options) => {
+          return {
+            url: '/apply-credit-card',
+            method: 'POST',
+            body: {
+              ...options?.request,
+            },
+            headers: {
+              ...options?.headers,
+            },
+          };
+        },
+      }),
+      resetCreditCardPIN: builder.mutation<
+        ResetCreditCardPINResponse,
+        ResetCreditCardPINOptions
+      >({
+        query: (options) => {
+          return {
+            url: CreditCardManagementEndpoints?.resetCreditCardPin,
+            method: 'POST',
+            headers: options?.headers,
+            body: options?.request,
+          };
+        },
+      }),
+    }),
+  });
+};
+###FilePath: core-code/credit-cards/queries/index.ts
+export * from './card-management';
+###FilePath: core-code/credit-cards/types/card-management.ts
+import { ApiErrors, ApiHeaders } from '../../../constants';
+/* Retrieve Payment Type */
+export type CardsRetrievePaymentTypeOptions = {
+  headers: ApiHeaders;
+  request: CardsRetrievePaymentTypeRequest;
+};
+export type CardsRetrievePaymentTypeRequest = {
+  creditCardNumber: string;
+};
+export type CardsRetrievePaymentTypeResponse = {
+  isSuccess: boolean;
+  cardPaymentType: string;
+  accountNumber: string;
+  errors?: ApiErrors[];
+};
+/* Update Payment Type */
+export type CardsUpdatePaymentTypeOptions = {
+  headers: ApiHeaders;
+  request: CardsRetrievePaymentTypeRequest;
+};
+export type CardsUpdatePaymentTypeRequest = {
+  creditCardNumber: string;
+  blockTypes: string;
+  accountNumber: string;
+};
+export type CardsUpdatePaymentTypeResponse = {
+  isSuccess: boolean;
+  cardPaymentType: string;
+  errors?: ApiErrors[];
+};
+/* Retrieve Payment Channels */
+export type CardsRetrievePaymentChannelsOptions = {
+  headers: ApiHeaders;
+  request: CardsRetrievePaymentChannelsRequest;
+};
+export type CardsRetrievePaymentChannelsRequest = {
+  creditCardNumber: string;
+};
+export type CardsRetrievePaymentChannelsResponse = {
+  isSuccess: boolean;
+  ECOM: boolean;
+  ATM: boolean;
+  POS: boolean;
+  ContactLess: boolean;
+  errors?: ApiErrors[];
+};
+/* Update Payment Channels */
+export type CardsUpdatePaymentChannelsOptions = {
+  headers: ApiHeaders;
+  request: CardsUpdatePaymentChannelsRequest;
+};
+export type PaymentChannelData = {
+  ccPaymentChannelType: string;
+  isEnabled: boolean;
+};
+export type CardsUpdatePaymentChannelsRequest = {
+  verificationData: {
+    otp: {
+      otpHash: string;
+      transactionName: string;
+      referenceNumber: string;
+    };
+  };
+  creditCardNumber: string;
+  paymentChannelDataList: PaymentChannelData[];
+};
+export type CardsUpdatePaymentChannelsResponse = {
+  isSuccess: boolean;
+  errors?: ApiErrors[];
+};
+/* Update Avatar & Nickname */
+export type CardsUpdateAvatarAndNicknameOptions = {
+  headers: ApiHeaders;
+  request: CardsUpdateAvatarAndNicknameRequest;
+};
+export type CardsUpdateAvatarAndNicknameRequest = {
+  isFriendlyNameChanged: boolean;
+  isAvatarImageSet: boolean;
+  avatarImageCode: string;
+  isCustomerImageSet: boolean;
+  customerImage: string;
+  friendlyName: string;
+  cardType: string;
+  cardNumber: string;
+};
+export type CardsUpdateAvatarAndNicknameResponse = {
+  isSuccess: boolean;
+  errors?: ApiErrors[];
+};
+/* Update Phone Number */
+export type CardsUpdatePhoneNumberOptions = {
+  headers: ApiHeaders;
+  request: CardsUpdatePhoneNumberRequest;
+};
+export type CardsUpdatePhoneNumberRequest = {
+  cardNo: string;
+  phoneNumber: string;
+};
+export type CardsUpdatePhoneNumberResponse = {
+  isSuccess: boolean;
+  errors?: ApiErrors[];
+};
+export type BlockAndReissueIvrCallbackRequest = {
+  verificationData: {
+    otp: {
+      otpHash: string;
+      transactionName: string;
+      referenceNumber: string;
+    };
+  };
+  cardNumber: string;
+  primaryCardNumber: string;
+  embossedName: string;
+  blockReason: string;
+  blockType: string;
+  cardTypeInternal: string;
+  cardClass: string;
+};
+export type RetrieveDebitCardTransactionsRequest = {
+  pageIndex: string;
+  categoryID: string;
+  fromDate: string;
+  toDate: string;
+  minAmount: number;
+  maxAmount: number;
+  sortingOrder: string;
+  sortingType: string;
+  cardNumber: string;
+  transactionType: string;
+  channel: string;
+};
+export type BlockAndReissueIvrCallbackResponse = {
+  isSuccess: string;
+  isCallbackRequired: string;
+  callBackID: string;
+};
+export type DebitCardTransactionList = {
+  title: string;
+  amountInLocalCurrency: number;
+  txnDateTime: string;
+  txnCurrency: string;
+  txnNature: string;
+  txnCode: string;
+  txnReference: string;
+  currentBalance: number;
+  spendingCategoryID: number;
+  bicCode: string;
+  billerID: number;
+  merchantID: number;
+  merchantImage: string;
+  isReversal: boolean;
+  accountEntrySrNo: number;
+};
+export interface VerificationData {
+  otp: Otp;
+}
+export interface Otp {
+  otpHash: string;
+  transactionName: string;
+  referenceNumber: string;
+}
+export type BlockAndReissueIvrCallbackOptions = {
+  headers: ApiHeaders;
+  request: BlockAndReissueIvrCallbackRequest;
+};
+export type RetrieveDebitCardTransactionsOptions = {
+  headers: ApiHeaders;
+  request: RetrieveDebitCardTransactionsRequest;
+};
+export type RetrieveDebitCardTransactionsResponse = {
+  isSuccess: boolean;
+  txnList: DebitCardTransactionList[];
+};
+export type RetrieveDebitCardSecureInfoResponse = {
+  pan: string;
+  cvv2: string;
+  cardStatus: string;
+  expiryDate: string;
+  key: string;
+};
+export type RetrieveDebitCardSecureInfoRequest = {
+  verificationData: VerificationData;
+  vpan: string;
+  cardKey: string;
+  isBiometricValidated: boolean;
+};
+export type RetrieveDebitCardSecureInfoOptions = {
+  headers: ApiHeaders;
+  request: RetrieveDebitCardSecureInfoRequest;
+};
+###FilePath: core-code/credit-cards/types/index.ts
+export * from './card-management';
+
+**Follow these patterns for:**
+- File structure (hooks and schemas at feature level)
+- Import statement organization (strict order with path aliases)
+- Direct component imports (no namespace imports)
+- Export patterns (named vs default export)
+- Hook implementation pattern
+- Schema validation pattern
+- Constants.ts usage for enums and comparisons
+- Types.ts definitions for all arguments and objects
+- Component composition and layout
+- State management via custom hooks
+- Theme usage with `useNewTheme()`
+- Translation with `translation.useTranslation()`
+- Navigation patterns
+- Flex layout patterns (row vs column)
+
+---
+
+## 4. PROJECT STRUCTURE
+
+app/
+├── assets/
+│   ├── animations/
+│   ├── fonts/
+│   ├── html/
+│   ├── images/
+│   ├── lottie/
+│   └── svg/
+│       ├── Currency/
+│       └── (150+ icons)
+├── common/
+│   ├── theme/
+│   └── types.ts
+├── components/ (120+ components – showing first 5 + one deep dive)
+│   ├── account-status/
+│   ├── accounts-bottom-list/
+│   ├── action-bottom-sheet/
+│   ├── amount-input/
+│   ├── avatar/
+│   └── ... (115+ more)
+│
+│   └─ Deep dive example: action-bottom-sheet/
+│       ├── components/
+│       │   └── BottomSheetHeaderWrapper.tsx
+│       ├── index.tsx
+│       ├── styles.ts
+│       └── types.ts
+├── constants/ (11 files – first 5 only)
+│   ├── admin-config.ts
+│   ├── animation-config.ts
+│   ├── api-screen-ids.ts
+│   ├── error-values.ts
+│   ├── gradient-config.ts
+│   └── ... (6 more)
+├── features/
+│   ├── accounts/
+│   │   ├── constants/
+│   │   ├── hooks/
+│   │   ├── schemas/
+│   │   └── views/ (17 screens – first 5 + one deep dive)
+│   │       ├── account-details/
+│   │       ├── accounts-list/
+│   │       ├── accounts-transactions/
+│   │       ├── add-money-get-started/
+│   │       ├── bank-transfers/
+│   │       └── ... (12 more)
+│   │
+│   │       └─ Deep dive example: accounts-transactions/
+│   │           ├── components/
+│   │           │   ├── transaction-list-header/
+│   │           │   │   ├── index.tsx
+│   │           │   │   ├── styles.ts
+│   │           │   │   └── types.ts
+│   │           │   └── transaction-list-item/
+│   │           │       ├── index.tsx
+│   │           │       ├── styles.ts
+│   │           │       └── types.ts
+│   │           ├── index.tsx
+│   │           ├── styles.ts
+│   │           └── types.ts
+│   │
+│   ├── authentication/
+│   ├── beneficiaries/
+│   ├── dashboard/
+│   ├── onboarding/
+│   ├── transfers/
+│   └── user-setting/
+├── hooks/ (14 hooks)
+├── navigator/
+├── redux/
+├── services/
+└── utils/
+    ├── rsa/
+    └── (30+ utilities)
+
+**Generate code following this structure:**
+- `app/features/{feature-name}/views/{screen-name}/index.tsx`
+- `app/features/{feature-name}/views/{screen-name}/styles.ts`
+- `app/features/{feature-name}/views/{screen-name}/types.ts`
+- `app/features/{feature-name}/views/{screen-name}/translations.ts`
+- `app/features/{feature-name}/views/{screen-name}/constants.ts` ← **Only if enums/comparisons needed**
+- `app/features/{feature-name}/hooks/use-{screen-name}.ts` ← **Feature level**
+- `app/features/{feature-name}/schemas/{screen-name}-schema.ts` ← **Feature level**
+
+---
+
+## 5. USER STORIES & BUSINESS LOGIC
+
+ RCM-1977 Murabaha Profit Rates / Live Rates
+As an existing customer AND 
+accessed the Murabaha 
+deposit
+ I, tap on 'Get Started' When 
+from story board view
+ , I should be able view Then
+ the profit rates applicable for 
+the supported currencies
+  - Application should fetch the Live TD rates from the system for the below supported currencies
+     A. SAR
+     B. USD
+  - System should accommodate for new currencies which might be added in the future
+  - Duration &  Amount range applicable for each currencies should be configurable and bank users should have 
+ fetched and returned from core banking system access to update the data as and when required
+  - There should be a dedicated section for SAR and USD which expands on tapping the section/dropdown icon.
+  - The expanded section should display a table of profit rates for SAR/USD across various term durations. Live profit 
+rates  based on the amount range and duration should be fetched and returned from core banking should be retrieved
+ system. It should be presented to customer as provided in the Figma.
+  - User should be allowed to select the duration(column), which highlights the profit rates, as per figma
+  - Last  exact time of update for rates (SAR and USD) should be displayed right below the table. updated E.g.: “Last 
+” updated 2 hours ago
+  - Best profit rate and the term duration should be mentioned for the selected currency (SAR). Best rate is the highest 
+ offered by the bank for Murabaha deposits across all deposit amount range and term duration profit rate
+     E.g.: “Best rate: 4.3% for 360 days”.
+   - Application should also displays the competitive rates( ) for each currencies on the title section the highest profit rate
+   - On tapping, " " button should take the user to the deposit calculator page to find the estimated Profit calculator
+ profit and maturity amount.- On tapping, “ ” button should take the user to the deposit initiation page.   Open M
+
+**Implement according to:**
+- Field validation rules (define in schemas)
+- Mandatory vs optional fields (Yup validation)
+- Conditional field visibility (logic in hooks)
+- Data flow and state management (centralized in hooks)
+- Form submission and navigation (handlers in hooks)
+
+---
+
+## 6. API ENDPOINTS (NEW)
+
+
+types.yaml:
+currentName:
+description: currency Name
+data type: string
+Definitions:
+profit-rate-inquiry-req:
+  description: profit rate inquiry request
+  type: object
+  properties:
+    productType:
+      $ref: ../../components/types.yaml#/productType
+profit-rate-inquiry-res:
+  description: profit rate inquiry response
+  type: object
+  properties:
+    isSuccess:
+      $ref: ../../components/types.yaml#/isSuccess
+    lastUpdatedOn:
+      $ref: ../../components/types.yaml#/lastUpdatedOn
+    profitRateList:
+      type: array
+      items:
+        type: object
+        properties:
+          currencyCode:
+            $ref: ../../components/types.yaml#/currencyName
+          depositQuarter:
+            $ref: ../../components/types.yaml#/depositQuarter
+          depositRate:
+            $ref: ../../components/types.yaml#/depositRate
+          depositYear:
+            $ref: ../../components/types.yaml#/depositYear
+          fromAmount:
+            $ref: ../../components/types.yaml#/amountFrom
+          toAmount:
+            $ref: ../../components/types.yaml#/amountFrom
+          isRecommendedRate:
+            $ref: ../../components/types.yaml#/isRecommendedRate
+          productId:
+            $ref: ../../components/types.yaml#/productId
+          tenure:
+            $ref: ../../components/types.yaml#/tenure
+Examples:
+profit-rate-inquiry-req:
+  summary: profit rate inquiry request
+  value:
+    productType: "RTDEP"
+profit-rate-inquiry-res:
+  summary: profit rate inquiry  response
+  value:
+    isSuccess: true
+    lastUpdatedOn: "2025-04-28 12:06:13"
+    profitRateList:
+      - currencyCode: "USD"
+        depositQuarter: "1"
+        depositRate: "3.5"
+        depositYear: "2025"
+        fromAmount: "5000"
+        toAmount: "50000"
+        isRecommendedRate: false
+        productId: "RTDEP"
+        tenure: 30
+ accounts.yaml
+openapi: 3.1.0
+info:
+  title: Accounts API
+  description: API related to Accounts Management.
+  contact:
+    name: API Support
+    url: https://www.abc.com/api-support
+    email: api.support@abc.com
+  version: '0.0.20'
+servers:
+  - url: http://0.0.0.0:8080/v1/api
+    variables: {}
+paths:
+    /accounts/profit-rate-inquiry:
+    post:
+      tags:
+        - accounts-management
+      summary: profit-rate-inquiry
+      description: profit rate inquiry
+      operationId: profit-rate-inquiry
+      parameters:
+        - $ref: '../components/headers.yaml#/Authorization'
+        - $ref: '../components/headers.yaml#/Content-Type'
+        - $ref: '../components/headers.yaml#/ContentLanguage'
+        - $ref: '../components/headers.yaml#/activityid'
+        - $ref: '../components/headers.yaml#/ChannelID'
+        - $ref: '../components/headers.yaml#/DeviceID'
+        - $ref: '../components/headers.yaml#/DeviceType'
+        - $ref: '../components/headers.yaml#/MobileISDN'
+        - $ref: '../components/headers.yaml#/ScreenID'
+        - $ref: '../components/headers.yaml#/ClientTimestamp'
+        - $ref: '../components/headers.yaml#/AppVersion'
+      requestBody:
+        description: loan transactions
+        content:
+          application/json:
+            schema:
+              $ref: 'definitions/profit-rate-inquiry.yaml#/profit-rate-inquiry-req'
+            examples:
+              objectExample:
+                $ref: 'examples/profit-rate-inquiry.yaml#/profit-rate-inquiry-req'
+        required: false
+      responses:
+        '200':
+          description: Successfully retrieved data
+          headers: { }
+          content:
+            application/json:
+              schema:
+                $ref: 'definitions/profit-rate-inquiry.yaml#/profit-rate-inquiry-res'
+              examples:
+                objectExample:
+                  $ref: 'examples/profit-rate-inquiry.yaml#/profit-rate-inquiry-res'
+        '400':
+          description: BadRequest
+          headers: { }
+          content:
+            application/json:
+              schema:
+                $ref: '../components/responses.yaml#/BadRequest'
+                description: Bad Request - The server could not understand the request.
+        '404':
+          description: NotFound
+          headers: { }
+          content:
+            application/json:
+              schema:
+                $ref: '../components/responses.yaml#/NotFound'
+                description: Not Found - The requested resource could not be found.
+        '500':
+          description: InternalServerError
+          headers: { }
+          content:
+            application/json:
+              schema:
+                $ref: '../components/responses.yaml#/InternalServerError'
+                description: Internal Server Error.
+      deprecated: false
+    parameters: [ ]
+tags:
+  - name: accounts-management
+    description: Accounts Management
+# === Appended schema definitions from types.yaml ===
+productType:
+  type: string
+  minLength: 0
+  maxLength: 500
+isSuccess:
+  description: isSuccess
+  type: boolean
+lastUpdatedOn:
+  description: lastUpdatedOn
+  type: string
+currencyName:
+  description: currencyName
+  type: string
+  examples:
+  - string
+  minLength: 0
+  maxLength: 500
+depositQuarter:
+  description: Deposit Quarter
+  type: string
+depositRate:
+  description: Deposit Rate
+  type: string
+depositYear:
+  description: Deposit Year
+  type: string
+amountFrom:
+  description: amountFrom
+  type: string
+  example:
+  - 0.0
+amountFrom:
+  description: amountFrom
+  type: string
+  example:
+  - 0.0
+isRecommendedRate:
+  description: Is Recommended Rate
+  type: boolean
+productId:
+  description: productId
+  type: string
+tenure:
+  description: tenure
+  type: number
+
+
+**Usage Instructions:**
+- Derive API request/response interfaces, constants, and queries from this content.
+- Use examples in `api_endpoints` to build mock responses in hooks.
+- Always keep URL paths and product/type codes in constants, not hardcoded strings in hooks/views.
+- When integrating real APIs, use the same types and constants; only switch implementation from mock to RTK Query + backend.
+---
+
+## GENERATION REQUIREMENTS
+
+### Design Analysis
+
+1. Analyze the attached Figma design image carefully.
+2. Match structure, layout, spacing, and alignment as closely as possible.
+3. **Identify flex-direction** for each container (row vs column based on visual layout).
+4. Identify all UI components, layouts, interactions, text content, and styling.
+5. Map each visual element to existing custom components.
+6. Extract text content, colors, spacing, and typography.
+7. Identify form fields that need validation.
+8. Note component hierarchy, nesting, and flex behavior.
+9. Respect safe-area, scrolling, and keyboard behavior if indicated.
+10. Identify if enums/constants are needed for comparisons.
+11. Identify correct export pattern for the component.
+12. **Identify API endpoints needed** from the provided API endpoints file.
+
+### Code Structure
+
+
+Generate files in this format:
+
+
+###FilePath: app/features/{feature}/views/{screen-name}/index.tsx
+[View component with screen name export - UI only, uses custom hook, direct component imports]
+
+###FilePath: app/features/{feature}/hooks/use-{screen-name}.ts
+[Custom hook - all business logic, state, handlers, API integration]
+
+###FilePath: app/features/{feature}/schemas/{screen-name}-schema.ts
+[Yup schema, initial values, types]
+
+###FilePath: app/features/{feature}/views/{screen-name}/styles.ts
+[Styles implementation with typed StyleSheet, Theme, and correct flex-direction]
+
+###FilePath: app/features/{feature}/views/{screen-name}/types.ts
+[Types/interfaces for props, function arguments, and objects]
+
+###FilePath: app/features/{feature}/views/{screen-name}/translations.ts
+[Translation keys with en and ar objects]
+
+###FilePath: app/features/{feature}/views/{screen-name}/constants.ts
+[Enums and typed constants - ONLY if comparisons needed]
+
+###FilePath: app/features/{feature}/types/{endpoint-name}.types.ts
+[API request/response types derived from api_endpoints]
+
+###FilePath: app/features/{feature}/constants/{endpoint-name}.constants.ts
+[API endpoint paths, enums, and config]
+
+###FilePath: app/features/{feature}/queries/use-{endpoint-name}-query.ts
+[RTK Query API definitions using the above types/constants]
+
+text
+
+
+### Implementation Checklist
+
+
+- [ ] Strict import order (React → Third-party → Components → Theme/utils → Assets → Feature imports → Local)
+- [ ] Use path aliases (@app/features, @app/components, @app/assets, @app/constants)
+- [ ] Direct component imports (`import {Label, Input} from '@app/components'`)
+- [ ] Correct export pattern (named vs default)
+- [ ] Component name matches screen name in TitleCase
+- [ ] Hooks at feature level
+- [ ] Schemas at feature level
+- [ ] View-level constants only when comparisons needed
+- [ ] All function and object types defined in view-level types.ts
+- [ ] Enums for string comparisons (no hardcoded literals)
+- [ ] Flex-direction correct
+- [ ] View is pure UI (no business logic)
+- [ ] All state and handlers in custom hook
+- [ ] Formik + Yup used for forms
+- [ ] Translations generated with both `en` and `ar`
+- [ ] Component IDs follow `ComponentNameFieldName`
+- [ ] Translation keys follow `JourneyScreenNameComponentAbbreviationFieldName`
+- [ ] Styles typed with ViewStyle/TextStyle/ImageStyle
+- [ ] No circular dependencies
+- [ ] Figma layout matched
+- [ ] **API types present** in `types/{endpoint-name}.types.ts`
+- [ ] **API constants present** in `constants/{endpoint-name}.constants.ts`
+- [ ] **API queries present** in `queries/use-{endpoint-name}-query.ts`
+- [ ] **Mock implementation** in hook using `api_endpoints` examples
+- [ ] **Real implementation** ready using RTK Query + `usePostLoginHandler`
+- [ ] **All endpoints** referenced via constants, not inline strings
+
+
+---
+
+## OUTPUT FORMAT
+
+
+Provide complete, production-ready code organized by file path (including view, hook, schema, styles, types, translations, view-level constants, API types, API constants, and API queries) for the given feature and screen.
+
+

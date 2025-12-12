@@ -1,0 +1,3077 @@
+
+
+Generate React Native screen code from the attached design image for integration into an existing project.
+
+**Project Configuration:**
+- React: 19.1.1
+- React Native: 0.82.1
+- Gradle: 9.0.0
+- TypeScript: Required
+
+---
+
+## CRITICAL INSTRUCTIONS
+
+**DO NOT:**
+- Create mock components or mock functions
+- Recreate any existing components
+- Generate placeholder/TODO comments
+- Create standalone App.tsx files
+
+**DO:**
+- Use existing custom components with proper import statements
+- Follow the existing project structure and patterns
+- Generate production-ready, integration-ready code
+- Use proper file path format: `###FilePath: app/features/{feature}/views/{screen-name}/index.tsx`
+- Separate business logic into custom hooks
+- Define validation schemas using Yup
+- Use Formik for form management
+
+---
+
+## FILE STRUCTURE & ARCHITECTURE
+
+**IMPORTANT:** Hooks and Schemas are at the **feature level**, NOT inside the view folder.
+
+```
+app/features/{feature}/
+├── views/
+│   └── {screen-name}/
+│       ├── index.tsx          # Main view component (UI only)
+│       ├── styles.ts          # StyleSheet definitions
+│       ├── types.ts           # TypeScript interfaces/types
+│       └── translations.ts    # Translation keys (en/ar)
+├── hooks/
+│   └── use-{screen-name}.ts   # Custom hook (business logic, state, handlers)
+└── schemas/
+    └── {screen-name}-schema.ts # Yup validation schema & initial values
+```
+
+**Example Structure:**
+```
+app/features/credit-card/
+├── views/
+│   ├── monthly-expenses/
+│   │   ├── index.tsx
+│   │   ├── styles.ts
+│   │   ├── types.ts
+│   │   └── translations.ts
+│   └── personal-details/
+│       ├── index.tsx
+│       ├── styles.ts
+│       ├── types.ts
+│       └── translations.ts
+├── hooks/
+│   ├── use-monthly-expenses.ts
+│   └── use-personal-details.ts
+└── schemas/
+    ├── monthly-expenses-schema.ts
+    └── personal-details-schema.ts
+```
+
+### Architecture Principles:
+
+1. **View (views/{screen-name}/index.tsx):** Pure UI component, no business logic
+2. **Hook (hooks/use-{screen-name}.ts):** All state, logic, handlers, validation
+3. **Schema (schemas/{screen-name}-schema.ts):** Yup validation rules, initial values, types
+4. **Styles (views/{screen-name}/styles.ts):** Theme-based StyleSheet
+5. **Types (views/{screen-name}/types.ts):** Component props, navigation types, style props
+6. **Translations (views/{screen-name}/translations.ts):** i18n keys and values
+
+---
+
+## NAMING CONVENTIONS & STANDARDS
+
+### 1. Import Order
+**STRICT ORDER - Must follow this sequence:**
+```typescript
+// 1. React imports (always first)
+import React, {FC, useState, useEffect, useMemo} from 'react';
+import {View, Text, StyleSheet} from 'react-native';
+
+// 2. Third-party library imports
+import {useNavigation} from '@react-navigation/native';
+import {useFormik} from 'formik';
+
+// 3. Custom component imports (after React and third-party)
+import * as Components from '@app/components';
+
+// 4. Theme and utilities
+import {useNewTheme, Theme, translation, ContextualType} from 'react-core';
+
+// 5. Assets (SVG icons, images)
+import {IconName} from 'app/assets/svg';
+
+// 6. Feature-level imports (hooks, schemas) - OUTSIDE view folder
+import {useScreenName} from '../../hooks/use-screen-name';
+import {ScreenNameSchema, screenNameInitialValues} from '../../schemas/screen-name-schema';
+
+// 7. Local view imports (types, styles)
+import {getStyles} from './styles';
+import {ScreenNameProps} from './types';
+```
+
+### 2. Component ID Naming Convention
+
+**Pattern:** `<<ComponentName>><<FieldName>>`
+- Use **TitleCase** for both component name and field name
+- No spaces, no underscores, just concatenated TitleCase
+
+**Examples:**
+```typescript
+// Input components
+id="InputTotalExpenses"
+id="InputFinancialObligations"
+id="InputNickname"
+
+// Label components
+id="LabelTitle"
+id="LabelDescription"
+id="LabelScreenTitle"
+id="LabelScreenSubtitle"
+
+// Button components
+id="ButtonNext"
+id="SubmitButtonNextButton"
+
+// Checkbox components
+id="CustomCheckboxDisclosureCheckbox"
+id="CheckboxAcknowledgement"
+
+// Screen containers
+id="ScreenContainerMonthlyExpensesScreen"
+```
+
+### 3. Translation Key Pattern
+
+**Pattern:** `<<Journey>><<ScreenName>><<ComponentAbbreviation>><<FieldName>>`
+- All parts in TitleCase, no separators
+- Component abbreviation must be in proper case
+
+**Component Abbreviations:**
+- `Lbl` = Label
+- `Btn` = Button
+- `Txt` = Text input value
+- `Plc` = Placeholder
+- `Chk` = Checkbox
+- `Info` = Info/help text
+- `Error` = Error message
+
+**Examples:**
+```typescript
+// Labels
+title={t('CreditCardApplicationMonthlyExpensesLblTitle')}
+text={t('OnboardingMonthlyExpensesLblSubtitle')}
+
+// Buttons
+label={t('OnboardingMonthlyExpensesNextBtnLbl')}
+
+// Placeholders
+placeholder={t('OnboardingMonthlyExpensesPlcTotalExpenses')}
+placeholder={t('OnboardingMonthlyExpensesPlcFinancialOblgn')}
+
+// Checkboxes
+title={t('OnboardingMonthlyExpensesChkTitle')}
+linkTitle={t('OnboardingMonthlyExpensesChkLinkTitle')}
+
+// Info text
+text={t('OnboardingMonthlyExpensesInfoFinancialOblgn')}
+
+// Total/Summary
+text={t('OnboardingMonthlyExpensesLblTotalAmt')}
+```
+
+---
+
+## CUSTOM HOOKS PATTERN
+
+### Hook File Structure: `app/features/{feature}/hooks/use-{screen-name}.ts`
+
+**Location:** At feature level, NOT inside view folder
+
+**Purpose:** Centralize all business logic, state management, form handling, and event handlers
+
+**Must Include:**
+1. All useState declarations
+2. Formik form management
+3. useMemo for computed values
+4. All event handlers (onChange, onPress, etc.)
+5. Validation logic
+6. Navigation logic
+7. API calls (if any)
+
+**Example Pattern:**
+```typescript
+###FilePath: app/features/{feature}/hooks/use-{screen-name}.ts
+
+import {useState, useMemo} from 'react';
+import {useFormik} from 'formik';
+import {useNavigation} from '@react-navigation/native';
+import {ScreenNameSchema, screenNameInitialValues} from '../schemas/screen-name-schema';
+
+export const useScreenName = () => {
+  // 1. State declarations
+  const [fieldOne, setFieldOne] = useState<string>('');
+  const [fieldTwo, setFieldTwo] = useState<string>('');
+  const [isChecked, setIsChecked] = useState<boolean>(false);
+
+  const navigation = useNavigation();
+
+  // 2. Formik form management
+  const formikForm = useFormik({
+    validateOnChange: true,
+    validateOnBlur: true,
+    initialValues: screenNameInitialValues,
+    validationSchema: ScreenNameSchema,
+    onSubmit: async (values) => {
+      // Submit logic here
+      console.log('Form submitted:', values);
+    },
+  });
+
+  // 3. Helper functions (if needed)
+  const parseAmount = (amountString: string): number => {
+    return parseFloat(amountString.replace(/,/g, '') || '0');
+  };
+
+  // 4. Computed values with useMemo
+  const isFormValid = useMemo(() => {
+    // Validation logic
+    return fieldOne !== '' && fieldTwo !== '' && isChecked;
+  }, [fieldOne, fieldTwo, isChecked]);
+
+  // 5. Event handlers
+  const onChangeFieldOne = (text: string) => {
+    setFieldOne(text);
+  };
+
+  const onChangeFieldTwo = (text: string) => {
+    setFieldTwo(text);
+  };
+
+  const onCheckboxSelect = () => {
+    setIsChecked(!isChecked);
+  };
+
+  const handleNext = () => {
+    console.log('Next pressed');
+    // navigation.navigate('NextScreen');
+  };
+
+  const onBackButtonPress = () => {
+    navigation.goBack();
+  };
+
+  // 6. Return all state, handlers, and computed values
+  return {
+    // State
+    fieldOne,
+    fieldTwo,
+    isChecked,
+
+    // Form
+    formikForm,
+
+    // Computed
+    isFormValid,
+
+    // Handlers
+    onChangeFieldOne,
+    onChangeFieldTwo,
+    onCheckboxSelect,
+    handleNext,
+    onBackButtonPress,
+  };
+};
+```
+
+---
+
+## VALIDATION SCHEMAS PATTERN
+
+### Schema File Structure: `app/features/{feature}/schemas/{screen-name}-schema.ts`
+
+**Location:** At feature level, NOT inside view folder
+
+**Purpose:** Define Yup validation rules, initial values, and form types
+
+**Must Include:**
+1. Yup validation schema
+2. Initial values object
+3. TypeScript type for form values
+4. Import error message keys from constants
+
+**Example Pattern:**
+```typescript
+###FilePath: app/features/{feature}/schemas/{screen-name}-schema.ts
+
+import {Errors} from '@app/constants';
+import * as yup from 'yup';
+
+// 1. Yup Validation Schema
+export const ScreenNameSchema = yup.object().shape({
+  fieldOne: yup
+    .string()
+    .min(3, Errors.FieldOneMinLength)
+    .max(50, Errors.FieldOneMaxLength)
+    .required(Errors.FieldOneRequired),
+
+  fieldTwo: yup
+    .string()
+    .matches(/^[0-9]+$/, Errors.FieldTwoInvalid)
+    .required(Errors.FieldTwoRequired),
+});
+
+// 2. Initial Values
+export const screenNameInitialValues = {
+  fieldOne: '',
+  fieldTwo: '',
+};
+
+// 3. TypeScript Type
+export type ScreenNameInitialValuesType = {
+  fieldOne: string;
+  fieldTwo: string;
+};
+```
+
+**Common Validation Patterns:**
+```typescript
+// Required field
+.required(Errors.FieldRequired)
+
+// Min/Max length
+.min(3, Errors.MinLength)
+.max(50, Errors.MaxLength)
+
+// Regex patterns
+.matches(/^[a-zA-Z0-9]+$/, Errors.AlphanumericOnly)
+.matches(/^[0-9]+$/, Errors.NumericOnly)
+
+// Email
+.email(Errors.InvalidEmail)
+
+// Number validation
+yup.number()
+  .min(0, Errors.MinValue)
+  .max(1000000, Errors.MaxValue)
+  .required(Errors.Required)
+```
+
+---
+
+## VIEW COMPONENT PATTERN
+
+### View File: `app/features/{feature}/views/{screen-name}/index.tsx`
+
+**Purpose:** Pure UI component - only rendering, no business logic
+
+**Pattern:**
+```typescript
+###FilePath: app/features/{feature}/views/{screen-name}/index.tsx
+
+// 1. React imports
+import React from 'react';
+import {View} from 'react-native';
+
+// 2. Third-party imports
+// (if needed)
+
+// 3. Custom components
+import {
+  ScreenContainer,
+  Label,
+  Input,
+  SubmitButton,
+  CustomCheckbox,
+} from '@app/components';
+
+// 4. Theme and utilities
+import {useNewTheme, translation, ContextualType} from 'react-core';
+
+// 5. Assets
+import {IconName} from 'app/assets/svg';
+
+// 6. Feature-level imports (hooks, schemas) - TWO LEVELS UP
+import {useScreenName} from '../../hooks/use-screen-name';
+
+// 7. Local view imports (types, styles)
+import {getStyles} from './styles';
+import {ScreenNameProps} from './types';
+import {variants} from 'app/components/label/types';
+
+const ScreenName: React.FC<ScreenNameProps> = ({navigation}) => {
+  const theme = useNewTheme();
+  const styles = getStyles({theme});
+  const {t} = translation.useTranslation();
+
+  // Get all state and handlers from custom hook
+  const {
+    fieldOne,
+    fieldTwo,
+    isChecked,
+    formikForm,
+    isFormValid,
+    onChangeFieldOne,
+    onChangeFieldTwo,
+    onCheckboxSelect,
+    handleNext,
+    onBackButtonPress,
+  } = useScreenName();
+
+  return (
+    <ScreenContainer
+      id="ScreenContainerScreenName"
+      showGoBackIcon
+      onPressLeftContent={onBackButtonPress}
+      bottomScreenContent={
+        <View style={styles.bottomContentContainer}>
+          <SubmitButton
+            id="SubmitButtonNext"
+            label={t('JourneyScreenNameBtnNext')}
+            onPress={handleNext}
+            disabled={!isFormValid}
+          />
+        </View>
+      }>
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.headerContainer}>
+          <Label
+            id="LabelScreenTitle"
+            text={t('JourneyScreenNameLblTitle')}
+            variant={variants.titleL}
+            style={styles.screenTitle}
+          />
+          <Label
+            id="LabelScreenSubtitle"
+            text={t('JourneyScreenNameLblSubtitle')}
+            variant={variants.bodyRegularM}
+            style={styles.subTitle}
+          />
+        </View>
+
+        {/* Form Section */}
+        <View style={styles.formSection}>
+          <Input
+            id="InputFieldOne"
+            placeholder={t('JourneyScreenNamePlcFieldOne')}
+            value={fieldOne}
+            setValue={onChangeFieldOne}
+            errorText={
+              formikForm.touched.fieldOne
+                ? formikForm.errors.fieldOne
+                : ''
+            }
+          />
+
+          <Input
+            id="InputFieldTwo"
+            placeholder={t('JourneyScreenNamePlcFieldTwo')}
+            value={fieldTwo}
+            setValue={onChangeFieldTwo}
+            errorText={
+              formikForm.touched.fieldTwo
+                ? formikForm.errors.fieldTwo
+                : ''
+            }
+          />
+        </View>
+
+        {/* Checkbox */}
+        <View style={styles.checkboxContainer}>
+          <CustomCheckbox
+            id="CustomCheckboxConsent"
+            isChecked={isChecked}
+            onPress={onCheckboxSelect}
+            title={t('JourneyScreenNameChkTitle')}
+          />
+        </View>
+      </View>
+    </ScreenContainer>
+  );
+};
+
+export default ScreenName;
+```
+
+---
+
+## 1. COMPONENT MAPPING
+
+Feature: meem As'hal
+Screen Name: meem_ashal_1
+Component       Name
+root-detail - screen container
+header - backbutton + title
+label - Title, remaining amount label, green dot + paid label with amount, installment details label, from label, To label, Payments label
+remote-svg - header center image
+figure - Amount Show
+progress-bar - progress bar
+tag - status show
+view - container
+AdditionalContext:
+
+
+---
+
+## 2. EXISTING CUSTOM COMPONENTS
+
+
+// COMPONENT: root-detail
+// root-detail/index.tsx
+/* eslint-disable react-hooks/exhaustive-deps */
+/**
+Author: Haseeb Muhsin
+Date Created:  13/10/2025
+ * Component for displaying details or summary on a given flow
+ *
+ * Allow users to view title
+ * Allow users to view main content
+ * Allow users to interact with the content
+ */
+import React, {useEffect, useMemo, useRef, useState} from 'react';
+import {RootDetailProps} from './types';
+import {useNewTheme} from 'react-core';
+import {getStyles} from './style';
+import {ImageBackground, StatusBar, View} from 'react-native';
+import {Images} from 'app/constants';
+import {Header} from '../header';
+import {HeaderType} from '../header/types';
+import {LeftContentType} from '../header/left-content/types';
+import {
+  Gesture,
+  GestureDetector,
+  GestureType,
+  ScrollView,
+} from 'react-native-gesture-handler';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  interpolateColor,
+  runOnJS,
+  useAnimatedProps,
+  useAnimatedReaction,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
+import {NavigationService} from 'app/utils';
+import BottomSheet, {
+  BottomSheetScrollView,
+  useBottomSheetInternal,
+} from '@gorhom/bottom-sheet';
+import {useScrollShadow} from 'app/hooks/use-scroll-shadow';
+import {StickyShadows} from '../sticky-shadows';
+import {StickyShadowDirections} from '../sticky-shadows/types';
+import {Animated as RNAnimated} from 'react-native';
+import {RightContentType} from '../header/right-content/types';
+export const RootDetail: React.FC<RootDetailProps> = props => {
+  const {
+    title = '',
+    headerContent,
+    scrollContent,
+    bottomContent,
+    showTitleOnlyOnFullScreen = false,
+    rightContentClick,
+  } = props;
+  const sheetTranslateY = useSharedValue(0);
+  const theme = useNewTheme();
+  const styleProps = {theme};
+  const style = getStyles(styleProps);
+  const [inverted, setInverted] = useState(false);
+  const [customSnapPoints, setCustomSnapPoints] = useState<any[]>([]);
+  const [mainContentHeight, setMainContentHeight] = useState(0);
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const animatedPosition = useSharedValue(0);
+  const animatedIndex = useSharedValue(0);
+  const headerAnimatedStyle = useAnimatedStyle(() => {
+    const bgColor = interpolateColor(
+      animatedPosition.value,
+      [headerHeight, 0],
+      ['transparent', theme.colors['surface-01']],
+    );
+    return {
+      backgroundColor: bgColor,
+    };
+  });
+  const screenTitleAnimatedStyle = useAnimatedStyle(() => {
+    const color = interpolateColor(
+      animatedPosition.value,
+      [headerHeight, 0],
+      [
+        showTitleOnlyOnFullScreen
+          ? 'transparent'
+          : theme.colors['content-inverted-primary'],
+        theme.colors['content-primary'],
+      ],
+    );
+    return {
+      color,
+    };
+  });
+  const screenLeftIconAnimatedStyle = useAnimatedProps(() => {
+    const stroke = interpolateColor(
+      animatedPosition.value,
+      [headerHeight, 0],
+      [
+        theme.colors['icon-interactive-inverted-active'],
+        theme.colors['icon-interactive-primary-active'],
+      ],
+    );
+    return {
+      stroke,
+    };
+  });
+  const headerOpacityAnimatedStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(
+      animatedPosition.value,
+      [0, headerHeight],
+      [0, 1],
+    );
+    return {
+      opacity,
+    };
+  });
+  const sheetAnimatedStyle = useAnimatedStyle(() => {
+    const radius = interpolate(
+      animatedPosition.value,
+      [0, headerHeight],
+      [0, 16],
+    );
+    return {
+      borderTopLeftRadius: radius,
+      borderTopRightRadius: radius,
+    };
+  });
+  useMemo(() => {
+    if (mainContentHeight && headerHeight) {
+      setCustomSnapPoints([
+        mainContentHeight - headerHeight,
+        mainContentHeight,
+      ]);
+    }
+  }, [mainContentHeight, headerHeight]);
+  useEffect(() => {
+    StatusBar.setBarStyle(inverted ? 'dark-content' : 'light-content');
+  }, []);
+  const {
+    scrollable,
+    topShadowOpacity,
+    bottomShadowOpacity,
+    handleScroll,
+    handleRootScrollHeight,
+    handleContentSizeChange,
+  } = useScrollShadow();
+  useAnimatedReaction(
+    () => animatedIndex.value,
+    index => {
+      if (index === 0 || index === 1) {
+        console.log('root-detail', {index, height: customSnapPoints[index]});
+        runOnJS(handleRootScrollHeight)(customSnapPoints[index] ?? 0);
+      }
+    },
+  );
+  return (
+    <ImageBackground
+      source={Images.theme_background}
+      resizeMode="cover"
+      style={style.container}>
+      <Header
+        inverted
+        type={HeaderType.TRANSFER}
+        leftContentType={LeftContentType.BACK}
+        rightContentType={
+          RightContentType.CLOSE_SUMMARY
+        } /**RCM-3505 - defect fixes */
+        onRightContentClick={rightContentClick}
+        showRightContent={
+          rightContentClick && true
+        } /**RCM-3505 - defect fixes */
+        centerContentTitle={title}
+        animatedStyles={headerAnimatedStyle}
+        centerTextAnimatedStyle={screenTitleAnimatedStyle}
+        leftIconAnimatedStyle={screenLeftIconAnimatedStyle}
+        onLeftContentClick={() => {
+          NavigationService.goBack();
+        }}
+      />
+      <Animated.View
+        style={style.mainContent}
+        onLayout={e => {
+          setMainContentHeight(e.nativeEvent.layout.height);
+        }}>
+        <Animated.View
+          onLayout={e => {
+            setHeaderHeight(e.nativeEvent.layout.height);
+          }}
+          style={headerOpacityAnimatedStyle}>
+          {headerContent}
+        </Animated.View>
+        {customSnapPoints.length > 0 && (
+          <BottomSheet
+            index={0}
+            snapPoints={customSnapPoints}
+            handleComponent={null}
+            enablePanDownToClose={false}
+            bottomInset={0}
+            enableDynamicSizing={false}
+            enableOverDrag={false}
+            enableContentPanningGesture={true}
+            enableHandlePanningGesture={false}
+            onChange={index => {
+              if (index === 0) {
+                setInverted(false);
+              } else {
+                setInverted(true);
+              }
+            }}
+            animatedIndex={animatedIndex}
+            animatedPosition={animatedPosition}
+            >
+            <Animated.View
+              style={[
+                style.sheetContent,
+                sheetAnimatedStyle,
+                bottomContent ? style.bottomContentCustom : undefined,
+              ]}>
+              <RNAnimated.View style={{opacity: topShadowOpacity, zIndex: 10}}>
+                <StickyShadows />
+              </RNAnimated.View>
+              <BottomSheetScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={style.scrollViewContent}
+                bounces={false}
+                onScroll={handleScroll}
+                onContentSizeChange={handleContentSizeChange}
+                >
+                {scrollContent}
+              </BottomSheetScrollView>
+            </Animated.View>
+          </BottomSheet>
+        )}
+      </Animated.View>
+      {bottomContent && scrollable && (
+        <RNAnimated.View style={{opacity: bottomShadowOpacity, zIndex: 10}}>
+          <StickyShadows
+            direction={StickyShadowDirections.BOTTOM_TO_TOP}
+            containerStyle={{marginTop: -16}}
+          />
+        </RNAnimated.View>
+      )}
+      {bottomContent}
+    </ImageBackground>
+  );
+};
+
+// root-detail/style.ts
+/**
+Author: Haseeb Muhsin
+Date Created:  13/10/2025
+ * Stylesheet for maintaining the styles for the root detail component
+ */
+import {ScaledSheet} from 'react-native-size-matters';
+import {RootDetailStyleProps} from './types';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+export const getStyles = (props: RootDetailStyleProps) => {
+  const {theme} = props;
+  const insets = useSafeAreaInsets();
+  return ScaledSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors['background-03'],
+    },
+    mainContent: {
+      flex: 1,
+    },
+    sheetContent: {
+      backgroundColor: theme.colors['surface-01'],
+      flexGrow: 1,
+      // paddingHorizontal: 16,
+      paddingTop: 24,
+      borderTopLeftRadius: 16,
+      borderTopRightRadius: 16,
+      //paddingBottom: insets.bottom, //transparent bottom nav bar
+    },
+    scrollViewContent: {
+      flexGrow: 1,
+    },
+    bottomFixedContent: {
+      paddingBottom: 24,
+      paddingTop: 16,
+      paddingHorizontal: 16,
+      backgroundColor: theme.colors['surface-01'],
+    },
+    bottomContentCustom: {
+      paddingBottom: 0,
+    },
+  });
+};
+
+// root-detail/types.ts
+/**
+Author: Haseeb Muhsin
+Date Created:  12/10/2025
+ * Properties sheet for maintaing the view and style props for root detail component.
+ */
+import {Theme} from 'react-core';
+import React from 'react';
+export type RootDetailProps = {
+  title?: string;
+  headerContent?: React.ReactNode;
+  scrollContent?: React.ReactNode;
+  bottomContent?: React.ReactNode;
+  showTitleOnlyOnFullScreen?: boolean;
+  rightContentClick?: () => void;
+};
+export type RootDetailStyleProps = {
+  theme: Theme;
+};
+
+
+// COMPONENT: header
+// header/index.tsx
+/**
+Author: Haseeb Muhsin
+Date Created:  2/10/2025
+ * Component for displaying header for a screen.
+ *
+ * Allow users to select type of headers
+ * Allow users to configure actions upon click of any header elements
+ */
+import React from 'react';
+import {HeaderProps, HeaderType} from './types';
+import {useNewTheme} from 'react-core';
+import {getStyles} from './styles';
+import {StatusBar, View} from 'react-native';
+import {LeftContent} from './left-content';
+import {RightContent} from './right-content';
+import {CenterContent} from './center-content';
+import {CenterContentType} from './center-content/types';
+import Animated, {useSharedValue} from 'react-native-reanimated';
+import {Label} from '../label';
+import {RightContentType} from './right-content/types';
+import {MeemArabicLogo} from 'app/assets/svg';
+import {variants} from '../label/types';
+import {CustomProgressBar} from '../custom-progress-bar';
+import {ProgressBarVariants} from '../custom-progress-bar/types';
+export const Header: React.FC<HeaderProps> = props => {
+  const {
+    type = HeaderType.DEFAULT,
+    inverted = false,
+    showBackground = false,
+    showStatusBar = true,
+    showLeftContent = true,
+    showRightContent = true,
+    showCenterContent = true,
+    showStories = false,
+    animatedStyles,
+    onLayoutHeight,
+    endIconAnimatedStyle,
+    centerIconAnimatedStyle,
+    centerContentTitle = 'Transfers',
+    rightContentType,
+    leftContentType,
+    onLeftContentClick,
+    onRightContentClick,
+    storyTitle = 'Title',
+    centerTextAnimatedStyle,
+    leftIconAnimatedStyle,
+  } = props;
+  const theme = useNewTheme();
+  const styleProps = {theme, inverted, showBackground, showStories};
+  const style = getStyles(styleProps);
+  const leftContentWidth = useSharedValue(24);
+  return (
+    <View>
+      <Animated.View
+        style={[style.container, animatedStyles]}
+        onLayout={e => onLayoutHeight?.(e.nativeEvent.layout.height)}>
+        <StatusBar
+          hidden={!showStatusBar}
+          animated
+          backgroundColor={'transparent'}
+          barStyle={
+            inverted || showStories ? 'light-content' : 'dark-content'
+          }></StatusBar>
+        {showLeftContent ? (
+          <LeftContent
+            type={leftContentType}
+            inverted={inverted}
+            leftContentWidth={width => {
+              leftContentWidth.value = width;
+            }}
+            onLeftContentClick={() => {
+              onLeftContentClick?.();
+            }}
+            leftIconAnimatedStyle={leftIconAnimatedStyle}></LeftContent>
+        ) : (
+          <View style={style.dummyEndContainer}></View>
+        )}
+        {showCenterContent && (
+          <CenterContent
+            type={
+              type === HeaderType.TRANSFER
+                ? CenterContentType.TEXT
+                : type === HeaderType.SADAD
+                ? CenterContentType.SADAD
+                : CenterContentType.MEEM
+            }
+            inverted={inverted}
+            animatedStyle={centerIconAnimatedStyle}
+            textAnimatedStyle={centerTextAnimatedStyle}
+            title={centerContentTitle}></CenterContent>
+        )}
+        {showRightContent ? (
+          <RightContent
+            type={rightContentType}
+            leftContentWidth={leftContentWidth.value}
+            inverted={inverted}
+            animatedStyle={endIconAnimatedStyle}
+            onCloseCancelClick={() => {
+              onRightContentClick?.();
+            }}
+            onLanguageClick={() => {
+              onRightContentClick?.();
+            }}></RightContent>
+        ) : showStories ? undefined : (
+          <View style={style.dummyEndContainer}></View>
+        )}
+        {showStories && (
+          <View style={style.showStoriesContainer}>
+            <View style={style.progressBarRootView}>
+              {[1, 2, 3, 4, 5, 6].map(item => (
+                <CustomProgressBar
+                  id=""
+                  variant={ProgressBarVariants.informative}
+                  size={2}
+                  progress={100}></CustomProgressBar>
+              ))}
+            </View>
+            <View style={style.showStoriesRootContainer}>
+              <View style={style.storyTitleContainer}>
+                <MeemArabicLogo
+                  color={theme.colors['brand-01']}></MeemArabicLogo>
+                <Label
+                  id=""
+                  text={storyTitle}
+                  variant={variants.bodyRegularM}
+                  style={style.title}></Label>
+              </View>
+              <RightContent
+                type={RightContentType.CLOSE_CANCEL}
+                onCloseCancelClick={() => {
+                  onRightContentClick?.();
+                }}></RightContent>
+            </View>
+          </View>
+        )}
+      </Animated.View>
+    </View>
+  );
+};
+
+// header/styles.ts
+/**
+Author: Haseeb Muhsin
+Date Created:  2/10/2025
+ */
+import {ScaledSheet} from 'react-native-size-matters';
+import {HeaderStyleProps} from './types';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+export const getStyles = (props: HeaderStyleProps) => {
+  const {theme, inverted, showBackground, showStories} = props;
+  const insets = useSafeAreaInsets();
+  return ScaledSheet.create({
+    container: {
+      paddingTop: insets.top,
+      paddingHorizontal: 16,
+      justifyContent: 'space-between',
+      flexGrow: 1,
+      flexDirection: 'row',
+      minHeight: insets.top + 40,
+      zIndex:1,
+      backgroundColor:
+        showBackground && inverted
+          ? theme.colors['background-03']
+          : showBackground
+          ? theme.colors['background-01']
+          : showStories
+          ? 'black'
+          : undefined,
+    },
+    showStoriesRootContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      gap: 16,
+      alignItems: 'center',
+    },
+    showStoriesContainer: {
+      borderTopLeftRadius: 16,
+      borderTopRightRadius: 16,
+      backgroundColor: '#F0E8FF',
+      flex: 1,
+      marginHorizontal: -16,
+      gap: 16,
+      paddingHorizontal: 16,
+      paddingTop: 16,
+    },
+    storyTitleContainer: {
+      flex: 1,
+      flexDirection: 'row',
+      gap: 8,
+      alignItems: 'center',
+    },
+    title: {
+      color: theme.colors['content-primary'],
+    },
+    progressBarRootView: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    dummyEndContainer: {
+      minWidth:24
+    }
+  });
+};
+
+// header/types.ts
+/**
+Author: Haseeb Muhsin
+Date Created:  1/10/2025
+ */
+import {AnimatedStyle} from 'react-native-reanimated';
+import {StyleProp} from 'react-native';
+import {Theme} from 'react-core';
+import {IconProps} from 'app/constants';
+import {LeftContentType} from './left-content/types';
+import {RightContentType} from './right-content/types';
+export type HeaderProps = {
+  type?: HeaderType;
+  inverted?: boolean;
+  showBackground?: boolean;
+  showStatusBar?: boolean;
+  showLeftContent?: boolean;
+  showCenterContent?: boolean;
+  showRightContent?: boolean;
+  showStories?: boolean;
+  animatedStyles?: StyleProp<AnimatedStyle>;
+  onLayoutHeight?: (height: number) => void;
+  endIconAnimatedStyle?: Partial<IconProps>;
+  centerIconAnimatedStyle?: Partial<IconProps>;
+  centerContentTitle?: string;
+  rightContentType?: RightContentType;
+  leftContentType?: LeftContentType;
+  onLeftContentClick?: () => void;
+  onRightContentClick?: () => void;
+  storyTitle?: string,
+  centerTextAnimatedStyle?:StyleProp<AnimatedStyle>,
+  leftIconAnimatedStyle?: Partial<IconProps>
+};
+export type HeaderStyleProps = {
+  theme: Theme;
+  inverted: boolean;
+  showBackground: boolean;
+  showStories: boolean;
+};
+export enum HeaderType {
+  DEFAULT = 'Default',
+  OTHER = 'Other',
+  TRANSFER = 'Transfer',
+  SADAD = 'SADAD',
+}
+export enum HeaderState {
+  ENABLED = 'Enabled',
+  FOCUS = 'Focus',
+}
+
+// header/center-content/index.tsx
+/**
+Author: Haseeb Muhsin
+Date Created:  2/10/2025
+ */
+import React from 'react';
+import {CenterContentProps, CenterContentType} from './types';
+import {useNewTheme} from 'react-core';
+import {getStyles} from './styles';
+import {MeemLogoNew} from 'app/assets/svg/meem-logo-new';
+import {SadadLogo} from 'app/assets/svg/sadad-logo';
+import {Label} from 'app/components/label';
+import {variants} from 'app/components/label/types';
+import {View} from 'react-native';
+export const CenterContent: React.FC<CenterContentProps> = props => {
+  const {
+    type = CenterContentType.MEEM,
+    title = '',
+    inverted = false,
+    animatedStyle,
+    textAnimatedStyle
+  } = props;
+  const theme = useNewTheme();
+  const styleProps = {theme, inverted};
+  const style = getStyles(styleProps);
+  return (
+    <>
+      {type === CenterContentType.MEEM && (
+        <View style={style.baseContainer}>
+          <MeemLogoNew
+            isAnimated={animatedStyle && true}
+            color={
+              inverted ? theme.colors['brand-02'] : theme.colors['brand-01']
+            }
+            animatedProps={animatedStyle}></MeemLogoNew>
+        </View>
+      )}
+      {type === CenterContentType.SADAD && (
+        <View style={style.baseContainer}>
+          <SadadLogo
+            isAnimated={animatedStyle && true}
+            color={
+              inverted ? theme.colors['brand-02'] : theme.colors['brand-01']
+            }
+            animatedProps={animatedStyle}></SadadLogo>
+        </View>
+      )}
+      {type === CenterContentType.TEXT && (
+        <View style={style.textContainer}>
+          <Label
+            id=""
+            text={title}
+            variant={variants.titleXS}
+            numberOfLines={1}
+            style={[style.text, textAnimatedStyle]}></Label>
+        </View>
+      )}
+    </>
+  );
+};
+
+// header/center-content/styles.ts
+/**
+Author: Haseeb Muhsin
+Date Created:  1/10/2025
+ */
+import {ScaledSheet} from 'react-native-size-matters';
+import {CenterContentStyleProps} from './types';
+export const getStyles = (props: CenterContentStyleProps) => {
+  const {theme, inverted = false} = props;
+  return ScaledSheet.create({
+    textContainer: {
+      // minWidth: 278,
+      maxWidth: 278,
+      alignItems: 'center',
+      alignSelf: 'center',
+    },
+    baseContainer: {
+      alignSelf: 'center',
+    },
+    text: {
+      color: inverted
+        ? theme.colors['content-inverted-primary']
+        : theme.colors['content-primary'],
+    },
+  });
+};
+
+// header/center-content/types.ts
+/**
+Author: Haseeb Muhsin
+Date Created:  1/10/2025
+ */
+import {IconProps} from 'app/constants';
+import {StyleProp} from 'react-native';
+import {Theme} from 'react-core';
+import {AnimatedStyle} from 'react-native-reanimated';
+export type CenterContentProps = {
+  type?: CenterContentType;
+  title?: string;
+  inverted?: boolean;
+  animatedStyle?: Partial<IconProps>;
+  textAnimatedStyle?: StyleProp<AnimatedStyle>;
+};
+export type CenterContentStyleProps = {
+  theme: Theme;
+  inverted: boolean;
+};
+export enum CenterContentType {
+  MEEM = 'Meem',
+  SADAD = 'Sadad',
+  TEXT = 'Text',
+}
+
+// header/hooks/use-header-component.ts
+/**
+Author: Haseeb Muhsin
+Date Created:  4/10/2025
+ */
+import {useAppSelector} from 'app/redux/hooks';
+export const useHeaderComponent = () => {
+  const userDetails = useAppSelector(state => state?.global?.userDetails);
+  return {
+    userDetails,
+  };
+};
+
+// header/left-content/index.tsx
+/**
+Author: Haseeb Muhsin
+Date Created:  1/10/2025
+ */
+import React from 'react';
+import {LeftContentProps, LeftContentType} from './types';
+import {HeaderState} from '../types';
+import {useNewTheme} from 'react-core';
+import {getStyles} from './styles';
+import {Pressable, View} from 'react-native';
+import {ArrowBackIcon, MoreHorizontalIcon} from 'app/assets/svg';
+import {Avatar} from 'app/components/avatar';
+import {AvatarSizes} from 'app/components/avatar/types';
+import {Label} from 'app/components/label';
+import {variants} from 'app/components/label/types';
+import {useHeaderComponent} from '../hooks/use-header-component';
+import {AvatarImageTypes} from 'app/components/choose-avatar-bottom-sheet/types';
+export const LeftContent: React.FC<LeftContentProps> = props => {
+  const {
+    type = LeftContentType.AVATAR,
+    state = HeaderState.ENABLED,
+    inverted = false,
+    leftContentWidth,
+    onLeftContentClick,
+    leftIconAnimatedStyle,
+  } = props;
+  const theme = useNewTheme();
+  const styleProps = {theme, state, type, inverted};
+  const style = getStyles(styleProps);
+  const iconColor = inverted
+    ? theme.colors['icon-interactive-inverted-enabled']
+    : theme.colors['icon-interactive-secondary-enabled'];
+  const {userDetails} = useHeaderComponent();
+  return (
+    <>
+      <View
+        style={style.root}
+        onLayout={e => {
+          leftContentWidth?.(e.nativeEvent.layout.width);
+        }}>
+        {type === LeftContentType.BACK && (
+          <Pressable
+            style={style.squareContainer}
+            onPress={() => {
+              onLeftContentClick?.();
+            }}>
+            <ArrowBackIcon
+              rtl={false}
+              color={iconColor}
+              isAnimated={leftIconAnimatedStyle && true}
+              animatedProps={leftIconAnimatedStyle}></ArrowBackIcon>
+          </Pressable>
+        )}
+        {type === LeftContentType.MENU && (
+          <Pressable style={style.squareContainer} onPress={() => {
+              onLeftContentClick?.();
+            }}>
+            <MoreHorizontalIcon color={iconColor}></MoreHorizontalIcon>
+          </Pressable>
+        )}
+        {type === LeftContentType.AVATAR && (
+          <View style={style.avatarContainer}>
+            <Avatar
+              id=""
+              image={
+                userDetails?.profilePicture
+                  ? userDetails?.profilePicture
+                  : undefined
+              }
+              onClick={() => {
+                onLeftContentClick?.();
+              }}
+              initial={
+                userDetails?.firstname?.trim()?.charAt(0)?.toUpperCase() ?? 'Z'
+              }
+              size={AvatarSizes.small}
+              showFallbackInitial={true}
+              onlyImage={userDetails?.imageType !== AvatarImageTypes.avatar}
+              inverted={inverted}></Avatar>
+          </View>
+        )}
+        {type === LeftContentType.POINTS && (
+          <View style={style.pointsContainer}>
+            <Avatar
+              id=""
+              initial="Z"
+              size={AvatarSizes.small}
+              inverted={inverted}></Avatar>
+            <Label
+              id=""
+              text="985 pts"
+              variant={variants.bodyRegularS}
+              style={style.pointsText}></Label>
+          </View>
+        )}
+      </View>
+    </>
+  );
+};
+
+// header/left-content/styles.ts
+/**
+Author: Haseeb Muhsin
+Date Created:  1/10/2025
+ */
+import {ScaledSheet} from 'react-native-size-matters';
+import {LeftContentStyleProps} from './types';
+import {HeaderState} from '../types';
+export const getStyles = (props: LeftContentStyleProps) => {
+  const {theme, state = HeaderState.ENABLED, inverted = false} = props;
+  return ScaledSheet.create({
+    root: {
+      alignSelf: 'center',
+    },
+    squareContainer: {
+      width: state === HeaderState.FOCUS ? 28 : 24,
+      height: state === HeaderState.FOCUS ? 28 : 24,
+      borderWidth: state === HeaderState.FOCUS ? 2 : 0,
+      borderColor: theme.colors['border-focus'],
+      borderRadius: state === HeaderState.FOCUS ? 4 : 0,
+      alignSelf: 'center',
+      alignItems: 'center',
+    },
+    avatarContainer: {
+      backgroundColor:
+        state === HeaderState.FOCUS && inverted
+          ? theme.colors['border-focus-inverted']
+          : state === HeaderState.FOCUS
+          ? theme.colors['border-focus']
+          : undefined,
+      borderRadius: 999,
+    },
+    //Focus on points not added. Will be added later. Also the bordercolor needs to revisit
+    pointsContainer: {
+      borderRadius: 999,
+      paddingVertical: 2,
+      paddingStart: 2,
+      paddingEnd: 12,
+      flexDirection: 'row',
+      borderWidth: 1,
+      borderColor: inverted
+        ? theme.colors['border-inverted-enabled-02']
+        : theme.colors['border-interactive-active'],
+      gap: 8,
+      alignSelf: 'flex-start',
+    },
+    pointsText: {
+      color: inverted
+        ? theme.colors['content-inverted-primary']
+        : theme.colors['content-primary'],
+    },
+  });
+};
+
+// header/left-content/types.ts
+/**
+Author: Haseeb Muhsin
+Date Created:  1/10/2025
+ */
+import {Theme} from 'react-core';
+import {HeaderState} from '../types';
+import { IconProps } from 'app/constants';
+export type LeftContentProps = {
+  type?: LeftContentType;
+  state?: HeaderState;
+  inverted?: boolean;
+  leftContentWidth?: (width: number) => void;
+  onLeftContentClick?: () => void;
+  leftIconAnimatedStyle?:Partial<IconProps>
+};
+export type LeftContentStyleProps = {
+  theme: Theme;
+  state: HeaderState;
+  inverted: boolean;
+};
+export enum LeftContentType {
+  AVATAR = 'Avatar',
+  POINTS = 'Points',
+  BACK = 'Back',
+  MENU = 'Menu',
+}
+
+// header/right-content/index.tsx
+/**
+Author: Haseeb Muhsin
+Date Created:  2/10/2025
+ */
+import React from 'react';
+import {RightContentProps, RightContentType} from './types';
+import {HeaderState} from '../types';
+import {getStyles} from './styles';
+import {translation, useNewTheme} from 'react-core';
+import {Pressable, View} from 'react-native';
+import {CancelIcon, Notification02, Search} from 'app/assets/svg';
+import {Label} from 'app/components/label';
+import {variants} from 'app/components/label/types';
+export const RightContent: React.FC<RightContentProps> = props => {
+  const {
+    type = RightContentType.SEARCH_AND_NOTIFICATIONS,
+    state = HeaderState.ENABLED,
+    inverted = false,
+    leftContentWidth,
+    animatedStyle,
+    onCloseCancelClick,
+    onLanguageClick,
+  } = props;
+  const theme = useNewTheme();
+  const styleProps = {theme, state, inverted, leftContentWidth};
+  const style = getStyles(styleProps);
+  const {t} = translation.useTranslation();
+  const iconColor = inverted
+    ? theme.colors['icon-interactive-inverted-enabled']
+    : theme.colors['icon-interactive-secondary-enabled'];
+  return (
+    <>
+      {type === RightContentType.CLOSE_SUMMARY && (
+        /**RCM-3505 - defect fixes */
+        <View style={style.endIconContainer}>
+          <Pressable
+            style={style.circularContainer}
+            onPress={() => {
+              onCloseCancelClick?.();
+            }}>
+            <CancelIcon
+              color={
+                theme.colors['icon-interactive-secondary-enabled']
+              }></CancelIcon>
+          </Pressable>
+        </View>
+      )}
+      {type === RightContentType.CLOSE_CANCEL && (
+        <View style={style.endIconContainer}>
+          <Pressable
+            style={style.circularContainer}
+            onPress={() => {
+              onCloseCancelClick?.();
+            }}>
+            <CancelIcon color={iconColor}></CancelIcon>
+          </Pressable>
+        </View>
+      )}
+      {type === RightContentType.LANGUAGE && (
+        <View style={style.endIconContainer}>
+          <Pressable style={style.languageContainer} onPress={onLanguageClick}>
+            <Label
+              id=""
+              text={t('AuthenticationLoginBtnTranslate')}
+              variant={variants.bodySemiBoldM}
+              style={style.text}></Label>
+          </Pressable>
+        </View>
+      )}
+      {type === RightContentType.SEARCH_AND_NOTIFICATIONS && (
+        <View style={style.endIconContainer}>
+          <Notification02
+            isAnimated={animatedStyle && true}
+            color={iconColor}
+            animatedProps={animatedStyle}></Notification02>
+          <Search
+            isAnimated={animatedStyle && true}
+            color={iconColor}
+            animatedProps={animatedStyle}></Search>
+        </View>
+      )}
+    </>
+  );
+};
+
+// header/right-content/styles.ts
+/**
+Author: Haseeb Muhsin
+Date Created:  2/10/2025
+ */
+import {ScaledSheet} from 'react-native-size-matters';
+import {RightContentStyleProps} from './types';
+export const getStyles = (props: RightContentStyleProps) => {
+  const {theme, inverted = false, leftContentWidth} = props;
+  return ScaledSheet.create({
+    circularContainer: {
+      width: 24,
+      height: 24,
+      backgroundColor: theme.colors['surface-02'],
+      padding: 4,
+      borderRadius: 999,
+      alignSelf: 'center',
+    },
+    languageContainer: {
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: inverted
+        ? theme.colors['border-interactive-inverted-enabled']
+        : theme.colors['border-interactive-active'],
+      width:65,
+      height:40,
+      alignItems:'center',
+      justifyContent:'center'
+    },
+    text: {
+      color: inverted
+        ? theme.colors['content-interactive-inverted-enabled']
+        : theme.colors['content-interactive-primary-enabled'],
+    },
+    endIconContainer: {
+      flexDirection: 'row-reverse',
+      gap: 16,
+      alignSelf: 'center',
+      minWidth: leftContentWidth, // This is written to balance the left side and make center content in the middle
+      maxWidth: leftContentWidth,
+    },
+  });
+};
+
+// header/right-content/types.ts
+/**
+Author: Haseeb Muhsin
+Date Created:  2/10/2025
+ */
+import {Theme} from 'react-core';
+import {HeaderState} from '../types';
+import {IconProps} from 'app/constants';
+export type RightContentProps = {
+  type?: RightContentType;
+  state?: HeaderState;
+  inverted?: boolean;
+  leftContentWidth?: number;
+  animatedStyle?: Partial<IconProps>;
+  onCloseCancelClick?: () => void;
+  onSearchClick?: () => void;
+  onNotificationClick?: () => void;
+  onLanguageClick?: () => void;
+  onOtherClick?: () => void;
+};
+export type RightContentStyleProps = {
+  theme: Theme;
+  state: HeaderState;
+  inverted: boolean;
+  leftContentWidth?: number;
+};
+export enum RightContentType {
+  CLOSE_CANCEL = 'Close_Cancel',
+  LANGUAGE = 'Language',
+  SEARCH_AND_NOTIFICATIONS = 'Search_And_Notifications',
+  OTHER = 'Other',
+  CLOSE_SUMMARY = 'close_summary',
+}
+
+
+// COMPONENT: label
+// label/index.tsx
+import React, {FC} from 'react';
+import {Text} from 'react-native';
+import {getStyles} from './styles';
+import {LabelProperties} from './types';
+import {
+  getCurrentLanguage,
+  useNewTheme,
+  Language,
+  ContextualType,
+} from 'react-core';
+import Animated from 'react-native-reanimated';
+const Label: FC<LabelProperties> = (properties: LabelProperties) => {
+  const {
+    id,
+    variant = ContextualType.bodyRegularM,
+    text,
+    style,
+    numberOfLines,
+    textProps,
+  } = properties;
+  const theme = useNewTheme();
+  const language = getCurrentLanguage() as Language;
+  const styles = getStyles({theme, language, variant});
+  return (
+    <Animated.Text
+      key={id}
+      numberOfLines={numberOfLines}
+      style={[styles.labelStyle, style]}
+      {...textProps}>
+      {text}
+    </Animated.Text>
+  );
+};
+export {Label};
+
+// label/styles.ts
+import {Platform, StyleSheet} from 'react-native';
+import {LabelStyleProperties} from './types';
+import {getFontStyles, Language} from 'react-core';
+export const getStyles = (props: LabelStyleProperties) => {
+  const {theme, language, variant} = props;
+  const fontStyles = getFontStyles(variant, language);
+  return StyleSheet.create({
+    labelStyle: {
+      color: theme.colors['content-primary'],
+      textAlign: 'left',
+      textAlignVertical: 'center',
+      // ...Platform.select({
+      //   ios: {
+      //     transform: [{ translateY: 10 }]
+      //   }
+      // }),
+      // transform: [{ translateY: -25 }],
+      // height: 32,
+      ...(language === Language.Arabic ? {paddingTop: 5} : {}),
+      // backgroundColor: 'red',
+      ...fontStyles,
+      ...Platform.select({
+        android: {
+          // fontFamily: 'Vazirmatn-Medium',
+          // fontFamily: 'Vazirmatn-Regular',
+          // fontFamily: 'Vazirmatn-SemiBold',
+          // fontWeight: undefined
+        },
+        // ios: {
+        //   // fontFamily: 'Vazirmatn'
+        //   fontFamily: 'Vazirmatn-SemiBold',
+        //   fontWeight: undefined
+        // }
+      }),
+      // ...Platform.select({
+      //   android: {
+      //     fontFamily: fontStyles.fontFamily.replaceAll(' ', '')
+      //   },
+      // }),
+    },
+  });
+};
+
+// label/types.ts
+import { Language, ContextualType, Theme } from 'react-core';
+import { StyleProp, TextProps, TextStyle } from 'react-native';
+// export enum variants {
+//   titleXL = 'titleXL',
+//   titleL = 'titleL',
+//   titleM = 'titleM',
+//   titleS = 'titleS',
+//   titleXS = 'titleXS',
+//   bodySemiBoldL = 'bodySemiBoldL',
+//   bodyMediumL = 'bodyMediumL',
+//   bodyRegularL = 'bodyRegularL',
+//   bodySemiBoldM = 'bodySemiBoldM',
+//   bodyMediumM = 'bodyMediumM',
+//   bodyRegularM = 'bodyRegularM',
+//   bodySemiBoldS = 'bodySemiBoldS',
+//   bodyMediumS = 'bodyMediumS',
+//   bodyRegularS = 'bodyRegularS',
+//   bodySemiboldXS = 'bodySemiboldXS',
+//   bodyMediumXS = 'bodyMediumXS',
+//   bodyRegularXS = 'bodyRegularXS',
+// }
+export { ContextualType as variants }
+export interface LabelProperties {
+  id: string;
+  text: string;
+  variant?: ContextualType;
+  style?: StyleProp<TextStyle>;
+  numberOfLines?: number;
+  textProps?: TextProps;
+}
+export interface LabelStyleProperties {
+  theme: Theme;
+  language: Language;
+  variant: ContextualType;
+}
+
+
+// COMPONENT: remote-svg
+// remote-svg/index.tsx
+/**
+Author: Haseeb Muhsin
+Date Created:  25/5/2025
+ * Component for displaying SVG's downloaded from URL's
+ */
+import {useEffect, useState} from 'react';
+import {RemoteSvgProps} from './types';
+import {View} from 'react-native';
+import {SvgXml} from 'react-native-svg';
+import {useNewTheme} from 'react-core';
+import {getStyles} from './styles';
+import {CustomShimmer} from '../custom-shimmer';
+import {ShimmerElementType} from '../custom-shimmer/constants';
+const RemoteSvg: React.FC<RemoteSvgProps> = props => {
+  const [svgXml, setSvgXml] = useState('');
+  const theme = useNewTheme();
+  const {id = "remoteSVG", uri, size = 24, circularLoader = false} = props;
+  const styleProps = {theme, size, circularLoader};
+  const styles = getStyles(styleProps);
+  useEffect(() => {
+    console.log(uri);
+    fetch(uri)
+      .then(response => response.text())
+      .then(text => {
+        if (text.toLowerCase().includes('error')) {
+          return;
+        }
+        setSvgXml(text);
+      })
+      .catch(err => console.log('Error loading SVG:', err));
+  }, [uri]);
+  return (
+    <View style={{height: size, width: size, overflow:'hidden'}} id={id}>
+      {svgXml ? (
+        <SvgXml
+          height={size}
+          width={size}
+          xml={svgXml}
+          fallback={
+            <View style={[styles.placeholder, styles.svgFallBack]}></View>
+          }
+        />
+      ) : (
+        <CustomShimmer
+          id={id + "Shimmer"}
+          element={ShimmerElementType.CIRCLES_BENEFICIARY}
+          style={styles.shimmer}></CustomShimmer>
+      )}
+    </View>
+  );
+};
+export default RemoteSvg;
+
+// remote-svg/styles.ts
+/**
+Author: Haseeb Muhsin
+Date Created:  25/5/2025
+ */
+import {ScaledSheet} from 'react-native-size-matters';
+import {RemoteSvgStyleProps} from './types';
+export const getStyles = (props: RemoteSvgStyleProps) => {
+  const {theme, size, circularLoader} = props;
+  return ScaledSheet.create({
+    container: {},
+    placeholder: {
+      width: size,
+      height: size,
+      backgroundColor: theme.colors['surface-interactive-primary-enabled'],
+    },
+    svgFallBack: {
+      backgroundColor: theme.colors['background-01'],
+    },
+    shimmer: {
+      borderRadius: circularLoader ? '50%' : 0,
+      width: size,
+      height: size,
+    },
+  });
+};
+
+// remote-svg/types.ts
+/**
+Author: Haseeb Muhsin
+Date Created:  25/5/2025
+Copyright (c) 2025 GIB Digital
+**/
+import {Theme} from 'react-core';
+export type RemoteSvgProps = {
+  id?: string;
+  uri: string;
+  size?:number;
+  circularLoader?: boolean;
+};
+export type RemoteSvgStyleProps = {
+  theme: Theme;
+  size?: number;
+  circularLoader?: boolean
+};
+
+
+// COMPONENT: figure
+// figure/index.tsx
+/*
+ * Created by Haseeb Muhsin on Sun May 11 2025
+ *
+ * Copyright (c) 2025 GIB Digital
+ * Sample component definition >>
+ */
+import {useNewTheme} from 'node_modules/react-core/dist/hooks';
+import {FigureProps, FigureSizes, FigureTypes} from './types';
+import React, {FC} from 'react';
+import {PixelRatio, Platform, StyleSheet, View} from 'react-native';
+import {getStyles} from './styles';
+import {Label} from '../label';
+import {variants} from '../label/types';
+import {Currency} from '../Currency';
+import {useAppSelector} from 'app/redux/hooks';
+import {BlurredBand} from '../blurred-band';
+export const Figure: FC<FigureProps> = props => {
+  const {
+    moreStyle,
+    amount,
+    inverted = false,
+    size = FigureSizes.XL,
+    type = FigureTypes.primary,
+    showBalance = false,
+    color,
+    isCredit = true,
+    // currencyImageName,
+    currencyName,
+    minusLabelStyle,
+    showBlurredBand = true,
+  } = props;
+  const theme = useNewTheme();
+  const styleProps = {theme, inverted, size, type, color};
+  const style = getStyles(styleProps);
+  const numberOFDecimalDigits = useAppSelector(
+    state =>
+      state?.transfers.currencies.find(
+        currency => currency.isoCurrencyName === currencyName,
+      )?.noOfDecimalDigits,
+  );
+  const formattedAmount = (): string => {
+    const num = Number(amount);
+    if (isNaN(num)) {
+      return '0.00';
+    }
+    return num.toFixed(Number(numberOFDecimalDigits));
+  };
+  const splitValue = formattedAmount() ? formattedAmount().split('.') : [];
+  const integer = splitValue[0]; //.replace('-', '');
+  const formattedInteger = new Intl.NumberFormat('en-US').format(
+    Number(integer || '0'),
+  );
+  const integerPart = formattedInteger;
+  const decimalPart = splitValue[1] ?? 0;
+  const showBalanceBluredIntensity = !showBalance
+    ? {
+        filter: 'blur(8px)',
+        opacity: 1,
+      }
+    : {};
+  return (
+    <View style={[style.container, moreStyle]}>
+      {!isCredit ? (
+        size === FigureSizes.XL ? (
+          <Label
+            id="figure_negative_large_label"
+            text="-"
+            style={[
+              style.extraLargeLabel,
+              showBalanceBluredIntensity,
+              minusLabelStyle,
+            ]}
+          />
+        ) : (
+          <Label
+            id="figure_negative_label"
+            text="-"
+            variant={
+              size === FigureSizes.L
+                ? variants.titleXL
+                : size === FigureSizes.M
+                ? variants.titleM
+                : size === FigureSizes.S
+                ? variants.bodyMediumM
+                : size === FigureSizes.XS
+                ? variants.bodyRegularS
+                : variants.titleL
+            }
+            style={[
+              style.negativeLabel,
+              showBalanceBluredIntensity,
+              minusLabelStyle,
+            ]}
+          />
+        )
+      ) : null}
+      <View style={[style.currencyImage, showBalanceBluredIntensity]}>
+        <Currency
+          currencyType={currencyName ?? 'SAR'}
+          iconProps={{
+            color:
+              inverted && type === FigureTypes.secondary
+                ? theme.colors['content-inverted-secondary']
+                : inverted && type === FigureTypes.primary
+                ? theme.colors['content-inverted-primary']
+                : type === FigureTypes.secondary
+                ? theme.colors['content-secondary']
+                : color
+                ? color
+                : theme.colors['content-primary'],
+            size:
+              size === FigureSizes.XL
+                ? 50
+                : size === FigureSizes.L
+                ? 20
+                : size === FigureSizes.M
+                ? 14
+                : size === FigureSizes.S
+                ? 12
+                : 10,
+          }}
+        />
+      </View>
+      <View style={[style.labelContainer, showBalanceBluredIntensity]}>
+        {/* main part */}
+        <View>
+          {size === FigureSizes.XL ? (
+            <Label
+              id="figure_balance_extra_large_label"
+              text={integerPart}
+              style={style.extraLargeLabel}
+            />
+          ) : (
+            <Label
+              id="figure_balance_label"
+              text={integerPart}
+              variant={
+                size === FigureSizes.L
+                  ? variants.titleXL
+                  : size === FigureSizes.M
+                  ? variants.titleM
+                  : size === FigureSizes.S
+                  ? variants.bodyMediumM
+                  : size === FigureSizes.XS
+                  ? variants.bodyRegularS
+                  : variants.titleL
+              }
+              style={style.balanceLabel}
+            />
+          )}
+        </View>
+        <View>
+          {/* decimal part */}
+          {size == FigureSizes.XL ? (
+            <Label
+              id="figure_decimal_extra_large_label"
+              text={`.${decimalPart}`}
+              style={style.extraLargeDecimalLabel}
+            />
+          ) : (
+            <Label
+              id="figure_decimal_label"
+              text={`.${decimalPart}`}
+              variant={
+                size === FigureSizes.L
+                  ? variants.titleM
+                  : size === FigureSizes.M
+                  ? variants.titleXS
+                  : size === FigureSizes.S
+                  ? variants.bodyMediumM
+                  : size === FigureSizes.XS
+                  ? variants.bodyRegularS
+                  : variants.titleM
+              }
+              style={style.decimalLabel}
+            />
+          )}
+        </View>
+      </View>
+      {!showBalance ? (
+        <View style={[{...StyleSheet.absoluteFillObject}]}>
+          {showBlurredBand && (
+            <BlurredBand inverted={inverted} isOpacity={true} />
+          )}
+        </View>
+      ) : null}
+    </View>
+  );
+};
+
+// figure/styles.ts
+/*
+ * Created by Haseeb Muhsin on Mon May 12 2025
+ *
+ * Copyright (c) 2025 GIB Digital
+ */
+import {ScaledSheet} from 'react-native-size-matters';
+import {FigureStyleProps, FigureTypes} from './types';
+import {Typography} from 'app/utils';
+export const getStyles = (props: FigureStyleProps) => {
+  const {theme, inverted, type, color} = props;
+  return ScaledSheet.create({
+    container: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      writingDirection: 'ltr',
+      direction: 'ltr',
+      overflow: 'hidden',
+    },
+    labelContainer: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+    },
+    negativeLabel: {
+      color:
+        inverted && type === FigureTypes.secondary
+          ? theme.colors['content-inverted-secondary']
+          : inverted && type === FigureTypes.primary
+          ? theme.colors['content-inverted-primary']
+          : type === FigureTypes.secondary
+          ? theme.colors['content-secondary']
+          : color
+          ? color
+          : theme.colors['content-primary'],
+    },
+    balanceLabel: {
+      marginStart: 4,
+      color:
+        inverted && type === FigureTypes.secondary
+          ? theme.colors['content-inverted-secondary']
+          : inverted && type === FigureTypes.primary
+          ? theme.colors['content-inverted-primary']
+          : type === FigureTypes.secondary
+          ? theme.colors['content-secondary']
+          : color
+          ? color
+          : theme.colors['content-primary'],
+    },
+    decimalLabel: {
+      color:
+        inverted && type === FigureTypes.secondary
+          ? theme.colors['content-inverted-secondary']
+          : inverted && type === FigureTypes.primary
+          ? theme.colors['content-inverted-primary']
+          : type === FigureTypes.secondary
+          ? theme.colors['content-secondary']
+          : color
+          ? color
+          : theme.colors['content-primary'],
+    },
+    extraLargeLabel: {
+      fontFamily: Typography.fonts.figtree_medium,
+      fontWeight: '500',
+      fontSize: 56,
+      lineHeight: 64,
+      color:
+        inverted && type === FigureTypes.secondary
+          ? theme.colors['content-inverted-secondary']
+          : inverted && type === FigureTypes.primary
+          ? theme.colors['content-inverted-primary']
+          : type === FigureTypes.secondary
+          ? theme.colors['content-secondary']
+          : color
+          ? color
+          : theme.colors['content-primary'],
+    },
+    extraLargeDecimalLabel: {
+      fontFamily: Typography.fonts.figtree_medium,
+      fontWeight: '500',
+      fontSize: 32,
+      lineHeight: 100,
+      color:
+        inverted && type === FigureTypes.secondary
+          ? theme.colors['content-inverted-secondary']
+          : inverted && type === FigureTypes.primary
+          ? theme.colors['content-inverted-primary']
+          : type === FigureTypes.secondary
+          ? theme.colors['content-secondary']
+          : color
+          ? color
+          : theme.colors['content-primary'],
+    },
+    currencyImage: {
+      // marginLeft:5,
+    },
+  });
+};
+
+// figure/types.ts
+/*
+ * Created by Haseeb Muhsin on Mon May 12 2025
+ *
+ * Copyright (c) 2025 GIB Digital
+ */
+import {Theme} from 'node_modules/react-core/dist/exports';
+import {StyleProp, ViewStyle} from 'react-native';
+export type FigureProps = {
+  moreStyle?: StyleProp<ViewStyle>;
+  amount: string;
+  inverted?: boolean;
+  size?: FigureSizes;
+  type?: FigureTypes;
+  showBalance?: boolean;
+  color?: string | null;
+  isCredit?: boolean;
+  currencyName: string;
+  minusLabelStyle?: StyleProp<ViewStyle>;
+  showBlurredBand?: boolean;
+};
+export type FigureStyleProps = {
+  theme: Theme;
+  inverted?: boolean;
+  type?: FigureTypes;
+  color?: string | null;
+};
+export enum FigureSizes {
+  XL = 'ExtraLarge',
+  L = 'Large',
+  M = 'Medium',
+  S = 'Small',
+  XS = 'ExtraSmall',
+}
+export enum FigureTypes {
+  primary = 'Primary',
+  secondary = 'Secondary',
+}
+
+
+// COMPONENT: progress-bar
+// progress-bar/index.tsx
+import React, {FC, useRef, useEffect, useState} from 'react';
+import {View, PanResponder, Animated} from 'react-native';
+import {getStyles} from './styles';
+import {ProgressDotIcon} from 'app/assets/svg/progress-dot-icon';
+import {ProgressBarPropeties} from './types';
+import {isRTLLanguage} from 'app/utils/language-utils';
+const ProgressBar: FC<ProgressBarPropeties> = ({
+  width = 300,
+  height = 20,
+  thumbRadius = 15,
+  maximumValue = 100,
+  minimumValue = 0,
+  onValueChange,
+  trackColor,
+  progressColor,
+  value = 0,
+  endMargin = 18,
+  startMargin = 5,
+}) => {
+  const allowedWidth = width - startMargin - endMargin;
+  const valueRange = maximumValue - minimumValue;
+  // Clamp the incoming value
+  const clampedValue = Math.min(Math.max(value, minimumValue), maximumValue);
+  // const initialTranslateX =
+  //   ((clampedValue - minimumValue) / valueRange) * allowedWidth;
+  const Precentage = (clampedValue - minimumValue) / valueRange;
+  const initialTranslateX = isRTLLanguage()
+    ? allowedWidth * (1 - Precentage)
+    : allowedWidth * Precentage;
+  // ((clampedValue - minimumValue) / valueRange) * allowedWidth;
+  const rawTranslateX = useRef(new Animated.Value(initialTranslateX)).current;
+  // const rawTranslateX = useRef(
+  //   new Animated.Value(
+  //     isRTLLanguage() ? allowedWidth - initialTranslateX : initialTranslateX,
+  //   ),
+  // ).current;
+  //   const rawTranslateX = useRef(
+  //   new Animated.Value(
+  //     isRTLLanguage() ? allowedWidth - initialTranslateX : initialTranslateX,
+  //   ),
+  // ).current;
+  // const effectiveTranslateX = isRTLLanguage()
+  //   ? Animated.multiply(rawTranslateX, -1)
+  //   : rawTranslateX;
+  const translateX = Animated.add(
+    rawTranslateX,
+    new Animated.Value(startMargin),
+  );
+  const styles = getStyles(
+    width,
+    height,
+    trackColor,
+    progressColor,
+    rawTranslateX,
+    thumbRadius,
+  );
+  const gestureStartX = useRef(0);
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        rawTranslateX.stopAnimation(value => {
+          gestureStartX.current = value;
+        });
+      },
+      onPanResponderMove: (_, gestureState) => {
+        let newX = gestureStartX.current + gestureState.dx;
+        newX = Math.max(0, Math.min(newX, allowedWidth));
+        rawTranslateX.setValue(newX);
+        // const percentage = newX / allowedWidth;
+        const percentage = isRTLLanguage()
+          ? 1 - newX / allowedWidth
+          : newX / allowedWidth;
+        const newValue = minimumValue + percentage * valueRange;
+        onValueChange?.(newValue);
+      },
+    }),
+  ).current;
+  useEffect(() => {
+    const clamped = Math.min(Math.max(value, minimumValue), maximumValue);
+    const percentage = (clamped - minimumValue) / valueRange;
+    // const toValue = ((clamped - minimumValue) / valueRange) * allowedWidth;
+    const toValue = isRTLLanguage()
+      ? allowedWidth * (1 - percentage)
+      : allowedWidth * percentage;
+    Animated.timing(rawTranslateX, {
+      toValue,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  }, [value, minimumValue, maximumValue, allowedWidth, isRTLLanguage]);
+  return (
+    // <View style={(styles.container, {width})}>
+    //   <View style={styles.trackStyle}>
+    //     <Animated.View style={[styles.progressStyle, {width: rawTranslateX}]} />
+    //     <Animated.View
+    //       style={[styles.thumbStyle, {transform: [{translateX}]}]}
+    //       {...panResponder.panHandlers}>
+    //       <ProgressDotIcon />
+    //     </Animated.View>
+    //   </View>
+    // </View>
+    <View style={[styles.container, {width}]}>
+      <View style={styles.trackStyle}>
+        <Animated.View
+          style={{
+            position: 'absolute',
+            height,
+            backgroundColor: progressColor,
+            borderStartEndRadius: height / 2,
+            borderStartStartRadius: height / 2,
+            // borderRadius: height / 2,
+            // width: rawTranslateX,
+            // [isRTLLanguage() ? 'right' : 'left']: 0,
+            // width: rawTranslateX.interpolate({
+            //   inputRange: [0, allowedWidth],
+            //   outputRange: isRTLLanguage()
+            //     ? [allowedWidth, 0]
+            //     : [0, allowedWidth],
+            // }),
+            width: Animated.add(
+              rawTranslateX.interpolate({
+                inputRange: [0, allowedWidth],
+                outputRange: isRTLLanguage()
+                  ? [allowedWidth, 0]
+                  : [0, allowedWidth],
+                extrapolate: 'clamp',
+              }),
+              new Animated.Value(thumbRadius),
+            ),
+          }}
+        />
+        <Animated.View
+          style={[
+            styles.thumbStyle,
+            {
+              transform: [{translateX}],
+              [isRTLLanguage() ? 'right' : 'left']: startMargin,
+            },
+          ]}
+          {...panResponder.panHandlers}>
+          <ProgressDotIcon height={25} width={25} />
+        </Animated.View>
+      </View>
+    </View>
+  );
+};
+export {ProgressBar};
+
+// progress-bar/styles.ts
+import {Animated, StyleSheet} from 'react-native';
+export const getStyles = (
+  width: number,
+  height: number,
+  trackColor: string,
+  progressColor: string,
+  translateX: Animated.Value,
+  thumbRadius: number,
+) =>
+  StyleSheet.create({
+    container: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    trackStyle: {
+      width,
+      height,
+      backgroundColor: trackColor,
+      borderRadius: height / 2,
+    },
+    progressStyle: {
+      height,
+      //   backgroundColor: progressColor,
+      width: translateX,
+      borderRadius: height / 2,
+    },
+    thumbStyle: {
+      width: thumbRadius * 2,
+      height: thumbRadius * 2,
+      borderRadius: thumbRadius,
+      backgroundColor: 'transparent',
+      shadowColor: '#000',
+      shadowOffset: {width: 0, height: 2},
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      position: 'absolute',
+      top: -thumbRadius * 1.8,
+      marginLeft: -thumbRadius * 1.5,
+    },
+  });
+
+// progress-bar/types.ts
+export interface ProgressBarPropeties {
+  width: number;
+  height: number;
+  thumbRadius: number;
+  maximumValue: number;
+  minimumValue?: number;
+  onValueChange: (newValue: number) => void;
+  trackColor: string;
+  progressColor: string;
+  thumbColor: string;
+  value: number;
+  endMargin: number;
+  startMargin: number;
+}
+
+
+// COMPONENT: tag
+// tag/index.tsx
+import React, { FC } from 'react';
+import { TouchableOpacity,View } from 'react-native';
+import { getStyles } from './styles';
+import { useNewTheme } from 'react-core';
+import { TagProperties } from './types';
+import { Label } from '../label';
+import { variants } from '../label/types';
+const Tag: FC<TagProperties> = props => {
+  const {
+    label,
+    size,
+    type,
+    id,
+    customContainerStyle,
+    customLabelStyle,
+    onPress,
+  } = props;
+  const theme = useNewTheme();
+  const styles = getStyles({ size, theme });
+  return (
+    // <TouchableOpacity
+    //   key={id}
+    //   style={[
+    //     { ...styles.tagContainer },
+    //     { ...styles[`${type}Container`] },
+    //     customContainerStyle,
+    //   ]}
+    //   onPress={onPress}>
+        <View
+      key={id}
+      style={[
+        { ...styles.tagContainer },
+        { ...styles[`${type}Container`] },
+        customContainerStyle,
+      ]}>
+      <Label
+        id="lblText"
+        text={label}
+        variant={variants.bodyMediumS}
+        style={[styles[`${type}Label`], customLabelStyle]}
+      />
+    </View>
+  );
+};
+export { Tag };
+
+// tag/styles.ts
+import {StyleSheet} from 'react-native';
+import {TagSize, TagStyleProps} from './types';
+export const getStyles = (props: TagStyleProps) => {
+  const {theme, size} = props;
+  return StyleSheet.create({
+    tagContainer: {
+      height: 24,
+      borderRadius: 999,
+      paddingLeft: 8,
+      paddingRight: 8,
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 8,
+    },
+    successContainer: {
+      backgroundColor: theme.colors['surface-semantic-success-01'],
+    },
+    infoContainer: {
+      backgroundColor: theme.colors['surface-semantic-info-01'],
+    },
+    warningContainer: {
+      backgroundColor: theme.colors['surface-semantic-warning-01'],
+    },
+    errorContainer: {
+      backgroundColor: theme.colors['surface-semantic-error-01'],
+    },
+    otherContainer: {
+      backgroundColor: theme.colors['surface-02'],
+    },
+    successLabel: {
+      color: theme.colors['content-semantic-success-02'],
+    },
+    infoLabel: {
+      color: theme.colors['content-semantic-info-02'],
+    },
+    warningLabel: {
+      color: theme.colors['content-semantic-warning-02'],
+    },
+    errorLabel: {
+      color: theme.colors['content-semantic-error-02'],
+    },
+    otherLabel: {
+      color: theme.colors['content-secondary'],
+    },
+  });
+};
+
+// tag/types.ts
+import {StyleProp, ViewStyle} from 'react-native';
+import {Theme} from 'react-core';
+export enum TagTypes {
+  success = 'success',
+  info = 'info',
+  warning = 'warning',
+  error = 'error',
+  other = 'other',
+}
+export enum TagSize {
+  large = 'large',
+  small = 'small',
+}
+export interface TagProperties {
+  id: string;
+  type: TagTypes;
+  onPress?: () => void;
+  label: string;
+  size: TagSize;
+  style?: StyleProp<ViewStyle>;
+  customContainerStyle?: StyleProp<ViewStyle>;
+  customLabelStyle?: StyleProp<ViewStyle>;
+}
+export interface TagStyleProps {
+  theme: Theme;
+  size: TagSize.large | TagSize.small;
+}
+
+
+
+**Usage Instructions:**
+- Review all provided component definitions (props, types, usage patterns)
+- Match UI elements from the design to these components by type and purpose
+- Use these components instead of creating new ones
+- Follow the exact prop structures and conventions
+
+---
+
+## 3. SAMPLE WORKING CODE PATTERNS
+
+###FilePath: smart-sweep/get-started/index.tsx
+import {FC} from 'react';
+import {
+  SmartSweepGetStartedProps,
+  SmartSweepGetStartedScreenRouteProp,
+} from './types';
+import * as Components from '@app/components';
+import {Theme, translation, useNewTheme} from 'react-core';
+import {useRoute} from '@react-navigation/native';
+import {CoinsIcon} from 'app/assets/svg';
+import {NavigationService} from 'app/utils';
+import {AccountsRoutes} from 'app/constants';
+import {getStyles} from './styles';
+export const SmartSweepGetStarted: FC<SmartSweepGetStartedProps> = prop => {
+  const {navigation} = prop;
+  const theme: Theme = useNewTheme();
+  const styles = getStyles({theme});
+  const route = useRoute<SmartSweepGetStartedScreenRouteProp>();
+  const {accountNumber, branch, currency} = route.params;
+  const {t} = translation.useTranslation();
+  return (
+      <Components.GetStartedScreen
+        meemLogoSize={24}
+        headerTitle={t('SmartSweepLblScreenTitle')}
+        subTitle={t('SmartSweepLblTitle')}
+        description={t('SmartSweepLblDescription')}
+        BackGroundImage={CoinsIcon}
+        onClose={() => {
+          navigation.pop();
+        }}
+        onGetStarted={() => {
+          console.log('currency', currency);
+          NavigationService.navigate(AccountsRoutes.SmartSweepAmount, {
+            currency: currency,
+          });
+        }}
+        cancelIconStyle={styles.cancelIconStyle}
+      />
+  );
+};
+###FilePath: smart-sweep/get-started/styles.ts
+import {StyleSheet} from 'react-native';
+import {SmartSweepGetStarteStyle} from './types';
+export const getStyles = (props: SmartSweepGetStarteStyle) => {
+  const {theme} = props;
+  return StyleSheet.create({
+    cancelIconStyle: {
+      backgroundColor: theme.colors['surface-02'],
+      borderRadius: 999,
+      height: 24,
+      width: 24,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+  });
+};
+###FilePath: smart-sweep/get-started/types.ts
+import {RouteProp} from '@react-navigation/native';
+import {AccountsRootStackParamList} from 'app/navigator/accounts-section';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {Theme} from 'react-core';
+export type SmartSweepGetStartedProps = {
+  navigation: NativeStackNavigationProp<AccountsRootStackParamList>;
+};
+export type SmartSweepGetStartedScreenRouteProp = RouteProp<
+  AccountsRootStackParamList,
+  'SmartSweepGetStarted'
+>;
+export type SmartSweepGetStarteStyle = {
+  theme: Theme;
+};
+###FilePath: smart-sweep/smart-sweep-amount/index.tsx
+import {ArrowBackIcon, SaudiRiyalSAR} from 'app/assets/svg';
+import {FC, useEffect, useState} from 'react';
+import {
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  TextInput,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
+import {useToast} from 'app/components';
+import {variants} from 'app/components/label/types';
+import {ButtonVariants} from 'app/components/custom-button/types';
+import {translation, useNewTheme} from 'react-core';
+import {getStyles} from './styles';
+import {SmartSweepAmountProps, SmartSweepAmountScreenRouteProp} from './types';
+import {useRoute} from '@react-navigation/native';
+import * as Components from '@app/components';
+import {useAccounts} from 'app/features/accounts/hooks/use-accounts';
+import {ToastProps, ToastTypeProps} from 'app/components/toast/types';
+import AdminConfig from 'app/constants/admin-config';
+export const SmartSweepAmount: FC<SmartSweepAmountProps> = props => {
+  const {navigation} = props;
+  const route = useRoute<SmartSweepAmountScreenRouteProp>();
+  const {currency} = route.params;
+  const theme = useNewTheme();
+  const styles = getStyles({theme});
+  const toast = useToast();
+  const {sweepInstruction, callUpdateAutoSweep} = useAccounts();
+  const [sweepAmount, setSweepAmount] = useState('0');
+  const [focused, setFocused] = useState(false);
+  const [isConfirmButtonDisabled, setIsConfirmButtonDisabled] = useState(true);
+  const {t} = translation.useTranslation();
+  useEffect(() => {
+    if (sweepInstruction?.sweepAmount) {
+      const formattedAmount = Number(
+        sweepInstruction?.sweepAmount,
+      ).toLocaleString('en-US', {});
+      setSweepAmount(formattedAmount);
+    }
+  }, []);
+  useEffect(() => {
+    validateSweepAmount();
+  }, [sweepAmount]);
+  const getToastProps = (message: string): ToastProps => {
+    return {
+      id: 'toast_id',
+      toastMessage: message,
+      inverted: false,
+      toastType: ToastTypeProps.warning,
+    };
+  };
+  const validateSweepAmount = () => {
+    const sweepValue = Number(sweepAmount.replaceAll(',', ''));
+    // if (Number(sweepInstruction.sweepAmount) === sweepValue ) {
+    //   setIsConfirmButtonDisabled(true);
+    //   return;
+    // }
+    //behalf of 301847 //not needed
+    // if (sweepAmount === '') {
+    //   setSweepAmount('0');
+    //   setIsConfirmButtonDisabled(false);
+    //   return;
+    // }
+    if (Number(sweepValue) < Number(AdminConfig.AUTO_SWEEP_MIN_AMOUNT)) {
+      // const toastProps = getToastProps(t('SmartSweepLblErrorExceedLimit'));
+      // toast.showToast(toastProps);
+      setIsConfirmButtonDisabled(true);
+      return;
+    }
+    if (Number(sweepValue) > Number(AdminConfig.AUTO_SWEEP_MAX_AMOUNT)) {
+      const toastProps = getToastProps(t('SmartSweepLblErrorExceedLimit'));
+      toast.showToast(toastProps);
+      setIsConfirmButtonDisabled(true);
+      return;
+    }
+    setIsConfirmButtonDisabled(false);
+  };
+  return (
+    <Components.ScreenContainer
+      id="sweepAmount"
+      showCenterContent={true}
+      showGoBackIcon
+      // customBottomScreenContentStyle={styles.bottomContainer}
+      bottomScreenContent={
+        <Components.SubmitButton
+          onPress={() => {
+            Keyboard.dismiss();
+            callUpdateAutoSweep(sweepAmount.replace(',', ''), currency);
+          }}
+          label={t('SmartSweepBtnConfirm')}
+          id={t('SmartSweepBtnConfirm')}
+          variant={ButtonVariants.primary}
+          disabled={isConfirmButtonDisabled || sweepAmount === ''}
+          // style={focused ? styles.primaryButton : styles.unFocusedButton}
+        />
+      }>
+      <View style={styles.container}>
+        <View style={styles.contentContainer}>
+          <Components.Label
+            id="labelContentTitle"
+            text={t('SmartSweepLblScreenTitle')}
+            variant={variants.titleXL}
+            style={styles.labelContentTitle}
+          />
+          <Components.Label
+            id="labelContentDescription"
+            text={t('SmartSweepLblAddAmountDescription')}
+            variant={variants.bodyRegularM}
+            style={styles.labelContentDescription}
+          />
+        </View>
+        <View style={styles.amountInputContainer}>
+          <Components.AmountInput
+            id="amountInput"
+            value={sweepAmount}
+            setValue={(val: string) => {
+              setSweepAmount(val);
+            }}
+            maximumLength={10}
+            onFocus={() => {
+              setFocused(true);
+            }}
+            onBlur={() => {
+              setFocused(false);
+            }}
+          />
+        </View>
+      </View>
+    </Components.ScreenContainer>
+  );
+};
+###FilePath: smart-sweep/smart-sweep-amount/styles.ts
+import {StatusBar, StyleSheet} from 'react-native';
+import {SmartSweepAmountStyle} from './types';
+import {Typography} from 'app/utils';
+export const getStyles = (prop: SmartSweepAmountStyle) => {
+  const {theme} = prop;
+  return StyleSheet.create({
+    keyboardView: {
+      flex: 1,
+    },
+    container: {
+      flex: 1,
+      paddingHorizontal: 16,
+      gap: 32,
+    },
+    contentContainer: {
+      gap: 8,
+    },
+    labelContentTitle: {
+      color: theme.colors['content-primary'],
+    },
+    labelContentDescription: {
+      color: theme.colors['content-primary'],
+      fontSize: 16,
+    },
+    amountInputContainer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    textInput: {
+      fontFamily: Typography.fonts.figtree_regular,
+      fontSize: 56,
+    },
+    buttonContainer: {
+      position: 'absolute',
+      bottom: 0,
+      width: '100%',
+      alignSelf: 'center',
+    },
+    primaryButton: {
+      borderRadius: 0,
+    },
+    unFocusedButton: {
+      alignSelf: 'center',
+      width: '90%',
+    },
+    bottomContainer: {
+      paddingBottom: 24,
+    },
+  });
+};
+###FilePath: smart-sweep/smart-sweep-amount/types.ts
+import {AccountsRootStackParamList} from 'app/navigator/accounts-section';
+import {RouteProp} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {Theme} from 'node_modules/react-core/dist/exports';
+export type SmartSweepAmountStyle = {
+  theme: Theme;
+};
+export type SmartSweepAmountProps = {
+  navigation: NativeStackNavigationProp<AccountsRootStackParamList>;
+};
+export type SmartSweepAmountScreenRouteProp = RouteProp<
+  AccountsRootStackParamList,
+  'SmartSweepAmount'
+>;
+###FilePath: smart-sweep/sweep-success/index.tsx
+import {FC} from 'react';
+import {SmartSweepSuccessProps} from './types';
+import {Status} from 'app/features/beneficiaries/views/status';
+import {TickIcon} from 'app/assets/svg';
+import {Button} from 'app/components';
+import {ButtonSizes, ButtonVariants} from 'app/components/custom-button/types';
+import {translation, useNewTheme} from 'react-core';
+import {getStyles} from './styles';
+import {Background} from 'app/features/beneficiaries/views/status/components/background';
+import {ButtonAlignment} from 'app/features/beneficiaries/views/status/types';
+import {AccountsRoutes, TransferRoutes} from 'app/constants';
+import {NavigationService} from 'app/utils';
+const SmartSweepSuccess: FC<SmartSweepSuccessProps> = props => {
+  const theme = useNewTheme();
+  const styles = getStyles();
+  const {navigation} = props;
+  const {t} = translation.useTranslation();
+  return (
+    <Status
+      Background={Background}
+      icon={TickIcon}
+      title={t('SmartSweepLblStatusTitle').split("\\n").join('\n')}
+      inverted={true}
+      description={t('SmartSweepLblStatusDescription')}
+      backButtonVisible={false}
+      statusBarColor={theme.colors['background-03']}
+      primaryButton={
+        <Button
+          id="beneficiary_error_edit_button"
+          label={t('SmartSweepBtnHome')}
+          size={ButtonSizes.large}
+          variant={ButtonVariants.secondary}
+          inverted
+          onPress={() => navigation.pop(3)} //pop to transaction list
+          style={styles.button}
+        />
+      }
+      secondaryButton={
+        <Button
+          id="beneficiary_error_done_button"
+          label={t('SmartSweepBtnGoToAccounts')}
+          size={ButtonSizes.large}
+          style={styles.button}
+          inverted={true}
+          onPress={() => navigation.pop(3)}
+        />
+      }
+      buttonAlignment={ButtonAlignment.column}
+    />
+  );
+};
+export default SmartSweepSuccess;
+###FilePath: smart-sweep/sweep-success/styles.ts
+import {Theme} from 'react-core';
+import {StyleSheet} from 'react-native';
+export const getStyles = () => {
+  return StyleSheet.create({
+    container: {
+      flexGrow: 1,
+    },
+    button: {flex: 1},
+  });
+};
+###FilePath: smart-sweep/sweep-success/types.ts
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { AccountsRootStackParamList } from "app/navigator/accounts-section";
+export type SmartSweepSuccessProps = {
+    navigation: NativeStackNavigationProp<AccountsRootStackParamList>;
+}
+***************
+DropDown Sample Code
+          <Dropdown
+            id="sort_by_dropdown"
+            placeholder={translate('SortAndFilterDdSortBy')}
+            onPress={() => {
+              setShowSortByDropDown(true);
+            }}
+            inputText={SortAndFilterValidations.values.sortBy}
+            BottomSheet={
+              <BottomSheetOptions
+                visible={showSortByDropDown}
+                options={sortbyData}
+                showHeaderCloseIcon
+                headerTitle={translate('SortAndFilterDdSortBy')}
+                optionKey="categoryName"
+                optionLabelKey="categoryName"
+                optionSelected={sortBySelectedItem}
+                onBottomSheetClose={() => setShowSortByDropDown(false)}
+                onOptionSelect={data => setSortBy(data)}
+              />
+            }
+          />
+
+**Follow these patterns for:**
+- File structure (hooks and schemas at feature level)
+- Import statements organization (STRICT ORDER)
+- Hook implementation patterns
+- Schema validation patterns
+- Component composition
+- State management through custom hooks
+- Theme usage with `useNewTheme()`
+- Translation with `translation.useTranslation()`
+- Navigation patterns
+
+---
+
+## 4. PROJECT STRUCTURE
+
+app/
+├── assets/
+│   ├── animations/
+│   ├── fonts/
+│   ├── html/
+│   ├── images/
+│   ├── lottie/
+│   └── svg/
+│       ├── Currency/
+│       └── (150+ icons)
+├── common/
+│   ├── theme/
+│   └── types.ts
+├── components/ (120+ components – showing first 5 + one deep dive)
+│   ├── account-status/
+│   ├── accounts-bottom-list/
+│   ├── action-bottom-sheet/
+│   ├── amount-input/
+│   ├── avatar/
+│   └── ... (115+ more)
+│
+│   └─ Deep dive example: action-bottom-sheet/
+│       ├── components/
+│       │   └── BottomSheetHeaderWrapper.tsx
+│       ├── index.tsx
+│       ├── styles.ts
+│       └── types.ts
+├── constants/ (11 files – first 5 only)
+│   ├── admin-config.ts
+│   ├── animation-config.ts
+│   ├── api-screen-ids.ts
+│   ├── error-values.ts
+│   ├── gradient-config.ts
+│   └── ... (6 more)
+├── features/
+│   ├── accounts/
+│   │   ├── constants/
+│   │   ├── hooks/
+│   │   ├── schemas/
+│   │   └── views/ (17 screens – first 5 + one deep dive)
+│   │       ├── account-details/
+│   │       ├── accounts-list/
+│   │       ├── accounts-transactions/
+│   │       ├── add-money-get-started/
+│   │       ├── bank-transfers/
+│   │       └── ... (12 more)
+│   │
+│   │       └─ Deep dive example: accounts-transactions/
+│   │           ├── components/
+│   │           │   ├── transaction-list-header/
+│   │           │   │   ├── index.tsx
+│   │           │   │   ├── styles.ts
+│   │           │   │   └── types.ts
+│   │           │   └── transaction-list-item/
+│   │           │       ├── index.tsx
+│   │           │       ├── styles.ts
+│   │           │       └── types.ts
+│   │           ├── index.tsx
+│   │           ├── styles.ts
+│   │           └── types.ts
+│   │
+│   ├── authentication/
+│   ├── beneficiaries/
+│   ├── dashboard/
+│   ├── onboarding/
+│   ├── transfers/
+│   └── user-setting/
+├── hooks/ (14 hooks)
+├── navigator/
+├── redux/
+├── services/
+└── utils/
+    ├── rsa/
+    └── (30+ utilities)
+
+**Generate code following this structure:**
+- `app/features/{feature-name}/views/{screen-name}/index.tsx`
+- `app/features/{feature-name}/views/{screen-name}/styles.ts`
+- `app/features/{feature-name}/views/{screen-name}/types.ts`
+- `app/features/{feature-name}/views/{screen-name}/translations.ts`
+- `app/features/{feature-name}/hooks/use-{screen-name}.ts` ← **Feature level**
+- `app/features/{feature-name}/schemas/{screen-name}-schema.ts` ← **Feature level**
+
+---
+
+## 5. USER STORIES & BUSINESS LOGIC
+
+None
+
+**Implement according to:**
+- Field validation rules (define in schemas)
+- Mandatory vs optional fields (Yup validation)
+- Conditional field visibility (logic in hooks)
+- Data flow and state management (centralized in hooks)
+- Form submission and navigation (handlers in hooks)
+
+---
+
+## GENERATION REQUIREMENTS
+
+### Design Analysis
+1. Analyze the attached design image carefully
+2. Identify all UI components, layouts, interactions, text content, and styling
+3. Map each visual element to existing custom components
+4. Extract exact text content, colors, spacing, and typography
+5. Identify form fields that need validation
+
+### Code Structure
+Generate files in this format:
+
+```
+###FilePath: app/features/{feature}/views/{screen-name}/index.tsx
+[View component - UI only, uses custom hook]
+
+###FilePath: app/features/{feature}/hooks/use-{screen-name}.ts
+[Custom hook - all business logic, state, handlers]
+
+###FilePath: app/features/{feature}/schemas/{screen-name}-schema.ts
+[Yup schema, initial values, types]
+
+###FilePath: app/features/{feature}/views/{screen-name}/styles.ts
+[Styles implementation]
+
+###FilePath: app/features/{feature}/views/{screen-name}/types.ts
+[Types/interfaces]
+
+###FilePath: app/features/{feature}/views/{screen-name}/translations.ts
+[Translation keys with en and ar objects]
+```
+
+### Implementation Checklist
+- [ ] **Follow STRICT import order** (React → Third-party → Custom → Theme → Assets → Feature imports → Local)
+- [ ] **Hooks at feature level:** `app/features/{feature}/hooks/use-{screen-name}.ts`
+- [ ] **Schemas at feature level:** `app/features/{feature}/schemas/{screen-name}-schema.ts`
+- [ ] **Import hooks with relative path:** `import {useScreenName} from '../../hooks/use-screen-name'`
+- [ ] **Import schemas with relative path:** `import {Schema, initialValues} from '../../schemas/screen-name-schema'`
+- [ ] **Use TitleCase ID naming:** `ComponentNameFieldName`
+- [ ] **Use translation key pattern:** `JourneyScreenNameComponentTypeFieldName`
+- [ ] **Separate business logic into custom hook**
+- [ ] **Define validation schema** using Yup
+- [ ] **View component is pure UI** (no business logic in index.tsx)
+- [ ] **All state in custom hook** (useState, useMemo, etc.)
+- [ ] **All handlers in custom hook** (onChange, onPress, etc.)
+- [ ] **Formik for form management** (in custom hook)
+- [ ] **Generate translations.ts** with en and ar objects
+- [ ] Use only existing custom components
+- [ ] Import components: `import * as Components from '@app/components'`
+- [ ] Import theme: `import {useNewTheme, Theme, translation} from 'react-core'`
+- [ ] Implement TypeScript types properly
+- [ ] Use `getStyles()` pattern with theme
+- [ ] Match design precisely
+
+### Hook Development Guidelines
+**Custom Hook Must Include:**
+1. All useState declarations for form fields and UI state
+2. Formik setup with schema and initial values
+3. useMemo for computed values (isFormValid, totals, etc.)
+4. Helper functions (parseAmount, formatData, etc.)
+5. Event handlers (onChange, onPress, onSelect, etc.)
+6. Navigation handlers (onBack, onNext, etc.)
+7. API call functions (if applicable)
+8. Return object with all state, handlers, and computed values
+
+**Hook Return Pattern:**
+```typescript
+return {
+  // State values
+  field1,
+  field2,
+  isChecked,
+
+  // Form
+  formikForm,
+
+  // Computed values
+  isFormValid,
+  totalAmount,
+
+  // Handlers
+  onChangeField1,
+  onChangeField2,
+  onCheckboxSelect,
+  handleSubmit,
+  onBackPress,
+};
+```
+
+### Schema Development Guidelines
+**Schema Must Include:**
+1. Yup validation schema with proper rules
+2. Error message keys from Errors constant
+3. Initial values object matching schema shape
+4. TypeScript type derived from initial values
+5. Validation for all required fields
+6. Custom validation rules (regex, min/max, etc.)
+
+---
+
+## OUTPUT FORMAT
+
+Provide complete, production-ready code organized by file path:
+
+1. **View component** (views/{screen-name}/index.tsx) - Pure UI using custom hook
+2. **Custom hook** (hooks/use-{screen-name}.ts) - All business logic at feature level
+3. **Schema** (schemas/{screen-name}-schema.ts) - Yup validation at feature level
+4. **Styles** (views/{screen-name}/styles.ts) - Theme-based StyleSheet
+5. **Types** (views/{screen-name}/types.ts) - TypeScript interfaces
+6. **Translations** (views/{screen-name}/translations.ts) - i18n keys
+
+**File Path Examples:**
+```
+###FilePath: app/features/credit-card/views/monthly-expenses/index.tsx
+###FilePath: app/features/credit-card/hooks/use-monthly-expenses.ts
+###FilePath: app/features/credit-card/schemas/monthly-expenses-schema.ts
+###FilePath: app/features/credit-card/views/monthly-expenses/styles.ts
+###FilePath: app/features/credit-card/views/monthly-expenses/types.ts
+###FilePath: app/features/credit-card/views/monthly-expenses/translations.ts
+```
+
+**Code must be:**
+- Ready to integrate into existing project
+- Free of mocks, placeholders, or TODOs
+- Following exact patterns from samples
+- Using only provided custom components
+- Properly separated (UI vs logic)
+- Using custom hooks for all business logic at feature level
+- Using Yup schemas for all validation at feature level
+- Properly typed with TypeScript
+- Following all naming conventions
+- Using correct import order
+- Including proper IDs for all components
+- Using translation keys for all text
+- Importing hooks and schemas from feature level with correct relative paths
+
+Generate the code now based on the attached design image, following ALL conventions and patterns above.
+

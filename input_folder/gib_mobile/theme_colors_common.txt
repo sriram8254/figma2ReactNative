@@ -1,0 +1,808 @@
+###FilePath: common/types.ts
+
+export enum Language {
+  English = 'en',
+  Arabic = 'ar',
+}
+
+export enum Platforms {
+  Ios = 'ios',
+  Android = 'android',
+}
+
+
+###FilePath: common/theme/contextual-theme.ts
+
+import {ContextualTheme} from './types/contextual-theme';
+
+const contextualTheme: ContextualTheme = {
+  'background-01': 'neutral-00',
+  'background-02': 'neutral-10',
+  'background-03': 'primary-90',
+  'background-04': 'neutral-100',
+  'surface-01': 'neutral-00',
+  'surface-02': 'neutral-10',
+  'surface-03': 'primary-50',
+  'surface-04': 'primary-90',
+  'surface-05': 'primary-100',
+  'surface-inverted-01': 'primary-90',
+  'surface-inverted-02': 'primary-80',
+  'surface-inverted-03': 'primary-60',
+  'surface-inverted-04': 'primary-00',
+  'surface-inverted-05': 'neutral-90',
+  'surface-interactive-primary-enabled': 'primary-70',
+  'surface-interactive-primary-active': 'primary-90',
+  'surface-interactive-primary-disabled': 'neutral-20',
+  'surface-interactive-primary-inverted-enabled': 'neutral-00',
+  'surface-interactive-primary-inverted-active': 'primary-10',
+  'surface-interactive-primary-inverted-disabled': 'neutral-20',
+  'surface-interactive-secondary-enabled': 'neutral-10',
+  'surface-interactive-secondary-active': 'primary-10',
+  'surface-interactive-secondary-disabled': 'neutral-20',
+  'surface-interactive-secondary-inverted-enabled': 'primary-90',
+  'surface-interactive-secondary-inverted-active': 'primary-100',
+  'surface-interactive-secondary-inverted-disabled': 'neutral-20',
+  'surface-interactive-tertiary-enabled': 'neutral-20',
+  'surface-interactive-tertiary-active': 'primary-70',
+  'surface-interactive-tertiary-disabled': 'neutral-20',
+  'surface-interactive-tertiary-inverted-enabled': 'primary-50',
+  'surface-interactive-tertiary-inverted-active': 'primary-70',
+  'surface-interactive-tertiary-inverted-disabled': 'neutral-20',
+  'surface-semantic-success-01': 'semantic-success-00',
+  'surface-semantic-success-02': 'semantic-success-50',
+  'surface-semantic-info-01': 'semantic-info-00',
+  'surface-semantic-info-02': 'semantic-info-50',
+  'surface-semantic-warning-01': 'semantic-warning-00',
+  'surface-semantic-warning-02': 'semantic-warning-50',
+  'surface-semantic-error-01': 'semantic-error-00',
+  'surface-semantic-error-02': 'semantic-error-50',
+  'surface-semantic-inverted-success-01': 'semantic-success-00',
+  'surface-semantic-inverted-success-02': 'semantic-success-30',
+  'surface-semantic-inverted-info-01': 'semantic-info-00',
+  'surface-semantic-inverted-info-02': 'semantic-info-30',
+  'surface-semantic-inverted-warning-01': 'semantic-warning-00',
+  'surface-semantic-inverted-warning-02': 'semantic-warning-30',
+  'surface-semantic-inverted-error-01': 'semantic-error-00',
+  'surface-semantic-inverted-error-02': 'semantic-error-30',
+  'surface-overlay-01': 'light-opacity-10',
+  'surface-overlay-02': 'light-opacity-40',
+  'surface-overlay-03': 'dark-opacity-20',
+  'surface-overlay-04': 'dark-opacity-40',
+  'border-enabled-01': 'neutral-10',
+  'border-enabled-02': 'neutral-20',
+  'border-disabled': 'neutral-20',
+  'border-inverted-enabled-01': 'neutral-00',
+  'border-inverted-enabled-02': 'neutral-10',
+  'border-inverted-disabled': 'neutral-20',
+  'border-interactive-enabled': 'neutral-20',
+  'border-interactive-active': 'primary-70',
+  'border-interactive-disabled': 'neutral-20',
+  'border-interactive-inverted-enabled': 'neutral-00',
+  'border-interactive-inverted-active': 'primary-00',
+  'border-interactive-inverted-disabled': 'neutral-20',
+  'border-focus': 'focus-01',
+  'border-focus-inverted': 'focus-02',
+  'border-semantic-success': 'semantic-success-50',
+  'border-semantic-info': 'semantic-info-50',
+  'border-semantic-warning': 'semantic-warning-50',
+  'border-semantic-error': 'semantic-error-50',
+  'border-semantic-success-inverted': 'semantic-success-30',
+  'border-semantic-info-inverted': 'semantic-info-30',
+  'border-semantic-warning-inverted': 'semantic-warning-30',
+  'border-semantic-error-inverted': 'semantic-error-30',
+  'content-primary': 'neutral-100',
+  'content-secondary': 'neutral-70',
+  'content-tertiary': 'neutral-20',
+  'content-disabled': 'neutral-50',
+  'content-inverted-primary': 'neutral-00',
+  'content-inverted-secondary': 'primary-00',
+  'content-inverted-tertiary': 'primary-00',
+  'content-inverted-disabled': 'neutral-50',
+  'content-interactive-primary-enabled': 'primary-70',
+  'content-interactive-primary-active': 'primary-90',
+  'content-interactive-primary-disabled': 'neutral-50',
+  'content-interactive-secondary-enabled': 'neutral-60',
+  'content-interactive-secondary-active': 'primary-70',
+  'content-interactive-secondary-disabled': 'neutral-40',
+  'content-interactive-inverted-enabled': 'neutral-00',
+  'content-interactive-inverted-active': 'neutral-10',
+  'content-interactive-inverted-disabled': 'neutral-50',
+  'content-semantic-success-01': 'semantic-success-50',
+  'content-semantic-success-02': 'semantic-info-60',
+  'content-semantic-info-01': 'semantic-info-50',
+  'content-semantic-info-02': 'semantic-info-60',
+  'content-semantic-warning-01': 'semantic-warning-50',
+  'content-semantic-warning-02': 'semantic-warning-60',
+  'content-semantic-error-01': 'semantic-error-50',
+  'content-semantic-error-02': 'semantic-warning-60',
+  'content-semantic-success-inverted': 'semantic-success-30',
+  'content-semantic-info-inverted': 'semantic-info-30',
+  'content-semantic-warning-inverted': 'semantic-warning-30',
+  'content-semantic-error-inverted': 'semantic-error-30',
+  'icon-primary': 'neutral-100',
+  'icon-secondary': 'neutral-70',
+  'icon-tertiary': 'neutral-20',
+  'icon-disabled': 'neutral-50',
+  'icon-inverted-primary': 'neutral-00',
+  'icon-inverted-secondary': 'primary-00',
+  'icon-inverted-tertiary': 'primary-00',
+  'icon-inverted-disabled': 'neutral-50',
+  'icon-interactive-primary-enabled': 'primary-70',
+  'icon-interactive-primary-active': 'primary-90',
+  'icon-interactive-primary-disabled': 'neutral-50',
+  'icon-interactive-secondary-enabled': 'neutral-60',
+  'icon-interactive-secondary-active': 'primary-70',
+  'icon-interactive-secondary-disabled': 'neutral-40',
+  'icon-interactive-inverted-enabled': 'neutral-00',
+  'icon-interactive-inverted-active': 'neutral-10',
+  'icon-interactive-inverted-disabled': 'neutral-50',
+  'icon-semantic-success-01': 'semantic-success-50',
+  'icon-semantic-success-02': 'semantic-info-60',
+  'icon-semantic-info-01': 'semantic-info-50',
+  'icon-semantic-info-02': 'semantic-info-60',
+  'icon-semantic-warning-01': 'semantic-warning-50',
+  'icon-semantic-warning-02': 'semantic-warning-60',
+  'icon-semantic-error-01': 'semantic-error-50',
+  'icon-semantic-error-02': 'semantic-error-60',
+  'icon-semantic-success-inverted': 'semantic-success-30',
+  'icon-semantic-info-inverted': 'semantic-info-30',
+  'icon-semantic-warning-inverted': 'semantic-warning-30',
+  'icon-semantic-error-inverted': 'semantic-error-30',
+  'decorative-01': 'primary-70',
+  'decorative-02': 'primary-80',
+  'decorative-03': 'primary-90',
+  'brand-01': 'brand-01',
+  'brand-02': 'brand-02',
+};
+
+export default contextualTheme;
+
+
+###FilePath: common/theme/meem-theme.ts
+
+import {BaseTheme} from './types/base-theme';
+
+const MeemTheme: BaseTheme = {
+  'primary-100': '#19074a',
+  'primary-90': '#3a1284',
+  'primary-80': '#520ea8',
+  'primary-70': '#6a1ccd',
+  'primary-60': '#7e37e9',
+  'primary-50': '#914df7',
+  'primary-40': '#a473ff',
+  'primary-30': '#bb9afd',
+  'primary-20': '#d0b8ff',
+  'primary-10': '#e3d5ff',
+  'primary-00': '#f0e8ff',
+  'secondary-100': '#071012',
+  'secondary-90': '#0e2025',
+  'secondary-80': '#1c4049',
+  'secondary-70': '#29616e',
+  'secondary-60': '#378192',
+  'secondary-50': '#45a1b7',
+  'secondary-40': '#6ab4c5',
+  'secondary-30': '#8fc7d4',
+  'secondary-20': '#b5d9e2',
+  'secondary-10': '#daecf1',
+  'secondary-00': '#ecf6f8',
+  'neutral-100': '#19074A',
+  'neutral-90': '#281853',
+  'neutral-80': '#423369',
+  'neutral-70': '#6c608b',
+  'neutral-60': '#7d7495',
+  'neutral-50': '#948da7',
+  'neutral-40': '#a49eb3',
+  'neutral-30': '#c5c0d2',
+  'neutral-20': '#dddae4',
+  'neutral-10': '#f7f7fa',
+  'neutral-00': '#ffffff',
+  'light-opacity-100': '#ffffff',
+  'light-opacity-90': '#ffffffe6',
+  'light-opacity-80': '#ffffffcc',
+  'light-opacity-70': '#ffffffb3',
+  'light-opacity-60': '#ffffff99',
+  'light-opacity-50': '#ffffff80',
+  'light-opacity-40': '#ffffff66',
+  'light-opacity-30': '#ffffff4d',
+  'light-opacity-20': '#ffffff33',
+  'light-opacity-10': '#ffffff1a',
+  'light-opacity-00': '#ffffff00',
+  'dark-opacity-100': '#000000',
+  'dark-opacity-90': '#000000e6',
+  'dark-opacity-80': '#000000cc',
+  'dark-opacity-70': '#000000b3',
+  'dark-opacity-60': '#00000099',
+  'dark-opacity-50': '#00000080',
+  'dark-opacity-40': '#00000066',
+  'dark-opacity-30': '#0000004d',
+  'dark-opacity-20': '#00000033',
+  'dark-opacity-10': '#0000001a',
+  'dark-opacity-00': '#10033000',
+
+  'semantic-success-100': '#041109',
+  'semantic-success-90': '#092212',
+  'semantic-success-80': '#124324',
+  'semantic-success-70': '#1a6536',
+  'semantic-success-60': '#238648',
+  'semantic-success-50': '#2ca85a',
+  'semantic-success-40': '#56b97b',
+  'semantic-success-30': '#80cb9c',
+  'semantic-success-20': '#a9dcbc',
+  'semantic-success-10': '#d3eedd',
+  'semantic-success-00': '#e8f6ee',
+  'semantic-info-100': 'secondary-100',
+  'semantic-info-90': 'secondary-90',
+  'semantic-info-80': 'secondary-80',
+  'semantic-info-70': 'secondary-70',
+  'semantic-info-60': 'secondary-60',
+  'semantic-info-50': 'secondary-50',
+  'semantic-info-40': 'secondary-40',
+  'semantic-info-30': 'secondary-30',
+  'semantic-info-20': 'secondary-20',
+  'semantic-info-10': 'secondary-10',
+  'semantic-info-00': 'secondary-00',
+  'semantic-warning-100': '#150d00',
+  'semantic-warning-90': '#2a1900',
+  'semantic-warning-80': '#553301',
+  'semantic-warning-70': '#7f4c01',
+  'semantic-warning-60': '#aa6602',
+  'semantic-warning-50': '#d47f02',
+  'semantic-warning-40': '#dd9935',
+  'semantic-warning-30': '#e5b267',
+  'semantic-warning-20': '#eecc9a',
+  'semantic-warning-10': '#f6e5cc',
+  'semantic-warning-00': '#fbf2e6',
+  'semantic-error-100': '#280606',
+  'semantic-error-90': '#400b0b',
+  'semantic-error-80': '#701717',
+  'semantic-error-70': '#9f2222',
+  'semantic-error-60': '#cf2e2e',
+  'semantic-error-50': '#ff3939',
+  'semantic-error-40': '#ff6161',
+  'semantic-error-30': '#ff8888',
+  'semantic-error-20': '#ffb0b0',
+  'semantic-error-10': '#ffd7d7',
+  'semantic-error-00': '#ffebeb',
+  'focus-01': '#1E90FF',
+  'focus-02': '#FFCC00',
+  'brand-01': '#422575',
+  'brand-02': '#ffffff',
+};
+
+export default MeemTheme;
+
+
+###FilePath: common/theme/types/base-theme.ts
+
+type Primary =
+  | 'primary-100'
+  | 'primary-90'
+  | 'primary-80'
+  | 'primary-70'
+  | 'primary-60'
+  | 'primary-50'
+  | 'primary-40'
+  | 'primary-30'
+  | 'primary-20'
+  | 'primary-10'
+  | 'primary-00';
+type Secondary =
+  | 'secondary-100'
+  | 'secondary-90'
+  | 'secondary-80'
+  | 'secondary-70'
+  | 'secondary-60'
+  | 'secondary-50'
+  | 'secondary-40'
+  | 'secondary-30'
+  | 'secondary-20'
+  | 'secondary-10'
+  | 'secondary-00';
+type Neutral =
+  | 'neutral-100'
+  | 'neutral-90'
+  | 'neutral-80'
+  | 'neutral-70'
+  | 'neutral-60'
+  | 'neutral-50'
+  | 'neutral-40'
+  | 'neutral-30'
+  | 'neutral-20'
+  | 'neutral-10'
+  | 'neutral-00';
+type LightOpacity =
+  | 'light-opacity-100'
+  | 'light-opacity-90'
+  | 'light-opacity-80'
+  | 'light-opacity-70'
+  | 'light-opacity-60'
+  | 'light-opacity-50'
+  | 'light-opacity-40'
+  | 'light-opacity-30'
+  | 'light-opacity-20'
+  | 'light-opacity-10'
+  | 'light-opacity-00';
+
+type DarkOpacity =
+  | 'dark-opacity-100'
+  | 'dark-opacity-90'
+  | 'dark-opacity-80'
+  | 'dark-opacity-70'
+  | 'dark-opacity-60'
+  | 'dark-opacity-50'
+  | 'dark-opacity-40'
+  | 'dark-opacity-30'
+  | 'dark-opacity-20'
+  | 'dark-opacity-10'
+  | 'dark-opacity-00';
+
+type Semantic =
+  | 'semantic-success-100'
+  | 'semantic-success-90'
+  | 'semantic-success-80'
+  | 'semantic-success-70'
+  | 'semantic-success-60'
+  | 'semantic-success-50'
+  | 'semantic-success-40'
+  | 'semantic-success-30'
+  | 'semantic-success-20'
+  | 'semantic-success-10'
+  | 'semantic-success-00'
+  | 'semantic-info-100'
+  | 'semantic-info-90'
+  | 'semantic-info-80'
+  | 'semantic-info-70'
+  | 'semantic-info-60'
+  | 'semantic-info-50'
+  | 'semantic-info-40'
+  | 'semantic-info-30'
+  | 'semantic-info-20'
+  | 'semantic-info-10'
+  | 'semantic-info-00'
+  | 'semantic-warning-100'
+  | 'semantic-warning-90'
+  | 'semantic-warning-80'
+  | 'semantic-warning-70'
+  | 'semantic-warning-60'
+  | 'semantic-warning-50'
+  | 'semantic-warning-40'
+  | 'semantic-warning-30'
+  | 'semantic-warning-20'
+  | 'semantic-warning-10'
+  | 'semantic-warning-00'
+  | 'semantic-error-100'
+  | 'semantic-error-90'
+  | 'semantic-error-80'
+  | 'semantic-error-70'
+  | 'semantic-error-60'
+  | 'semantic-error-50'
+  | 'semantic-error-40'
+  | 'semantic-error-30'
+  | 'semantic-error-20'
+  | 'semantic-error-10'
+  | 'semantic-error-00';
+type Focus = 'focus-01' | 'focus-02';
+type Brand = 'brand-01' | 'brand-02';
+
+export type Color =
+  | Primary
+  | Secondary
+  | Neutral
+  | LightOpacity
+  | DarkOpacity
+  | Semantic
+  | Focus
+  | Brand;
+export type BaseTheme = Record<Color, string>;
+
+
+###FilePath: common/theme/types/contextual-theme.ts
+
+import {Color} from './base-theme';
+
+type Background =
+  | 'background-01'
+  | 'background-02'
+  | 'background-03'
+  | 'background-04';
+
+type SurfaceBase =
+  | 'surface-01'
+  | 'surface-02'
+  | 'surface-03'
+  | 'surface-04'
+  | 'surface-05';
+
+type SurfaceInverted =
+  | 'surface-inverted-01'
+  | 'surface-inverted-02'
+  | 'surface-inverted-03'
+  | 'surface-inverted-04'
+  | 'surface-inverted-05';
+
+type SurfaceInteractivePrimary =
+  | 'surface-interactive-primary-enabled'
+  | 'surface-interactive-primary-active'
+  | 'surface-interactive-primary-disabled'
+  | 'surface-interactive-primary-inverted-enabled'
+  | 'surface-interactive-primary-inverted-active'
+  | 'surface-interactive-primary-inverted-disabled';
+type SurfaceInteractiveSecondary =
+  | 'surface-interactive-secondary-enabled'
+  | 'surface-interactive-secondary-active'
+  | 'surface-interactive-secondary-disabled'
+  | 'surface-interactive-secondary-inverted-enabled'
+  | 'surface-interactive-secondary-inverted-active'
+  | 'surface-interactive-secondary-inverted-disabled';
+type SurfaceInteractiveTertiary =
+  | 'surface-interactive-tertiary-enabled'
+  | 'surface-interactive-tertiary-active'
+  | 'surface-interactive-tertiary-disabled'
+  | 'surface-interactive-tertiary-inverted-enabled'
+  | 'surface-interactive-tertiary-inverted-active'
+  | 'surface-interactive-tertiary-inverted-disabled';
+
+type SurfaceSemanticSuccess =
+  | 'surface-semantic-success-01'
+  | 'surface-semantic-success-02'
+  | 'surface-semantic-inverted-success-01'
+  | 'surface-semantic-inverted-success-02';
+type SurfaceSemanticInfo =
+  | 'surface-semantic-info-01'
+  | 'surface-semantic-info-02'
+  | 'surface-semantic-inverted-info-01'
+  | 'surface-semantic-inverted-info-02';
+type SurfaceSemanticWaning =
+  | 'surface-semantic-warning-01'
+  | 'surface-semantic-warning-02'
+  | 'surface-semantic-inverted-warning-01'
+  | 'surface-semantic-inverted-warning-02';
+type SurfaceSemanticError =
+  | 'surface-semantic-error-01'
+  | 'surface-semantic-error-02'
+  | 'surface-semantic-inverted-error-01'
+  | 'surface-semantic-inverted-error-02';
+
+type SurfaceOverlay =
+  | 'surface-overlay-01'
+  | 'surface-overlay-02'
+  | 'surface-overlay-03'
+  | 'surface-overlay-04';
+
+type BorderBase =
+  | 'border-enabled-01'
+  | 'border-enabled-02'
+  | 'border-disabled'
+  | 'border-focus'
+  | 'border-focus-inverted';
+type BorderInverted =
+  | 'border-inverted-enabled-01'
+  | 'border-inverted-enabled-02'
+  | 'border-inverted-disabled';
+type BorderInteractive =
+  | 'border-interactive-enabled'
+  | 'border-interactive-active'
+  | 'border-interactive-disabled'
+  | 'border-interactive-inverted-enabled'
+  | 'border-interactive-inverted-active'
+  | 'border-interactive-inverted-disabled';
+type BorderSemantic =
+  | 'border-semantic-success'
+  | 'border-semantic-info'
+  | 'border-semantic-warning'
+  | 'border-semantic-error'
+  | 'border-semantic-success-inverted'
+  | 'border-semantic-info-inverted'
+  | 'border-semantic-warning-inverted'
+  | 'border-semantic-error-inverted';
+
+type ContentBase =
+  | 'content-primary'
+  | 'content-secondary'
+  | 'content-tertiary'
+  | 'content-disabled';
+type ContentInverted =
+  | 'content-inverted-primary'
+  | 'content-inverted-secondary'
+  | 'content-inverted-tertiary'
+  | 'content-inverted-disabled';
+type ContentInteractive =
+  | 'content-interactive-primary-enabled'
+  | 'content-interactive-primary-active'
+  | 'content-interactive-primary-disabled'
+  | 'content-interactive-secondary-enabled'
+  | 'content-interactive-secondary-active'
+  | 'content-interactive-secondary-disabled'
+  | 'content-interactive-inverted-enabled'
+  | 'content-interactive-inverted-active'
+  | 'content-interactive-inverted-disabled';
+type ContentSemantic =
+  | 'content-semantic-success-01'
+  | 'content-semantic-success-02'
+  | 'content-semantic-info-01'
+  | 'content-semantic-info-02'
+  | 'content-semantic-warning-01'
+  | 'content-semantic-warning-02'
+  | 'content-semantic-error-01'
+  | 'content-semantic-error-02'
+  | 'content-semantic-success-inverted'
+  | 'content-semantic-info-inverted'
+  | 'content-semantic-warning-inverted'
+  | 'content-semantic-error-inverted';
+
+type IconBase =
+  | 'icon-primary'
+  | 'icon-secondary'
+  | 'icon-tertiary'
+  | 'icon-disabled';
+type IconInverted =
+  | 'icon-inverted-primary'
+  | 'icon-inverted-secondary'
+  | 'icon-inverted-tertiary'
+  | 'icon-inverted-disabled';
+type IconInterative =
+  | 'icon-interactive-primary-enabled'
+  | 'icon-interactive-primary-active'
+  | 'icon-interactive-primary-disabled'
+  | 'icon-interactive-secondary-enabled'
+  | 'icon-interactive-secondary-active'
+  | 'icon-interactive-secondary-disabled'
+  | 'icon-interactive-inverted-enabled'
+  | 'icon-interactive-inverted-active'
+  | 'icon-interactive-inverted-disabled';
+type IconSemantic =
+  | 'icon-semantic-success-01'
+  | 'icon-semantic-success-02'
+  | 'icon-semantic-info-01'
+  | 'icon-semantic-info-02'
+  | 'icon-semantic-warning-01'
+  | 'icon-semantic-warning-02'
+  | 'icon-semantic-error-01'
+  | 'icon-semantic-error-02'
+  | 'icon-semantic-success-inverted'
+  | 'icon-semantic-info-inverted'
+  | 'icon-semantic-warning-inverted'
+  | 'icon-semantic-error-inverted';
+
+type Decorative = 'decorative-01' | 'decorative-02' | 'decorative-03';
+
+type Brand = 'brand-01' | 'brand-02' | 'brand-02';
+
+type SurfaceInteractive =
+  | SurfaceInteractivePrimary
+  | SurfaceInteractiveSecondary
+  | SurfaceInteractiveTertiary;
+type SurfaceSemantic =
+  | SurfaceSemanticSuccess
+  | SurfaceSemanticInfo
+  | SurfaceSemanticWaning
+  | SurfaceSemanticError;
+type Surface =
+  | SurfaceBase
+  | SurfaceInverted
+  | SurfaceInteractive
+  | SurfaceSemantic
+  | SurfaceOverlay;
+
+type Border = BorderBase | BorderInverted | BorderInteractive | BorderSemantic;
+
+type Content =
+  | ContentBase
+  | ContentInverted
+  | ContentInteractive
+  | ContentSemantic;
+
+type Icon = IconBase | IconInverted | IconInterative | IconSemantic;
+
+export type ContextualThemeKeys =
+  | Background
+  | Surface
+  | Border
+  | Content
+  | Icon
+  | Brand
+  | Decorative;
+export type ContextualTheme = Record<ContextualThemeKeys, Color>;
+
+
+###FilePath: common/theme/types/theme.ts
+
+import {ContextualThemeKeys} from './contextual-theme';
+
+export type Colors = Record<ContextualThemeKeys, string>;
+export type Theme = {
+  name: string;
+  displayName: string;
+  colors: Colors;
+  // Border
+  // Spacing
+};
+
+###FilePath: app/utils/typography.ts
+
+/**
+ * Typography
+ */
+
+export const fonts: {[key: string]: string} = { // remove usages and delete
+  regular: 'Myriad Pro Regular', 
+  bold: 'Myriad Pro Black',
+  semiBold: 'Myriad Pro Semibold',
+  figtree_bold: 'Figtree-Bold',
+  figtree_regular: 'Figtree-Regular',
+  figtree_semibold: 'Figtree-SemiBold',
+  figtree_medium: 'Figtree-Medium',
+};
+
+export const fontsize: {[key: string]: number} = {
+  medium: 16,
+  small: 14,
+  extra_small: 12,
+  large: 28,
+};
+
+###FilePath: app/utils/text-typography.ts
+
+import {TextStyle} from 'react-native';
+
+const Fontfamily = {
+  'fontFamily-01': 'figtree',
+} as const;
+
+const Size = {
+  'size-01': 12,
+  'size-02': 14,
+  'size-03': 16,
+  'size-04': 18,
+  'size-05': 20,
+  'size-06': 24,
+  'size-07': 28,
+} as const;
+
+const Weight = {
+  'weight-regular': '400',
+  'weight-medium': '600',
+  'weight-semibold': '800',
+} as const;
+
+const Lineheight = {
+  'height-01': 16,
+  'height-02': 20,
+  'height-03': 24,
+  'height-04': 28,
+  'height-05': 32,
+} as const;
+
+type Style = {
+  fontFamily: TextStyle['fontFamily']; // Remains as string
+  fontSize: TextStyle['fontSize']; // React Native allows numbers or strings for fontSize
+  fontWeight?: TextStyle['fontWeight']; // Align with TextStyle
+  lineHeight?: TextStyle['lineHeight']; // React Native allows numbers or strings for lineHeight
+};
+
+export type StylesType = {
+  TitleXL: Style;
+  TitleL: Style;
+  TitleM: Style;
+  TitleS: Style;
+  TitleXS: Style;
+  BodySemiboldL: Style;
+  BodyMediumL: Style;
+  BodyRegularL: Style;
+  BodySemiBoldM: Style;
+  BodyMediumM: Style;
+  BodyRegularM: Style;
+  BodySemiboldS: Style;
+  BodyMediumS: Style;
+  BodyRegularS: Style;
+  BodySemiboldXS: Style;
+  BodyMediumXS: Style;
+  BodyRegularXS: Style;
+};
+
+const Styles: StylesType = {
+  TitleXL: {
+    fontFamily: Fontfamily['fontFamily-01'],
+    fontSize: Size['size-07'],
+    fontWeight: Weight['weight-medium'],
+    lineHeight: Lineheight['height-05'],
+  },
+  TitleL: {
+    fontFamily: Fontfamily['fontFamily-01'],
+    fontSize: Size['size-06'],
+    fontWeight: Weight['weight-semibold'],
+    lineHeight: Lineheight['height-04'],
+  },
+  TitleM: {
+    fontFamily: Fontfamily['fontFamily-01'],
+    fontSize: Size['size-05'],
+    fontWeight: Weight['weight-semibold'],
+    lineHeight: Lineheight['height-04'],
+  },
+  TitleS: {
+    fontFamily: Fontfamily['fontFamily-01'],
+    fontSize: Size['size-04'],
+    fontWeight: Weight['weight-medium'],
+    lineHeight: Lineheight['height-03'],
+  },
+  TitleXS: {
+    fontFamily: Fontfamily['fontFamily-01'],
+    fontSize: Size['size-03'],
+    fontWeight: Weight['weight-semibold'],
+    lineHeight: Lineheight['height-03'],
+  },
+  BodySemiboldL: {
+    fontFamily: Fontfamily['fontFamily-01'],
+    fontSize: Size['size-04'],
+    fontWeight: Weight['weight-semibold'],
+    lineHeight: Lineheight['height-03'],
+  },
+  BodyMediumL: {
+    fontFamily: Fontfamily['fontFamily-01'],
+    fontSize: Size['size-04'],
+    fontWeight: Weight['weight-medium'],
+    lineHeight: Lineheight['height-03'],
+  },
+  BodyRegularL: {
+    fontFamily: Fontfamily['fontFamily-01'],
+    fontSize: Size['size-04'],
+    fontWeight: Weight['weight-regular'],
+    lineHeight: Lineheight['height-03'],
+  },
+  BodySemiBoldM: {
+    fontFamily: Fontfamily['fontFamily-01'],
+    fontSize: Size['size-03'],
+    fontWeight: Weight['weight-semibold'],
+    lineHeight: Lineheight['height-03'],
+  },
+  BodyMediumM: {
+    fontFamily: Fontfamily['fontFamily-01'],
+    fontSize: Size['size-03'],
+    fontWeight: Weight['weight-medium'],
+    lineHeight: Lineheight['height-03'],
+  },
+  BodyRegularM: {
+    fontFamily: Fontfamily['fontFamily-01'],
+    fontSize: Size['size-03'],
+    fontWeight: Weight['weight-regular'],
+    lineHeight: Lineheight['height-03'],
+  },
+  BodySemiboldS: {
+    fontFamily: Fontfamily['fontFamily-01'],
+    fontSize: Size['size-02'],
+    fontWeight: Weight['weight-semibold'],
+    lineHeight: Lineheight['height-02'],
+  },
+  BodyMediumS: {
+    fontFamily: Fontfamily['fontFamily-01'],
+    fontSize: Size['size-02'],
+    fontWeight: Weight['weight-medium'],
+    lineHeight: Lineheight['height-02'],
+  },
+  BodyRegularS: {
+    fontFamily: Fontfamily['fontFamily-01'],
+    fontSize: Size['size-02'],
+    fontWeight: Weight['weight-regular'],
+    lineHeight: Lineheight['height-02'],
+  },
+  BodySemiboldXS: {
+    fontFamily: Fontfamily['fontFamily-01'],
+    fontSize: Size['size-01'],
+    fontWeight: Weight['weight-semibold'],
+    lineHeight: Lineheight['height-01'],
+  },
+  BodyMediumXS: {
+    fontFamily: Fontfamily['fontFamily-01'],
+    fontSize: Size['size-01'],
+    fontWeight: Weight['weight-medium'],
+    lineHeight: Lineheight['height-01'],
+  },
+  BodyRegularXS: {
+    fontFamily: Fontfamily['fontFamily-01'],
+    fontSize: Size['size-01'],
+    fontWeight: Weight['weight-regular'],
+    lineHeight: Lineheight['height-01'],
+  },
+};
+
+export {Fontfamily, Size, Weight, Lineheight, Styles};

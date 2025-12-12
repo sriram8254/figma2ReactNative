@@ -1,0 +1,912 @@
+```typescript
+###FilePath: app/features/credit-card/views/personal-details/index.tsx
+
+// 1. React imports
+import React, {FC} from 'react';
+import {View} from 'react-native';
+
+// 2. Third-party imports
+// (if needed)
+
+// 3. Custom components
+import {
+  ScreenContainer,
+  Label,
+  Input,
+  SubmitButton,
+  Dropdown,
+  BottomSheetOptions, // Assuming this exists based on dropdown sample
+} from '@app/components';
+
+// 4. Theme and utilities
+import {useNewTheme, translation} from 'react-core';
+
+// 5. Assets
+// import {IconName} from 'app/assets/svg'; // No specific icons are used in this screen beyond default dropdown/input icons
+
+// 6. Feature-level imports (hooks, schemas) - TWO LEVELS UP
+import {usePersonalDetails} from '../../hooks/use-personal-details';
+
+// 7. Local view imports (types, styles)
+import {getStyles} from './styles';
+import {PersonalDetailsProps} from './types';
+import {variants} from 'app/components/label/types';
+import {ButtonSizes, ButtonVariants} from 'app/components/custom-button/types';
+
+const PersonalDetails: FC<PersonalDetailsProps> = ({navigation}) => {
+  const theme = useNewTheme();
+  const styles = getStyles({theme});
+  const {t} = translation.useTranslation();
+
+  // Get all state and handlers from custom hook
+  const {
+    formikForm,
+    isFormValid,
+    onBackButtonPress,
+    maritalStatusOptions,
+    familyMembersOptions,
+    occupationOptions,
+    educationLevelOptions,
+    yesNoOptions,
+    incomeSourceOptions,
+    incomeFrequencyOptions,
+    showMaritalStatusSheet,
+    setShowMaritalStatusSheet,
+    showFamilyMembersSheet,
+    setShowFamilyMembersSheet,
+    showOccupationSheet,
+    setShowOccupationSheet,
+    showEducationLevelSheet,
+    setShowEducationLevelSheet,
+    showHasAdditionalIncomeSheet,
+    setShowHasAdditionalIncomeSheet,
+    showIncomeSourceSheet,
+    setShowIncomeSourceSheet,
+    showIncomeFrequencySheet,
+    setShowIncomeFrequencySheet,
+    showIsGIBBoardMemberSheet,
+    setShowIsGIBBoardMemberSheet,
+    handleMaritalStatusSelect,
+    handleFamilyMembersSelect,
+    handleOccupationSelect,
+    handleEducationLevelSelect,
+    handleHasAdditionalIncomeSelect,
+    handleIncomeSourceSelect,
+    handleIncomeFrequencySelect,
+    handleIsGIBBoardMemberSelect,
+  } = usePersonalDetails({navigation});
+
+  const hasAdditionalIncome = formikForm.values.hasAdditionalIncome === 'Yes';
+  const isGIBBoardMember = formikForm.values.isGIBBoardMember === 'Yes';
+
+  return (
+    <ScreenContainer
+      id="ScreenContainerPersonalDetailsScreen"
+      showGoBackIcon
+      onPressLeftContent={onBackButtonPress}
+      bottomScreenContent={
+        <SubmitButton
+          id="SubmitButtonSave"
+          label={t('CreditCardPersonalDetailsBtnSave')}
+          onPress={formikForm.handleSubmit}
+          disabled={!isFormValid}
+          variant={ButtonVariants.primary}
+          size={ButtonSizes.large}
+          paddingHorizontal={16}
+        />
+      }>
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.headerContainer}>
+          <Label
+            id="LabelScreenTitle"
+            text={t('CreditCardPersonalDetailsLblTitle')}
+            variant={variants.titleL}
+            style={styles.screenTitle}
+          />
+          <Label
+            id="LabelScreenSubtitle"
+            text={t('CreditCardPersonalDetailsLblSubtitle')}
+            variant={variants.bodyRegularM}
+            style={styles.subTitle}
+          />
+        </View>
+
+        {/* Form Section */}
+        <View style={styles.formSection}>
+          <Dropdown
+            id="DropdownMaritalStatus"
+            placeholder={t('CreditCardPersonalDetailsPlcMaritalStatus')}
+            inputText={formikForm.values.maritalStatus}
+            onPress={() => setShowMaritalStatusSheet(true)}
+            errorText={
+              formikForm.touched.maritalStatus
+                ? formikForm.errors.maritalStatus
+                : ''
+            }
+            BottomSheet={
+              <BottomSheetOptions
+                visible={showMaritalStatusSheet}
+                options={maritalStatusOptions}
+                showHeaderCloseIcon
+                headerTitle={t('CreditCardPersonalDetailsPlcMaritalStatus')}
+                optionKey="value"
+                optionLabelKey="label"
+                optionSelected={{
+                  value: formikForm.values.maritalStatus,
+                  label: formikForm.values.maritalStatus,
+                }}
+                onBottomSheetClose={() => setShowMaritalStatusSheet(false)}
+                onOptionSelect={handleMaritalStatusSelect}
+              />
+            }
+          />
+
+          <Dropdown
+            id="DropdownFamilyMembers"
+            placeholder={t('CreditCardPersonalDetailsPlcFamilyMembers')}
+            inputText={
+              formikForm.values.familyMembers
+                ? String(formikForm.values.familyMembers)
+                : ''
+            }
+            onPress={() => setShowFamilyMembersSheet(true)}
+            errorText={
+              formikForm.touched.familyMembers
+                ? formikForm.errors.familyMembers
+                : ''
+            }
+            BottomSheet={
+              <BottomSheetOptions
+                visible={showFamilyMembersSheet}
+                options={familyMembersOptions}
+                showHeaderCloseIcon
+                headerTitle={t('CreditCardPersonalDetailsPlcFamilyMembers')}
+                optionKey="value"
+                optionLabelKey="label"
+                optionSelected={{
+                  value: String(formikForm.values.familyMembers),
+                  label: String(formikForm.values.familyMembers),
+                }}
+                onBottomSheetClose={() => setShowFamilyMembersSheet(false)}
+                onOptionSelect={handleFamilyMembersSelect}
+              />
+            }
+          />
+
+          <Dropdown
+            id="DropdownOccupation"
+            placeholder={t('CreditCardPersonalDetailsPlcOccupation')}
+            inputText={formikForm.values.occupation}
+            onPress={() => setShowOccupationSheet(true)}
+            errorText={
+              formikForm.touched.occupation ? formikForm.errors.occupation : ''
+            }
+            BottomSheet={
+              <BottomSheetOptions
+                visible={showOccupationSheet}
+                options={occupationOptions}
+                showHeaderCloseIcon
+                headerTitle={t('CreditCardPersonalDetailsPlcOccupation')}
+                optionKey="value"
+                optionLabelKey="label"
+                optionSelected={{
+                  value: formikForm.values.occupation,
+                  label: formikForm.values.occupation,
+                }}
+                onBottomSheetClose={() => setShowOccupationSheet(false)}
+                onOptionSelect={handleOccupationSelect}
+              />
+            }
+          />
+
+          <Dropdown
+            id="DropdownEducationLevel"
+            placeholder={t('CreditCardPersonalDetailsPlcEducationLevel')}
+            inputText={formikForm.values.educationLevel}
+            onPress={() => setShowEducationLevelSheet(true)}
+            errorText={
+              formikForm.touched.educationLevel
+                ? formikForm.errors.educationLevel
+                : ''
+            }
+            BottomSheet={
+              <BottomSheetOptions
+                visible={showEducationLevelSheet}
+                options={educationLevelOptions}
+                showHeaderCloseIcon
+                headerTitle={t('CreditCardPersonalDetailsPlcEducationLevel')}
+                optionKey="value"
+                optionLabelKey="label"
+                optionSelected={{
+                  value: formikForm.values.educationLevel,
+                  label: formikForm.values.educationLevel,
+                }}
+                onBottomSheetClose={() => setShowEducationLevelSheet(false)}
+                onOptionSelect={handleEducationLevelSelect}
+              />
+            }
+          />
+
+          <Dropdown
+            id="DropdownAdditionalIncomeQuestion"
+            placeholder={t('CreditCardPersonalDetailsPlcAdditionalIncomeQuestion')}
+            inputText={formikForm.values.hasAdditionalIncome}
+            onPress={() => setShowHasAdditionalIncomeSheet(true)}
+            errorText={
+              formikForm.touched.hasAdditionalIncome
+                ? formikForm.errors.hasAdditionalIncome
+                : ''
+            }
+            BottomSheet={
+              <BottomSheetOptions
+                visible={showHasAdditionalIncomeSheet}
+                options={yesNoOptions}
+                showHeaderCloseIcon
+                headerTitle={t('CreditCardPersonalDetailsPlcAdditionalIncomeQuestion')}
+                optionKey="value"
+                optionLabelKey="label"
+                optionSelected={{
+                  value: formikForm.values.hasAdditionalIncome,
+                  label: formikForm.values.hasAdditionalIncome,
+                }}
+                onBottomSheetClose={() => setShowHasAdditionalIncomeSheet(false)}
+                onOptionSelect={handleHasAdditionalIncomeSelect}
+              />
+            }
+          />
+
+          {hasAdditionalIncome && (
+            <>
+              <Dropdown
+                id="DropdownIncomeSource"
+                placeholder={t('CreditCardPersonalDetailsPlcIncomeSource')}
+                inputText={formikForm.values.incomeSource}
+                onPress={() => setShowIncomeSourceSheet(true)}
+                errorText={
+                  formikForm.touched.incomeSource
+                    ? formikForm.errors.incomeSource
+                    : ''
+                }
+                BottomSheet={
+                  <BottomSheetOptions
+                    visible={showIncomeSourceSheet}
+                    options={incomeSourceOptions}
+                    showHeaderCloseIcon
+                    headerTitle={t('CreditCardPersonalDetailsPlcIncomeSource')}
+                    optionKey="value"
+                    optionLabelKey="label"
+                    optionSelected={{
+                      value: formikForm.values.incomeSource,
+                      label: formikForm.values.incomeSource,
+                    }}
+                    onBottomSheetClose={() => setShowIncomeSourceSheet(false)}
+                    onOptionSelect={handleIncomeSourceSelect}
+                  />
+                }
+              />
+
+              <Input
+                id="InputIncomeSourceDescription"
+                placeholder={t('CreditCardPersonalDetailsPlcIncomeSourceDescription')}
+                value={formikForm.values.incomeSourceDescription}
+                setValue={formikForm.handleChange('incomeSourceDescription')}
+                onBlur={formikForm.handleBlur('incomeSourceDescription')}
+                errorText={
+                  formikForm.touched.incomeSourceDescription
+                    ? formikForm.errors.incomeSourceDescription
+                    : ''
+                }
+              />
+
+              <Dropdown
+                id="DropdownIncomeFrequency"
+                placeholder={t('CreditCardPersonalDetailsPlcIncomeFrequency')}
+                inputText={formikForm.values.incomeFrequency}
+                onPress={() => setShowIncomeFrequencySheet(true)}
+                errorText={
+                  formikForm.touched.incomeFrequency
+                    ? formikForm.errors.incomeFrequency
+                    : ''
+                }
+                BottomSheet={
+                  <BottomSheetOptions
+                    visible={showIncomeFrequencySheet}
+                    options={incomeFrequencyOptions}
+                    showHeaderCloseIcon
+                    headerTitle={t('CreditCardPersonalDetailsPlcIncomeFrequency')}
+                    optionKey="value"
+                    optionLabelKey="label"
+                    optionSelected={{
+                      value: formikForm.values.incomeFrequency,
+                      label: formikForm.values.incomeFrequency,
+                    }}
+                    onBottomSheetClose={() => setShowIncomeFrequencySheet(false)}
+                    onOptionSelect={handleIncomeFrequencySelect}
+                  />
+                }
+              />
+
+              <Input
+                id="InputIncomeAmountRange"
+                placeholder={t('CreditCardPersonalDetailsPlcIncomeAmountRange')}
+                value={formikForm.values.incomeAmountRange}
+                setValue={formikForm.handleChange('incomeAmountRange')}
+                onBlur={formikForm.handleBlur('incomeAmountRange')}
+                errorText={
+                  formikForm.touched.incomeAmountRange
+                    ? formikForm.errors.incomeAmountRange
+                    : ''
+                }
+              />
+            </>
+          )}
+
+          <Dropdown
+            id="DropdownGIBBoardMemberQuestion"
+            placeholder={t('CreditCardPersonalDetailsPlcGIBBoardMemberQuestion')}
+            inputText={formikForm.values.isGIBBoardMember}
+            onPress={() => setShowIsGIBBoardMemberSheet(true)}
+            errorText={
+              formikForm.touched.isGIBBoardMember
+                ? formikForm.errors.isGIBBoardMember
+                : ''
+            }
+            BottomSheet={
+              <BottomSheetOptions
+                visible={showIsGIBBoardMemberSheet}
+                options={yesNoOptions}
+                showHeaderCloseIcon
+                headerTitle={t('CreditCardPersonalDetailsPlcGIBBoardMemberQuestion')}
+                optionKey="value"
+                optionLabelKey="label"
+                optionSelected={{
+                  value: formikForm.values.isGIBBoardMember,
+                  label: formikForm.values.isGIBBoardMember,
+                }}
+                onBottomSheetClose={() => setShowIsGIBBoardMemberSheet(false)}
+                onOptionSelect={handleIsGIBBoardMemberSelect}
+              />
+            }
+          />
+
+          {isGIBBoardMember && (
+            <Input
+              id="InputBoardMemberName"
+              placeholder={t('CreditCardPersonalDetailsPlcBoardMemberName')}
+              value={formikForm.values.boardMemberName}
+              setValue={formikForm.handleChange('boardMemberName')}
+              onBlur={formikForm.handleBlur('boardMemberName')}
+              errorText={
+                formikForm.touched.boardMemberName
+                  ? formikForm.errors.boardMemberName
+                  : ''
+              }
+            />
+          )}
+        </View>
+      </View>
+    </ScreenContainer>
+  );
+};
+
+export default PersonalDetails;
+```
+
+```typescript
+###FilePath: app/features/credit-card/hooks/use-personal-details.ts
+
+// 1. React imports (always first)
+import {useState, useMemo} from 'react';
+
+// 2. Third-party library imports
+import {useNavigation} from '@react-navigation/native';
+import {useFormik} from 'formik';
+
+// 3. Custom component imports (after React and third-party)
+// import * as Components from '@app/components'; // Not directly imported here, but used in view
+
+// 4. Theme and utilities
+import {translation} from 'react-core';
+
+// 5. Assets (SVG icons, images)
+// import {IconName} from 'app/assets/svg'; // Not used directly in hook
+
+// 6. Feature-level imports (hooks, schemas) - OUTSIDE view folder
+import {
+  PersonalDetailsSchema,
+  personalDetailsInitialValues,
+  PersonalDetailsInitialValuesType,
+} from '../schemas/personal-details-schema';
+
+// 7. Local view imports (types, styles)
+import {PersonalDetailsProps} from '../views/personal-details/types';
+
+export const usePersonalDetails = ({
+  navigation,
+}: PersonalDetailsProps['navigation']) => {
+  const {t} = translation.useTranslation();
+
+  // 1. State declarations for dropdown visibility
+  const [showMaritalStatusSheet, setShowMaritalStatusSheet] = useState(false);
+  const [showFamilyMembersSheet, setShowFamilyMembersSheet] = useState(false);
+  const [showOccupationSheet, setShowOccupationSheet] = useState(false);
+  const [showEducationLevelSheet, setShowEducationLevelSheet] = useState(false);
+  const [showHasAdditionalIncomeSheet, setShowHasAdditionalIncomeSheet] =
+    useState(false);
+  const [showIncomeSourceSheet, setShowIncomeSourceSheet] = useState(false);
+  const [showIncomeFrequencySheet, setShowIncomeFrequencySheet] =
+    useState(false);
+  const [showIsGIBBoardMemberSheet, setShowIsGIBBoardMemberSheet] =
+    useState(false);
+
+  // 2. Formik form management
+  const formikForm = useFormik<PersonalDetailsInitialValuesType>({
+    validateOnChange: true,
+    validateOnBlur: true,
+    initialValues: personalDetailsInitialValues,
+    validationSchema: PersonalDetailsSchema,
+    onSubmit: async values => {
+      // Submit logic here
+      console.log('Personal Details Form submitted:', values);
+      // Example navigation to a next screen or success screen
+      // navigation.navigate('CreditCardRoutes.NextScreen');
+    },
+  });
+
+  // Options for dropdowns
+  const maritalStatusOptions = useMemo(
+    () => [
+      {label: t('CreditCardPersonalDetailsOptSingle'), value: 'Single'},
+      {label: t('CreditCardPersonalDetailsOptMarried'), value: 'Married'},
+      {label: t('CreditCardPersonalDetailsOptDivorced'), value: 'Divorced'},
+      {label: t('CreditCardPersonalDetailsOptWidowed'), value: 'Widowed'},
+    ],
+    [t],
+  );
+
+  // Assuming family members from 0 to 10 for simplicity
+  const familyMembersOptions = useMemo(
+    () =>
+      Array.from({length: 11}, (_, i) => ({
+        label: String(i),
+        value: String(i),
+      })),
+    [],
+  );
+
+  const occupationOptions = useMemo(
+    () => [
+      {label: t('CreditCardPersonalDetailsOptDataAnalyst'), value: 'Data analyst'},
+      {label: t('CreditCardPersonalDetailsOptSoftwareEngineer'), value: 'Software engineer'},
+      {label: t('CreditCardPersonalDetailsOptDoctor'), value: 'Doctor'},
+      {label: t('CreditCardPersonalDetailsOptTeacher'), value: 'Teacher'},
+      {label: t('CreditCardPersonalDetailsOptDesigner'), value: 'Designer'},
+    ],
+    [t],
+  );
+
+  const educationLevelOptions = useMemo(
+    () => [
+      {label: t('CreditCardPersonalDetailsOptCollegeGraduate'), value: 'Collage graduate'},
+      {label: t('CreditCardPersonalDetailsOptHighSchool'), value: 'High school'},
+      {label: t('CreditCardPersonalDetailsOptMasters'), value: 'Masters'},
+      {label: t('CreditCardPersonalDetailsOptPhD'), value: 'PhD'},
+    ],
+    [t],
+  );
+
+  const yesNoOptions = useMemo(
+    () => [
+      {label: t('CreditCardPersonalDetailsOptYes'), value: 'Yes'},
+      {label: t('CreditCardPersonalDetailsOptNo'), value: 'No'},
+    ],
+    [t],
+  );
+
+  const incomeSourceOptions = useMemo(
+    () => [
+      {label: t('CreditCardPersonalDetailsOptSelfEmployed'), value: 'Self-employed'},
+      {label: t('CreditCardPersonalDetailsOptFreelance'), value: 'Freelance'},
+      {label: t('CreditCardPersonalDetailsOptInvestments'), value: 'Investments'},
+      {label: t('CreditCardPersonalDetailsOptRentalIncome'), value: 'Rental income'},
+    ],
+    [t],
+  );
+
+  const incomeFrequencyOptions = useMemo(
+    () => [
+      {label: t('CreditCardPersonalDetailsOptMonthly'), value: 'Monthly'},
+      {label: t('CreditCardPersonalDetailsOptAnnual'), value: 'Annual'},
+    ],
+    [t],
+  );
+
+  // 3. Computed values with useMemo
+  const isFormValid = useMemo(() => {
+    return formikForm.isValid;
+  }, [formikForm.isValid]);
+
+  // 4. Event handlers for dropdowns
+  const handleMaritalStatusSelect = (option: {label: string; value: string}) => {
+    formikForm.setFieldValue('maritalStatus', option.value);
+    formikForm.setFieldTouched('maritalStatus', true, true);
+    setShowMaritalStatusSheet(false);
+  };
+
+  const handleFamilyMembersSelect = (option: {label: string; value: string}) => {
+    formikForm.setFieldValue('familyMembers', Number(option.value));
+    formikForm.setFieldTouched('familyMembers', true, true);
+    setShowFamilyMembersSheet(false);
+  };
+
+  const handleOccupationSelect = (option: {label: string; value: string}) => {
+    formikForm.setFieldValue('occupation', option.value);
+    formikForm.setFieldTouched('occupation', true, true);
+    setShowOccupationSheet(false);
+  };
+
+  const handleEducationLevelSelect = (option: {label: string; value: string}) => {
+    formikForm.setFieldValue('educationLevel', option.value);
+    formikForm.setFieldTouched('educationLevel', true, true);
+    setShowEducationLevelSheet(false);
+  };
+
+  const handleHasAdditionalIncomeSelect = (option: {
+    label: string;
+    value: string;
+  }) => {
+    formikForm.setFieldValue('hasAdditionalIncome', option.value);
+    formikForm.setFieldTouched('hasAdditionalIncome', true, true);
+    setShowHasAdditionalIncomeSheet(false);
+    // Reset conditional fields if 'No' is selected
+    if (option.value === 'No') {
+      formikForm.setFieldValue('incomeSource', '');
+      formikForm.setFieldValue('incomeSourceDescription', '');
+      formikForm.setFieldValue('incomeFrequency', '');
+      formikForm.setFieldValue('incomeAmountRange', '');
+    }
+  };
+
+  const handleIncomeSourceSelect = (option: {label: string; value: string}) => {
+    formikForm.setFieldValue('incomeSource', option.value);
+    formikForm.setFieldTouched('incomeSource', true, true);
+    setShowIncomeSourceSheet(false);
+  };
+
+  const handleIncomeFrequencySelect = (option: {
+    label: string;
+    value: string;
+  }) => {
+    formikForm.setFieldValue('incomeFrequency', option.value);
+    formikForm.setFieldTouched('incomeFrequency', true, true);
+    setShowIncomeFrequencySheet(false);
+  };
+
+  const handleIsGIBBoardMemberSelect = (option: {
+    label: string;
+    value: string;
+  }) => {
+    formikForm.setFieldValue('isGIBBoardMember', option.value);
+    formikForm.setFieldTouched('isGIBBoardMember', true, true);
+    setShowIsGIBBoardMemberSheet(false);
+    // Reset conditional field if 'No' is selected
+    if (option.value === 'No') {
+      formikForm.setFieldValue('boardMemberName', '');
+    }
+  };
+
+  const onBackButtonPress = () => {
+    navigation.goBack();
+  };
+
+  // 6. Return all state, handlers, and computed values
+  return {
+    // Form
+    formikForm,
+
+    // Computed
+    isFormValid,
+
+    // Handlers
+    onBackButtonPress,
+
+    // Dropdown options
+    maritalStatusOptions,
+    familyMembersOptions,
+    occupationOptions,
+    educationLevelOptions,
+    yesNoOptions,
+    incomeSourceOptions,
+    incomeFrequencyOptions,
+
+    // Dropdown visibility state
+    showMaritalStatusSheet,
+    setShowMaritalStatusSheet,
+    showFamilyMembersSheet,
+    setShowFamilyMembersSheet,
+    showOccupationSheet,
+    setShowOccupationSheet,
+    showEducationLevelSheet,
+    setShowEducationLevelSheet,
+    showHasAdditionalIncomeSheet,
+    setShowHasAdditionalIncomeSheet,
+    showIncomeSourceSheet,
+    setShowIncomeSourceSheet,
+    showIncomeFrequencySheet,
+    setShowIncomeFrequencySheet,
+    showIsGIBBoardMemberSheet,
+    setShowIsGIBBoardMemberSheet,
+
+    // Dropdown select handlers
+    handleMaritalStatusSelect,
+    handleFamilyMembersSelect,
+    handleOccupationSelect,
+    handleEducationLevelSelect,
+    handleHasAdditionalIncomeSelect,
+    handleIncomeSourceSelect,
+    handleIncomeFrequencySelect,
+    handleIsGIBBoardMemberSelect,
+  };
+};
+```
+
+```typescript
+###FilePath: app/features/credit-card/schemas/personal-details-schema.ts
+
+import {Errors} from '@app/constants';
+import * as yup from 'yup';
+
+// 1. Yup Validation Schema
+export const PersonalDetailsSchema = yup.object().shape({
+  maritalStatus: yup.string().required(Errors.MaritalStatusRequired),
+  familyMembers: yup
+    .number()
+    .required(Errors.FamilyMembersRequired)
+    .min(0, Errors.FamilyMembersMin)
+    .integer(Errors.FamilyMembersInteger),
+  occupation: yup.string().required(Errors.OccupationRequired),
+  educationLevel: yup.string().required(Errors.EducationLevelRequired),
+  hasAdditionalIncome: yup
+    .string()
+    .oneOf(['Yes', 'No'], Errors.HasAdditionalIncomeInvalid)
+    .required(Errors.HasAdditionalIncomeRequired),
+
+  incomeSource: yup
+    .string()
+    .when('hasAdditionalIncome', {
+      is: 'Yes',
+      then: schema => schema.required(Errors.IncomeSourceRequired),
+      otherwise: schema => schema.notRequired(),
+    }),
+  incomeSourceDescription: yup
+    .string()
+    .when('hasAdditionalIncome', {
+      is: 'Yes',
+      then: schema =>
+        schema
+          .min(3, Errors.IncomeSourceDescriptionMinLength)
+          .max(100, Errors.IncomeSourceDescriptionMaxLength)
+          .required(Errors.IncomeSourceDescriptionRequired),
+      otherwise: schema => schema.notRequired(),
+    }),
+  incomeFrequency: yup
+    .string()
+    .when('hasAdditionalIncome', {
+      is: 'Yes',
+      then: schema => schema.required(Errors.IncomeFrequencyRequired),
+      otherwise: schema => schema.notRequired(),
+    }),
+  incomeAmountRange: yup
+    .string()
+    .when('hasAdditionalIncome', {
+      is: 'Yes',
+      then: schema =>
+        schema
+          .matches(
+            /^\d{1,3}(,\d{3})*-\d{1,3}(,\d{3})*\sSAR$/,
+            Errors.IncomeAmountRangeInvalid,
+          ) // Matches "X,XXX-Y,YYY SAR" format
+          .required(Errors.IncomeAmountRangeRequired),
+      otherwise: schema => schema.notRequired(),
+    }),
+
+  isGIBBoardMember: yup
+    .string()
+    .oneOf(['Yes', 'No'], Errors.IsGIBBoardMemberInvalid)
+    .required(Errors.IsGIBBoardMemberRequired),
+  boardMemberName: yup
+    .string()
+    .when('isGIBBoardMember', {
+      is: 'Yes',
+      then: schema =>
+        schema
+          .min(3, Errors.BoardMemberNameMinLength)
+          .max(50, Errors.BoardMemberNameMaxLength)
+          .required(Errors.BoardMemberNameRequired),
+      otherwise: schema => schema.notRequired(),
+    }),
+});
+
+// 2. Initial Values
+export const personalDetailsInitialValues = {
+  maritalStatus: 'Single',
+  familyMembers: 3,
+  occupation: 'Data analyst',
+  educationLevel: 'Collage graduate',
+  hasAdditionalIncome: 'Yes',
+  incomeSource: 'Self-employed',
+  incomeSourceDescription: 'Designer weekend job',
+  incomeFrequency: 'Monthly',
+  incomeAmountRange: '15,000-30,000 SAR',
+  isGIBBoardMember: 'Yes',
+  boardMemberName: 'Khalid Abbas',
+};
+
+// 3. TypeScript Type
+export type PersonalDetailsInitialValuesType = {
+  maritalStatus: string;
+  familyMembers: number;
+  occupation: string;
+  educationLevel: string;
+  hasAdditionalIncome: string;
+  incomeSource: string;
+  incomeSourceDescription: string;
+  incomeFrequency: string;
+  incomeAmountRange: string;
+  isGIBBoardMember: string;
+  boardMemberName: string;
+};
+```
+
+```typescript
+###FilePath: app/features/credit-card/views/personal-details/styles.ts
+
+import {StyleSheet} from 'react-native';
+import {PersonalDetailsStyleProps} from './types';
+import {Platform} from 'react-native';
+
+export const getStyles = (props: PersonalDetailsStyleProps) => {
+  const {theme} = props;
+
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      paddingHorizontal: 16,
+    },
+    headerContainer: {
+      marginBottom: 32,
+    },
+    screenTitle: {
+      color: theme.colors['content-primary'],
+      marginBottom: 8,
+    },
+    subTitle: {
+      color: theme.colors['content-primary'],
+    },
+    formSection: {
+      gap: 16, // Spacing between form fields
+      flex: 1,
+      paddingBottom: Platform.OS === 'ios' ? 0 : 24, // Add padding for android to prevent button overlap if needed
+    },
+  });
+};
+```
+
+```typescript
+###FilePath: app/features/credit-card/views/personal-details/types.ts
+
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {Theme} from 'react-core';
+
+// Define the root stack param list for your application or a relevant section
+// This would typically be defined in app/navigator/AppNavigator.ts or similar
+export type CreditCardRootStackParamList = {
+  PersonalDetails: undefined;
+  // Add other screens in the credit card flow here
+  // e.g., MonthlyExpenses: undefined;
+  // ReviewScreen: undefined;
+};
+
+export type PersonalDetailsProps = {
+  navigation: NativeStackNavigationProp<
+    CreditCardRootStackParamList,
+    'PersonalDetails'
+  >;
+};
+
+export interface PersonalDetailsStyleProps {
+  theme: Theme;
+}
+```
+
+```typescript
+###FilePath: app/features/credit-card/views/personal-details/translations.ts
+
+export const en = {
+  CreditCardPersonalDetailsLblTitle: 'Personal details',
+  CreditCardPersonalDetailsLblSubtitle:
+    'Tell us about your current employment.',
+  CreditCardPersonalDetailsPlcMaritalStatus: 'Marital status',
+  CreditCardPersonalDetailsPlcFamilyMembers: 'Family members',
+  CreditCardPersonalDetailsPlcOccupation: 'Occupation',
+  CreditCardPersonalDetailsPlcEducationLevel: 'Education level',
+  CreditCardPersonalDetailsPlcAdditionalIncomeQuestion:
+    'Do you have any other additional income?',
+  CreditCardPersonalDetailsPlcIncomeSource: 'Income source',
+  CreditCardPersonalDetailsPlcIncomeSourceDescription:
+    'Income source description',
+  CreditCardPersonalDetailsPlcIncomeFrequency:
+    'Is this income monthly or annual?',
+  CreditCardPersonalDetailsPlcIncomeAmountRange: 'Income amount range',
+  CreditCardPersonalDetailsPlcGIBBoardMemberQuestion:
+    'Are you related or affiliated to a GIB Board Member?',
+  CreditCardPersonalDetailsPlcBoardMemberName: 'Board member name',
+  CreditCardPersonalDetailsBtnSave: 'Save',
+
+  // Dropdown Options
+  CreditCardPersonalDetailsOptSingle: 'Single',
+  CreditCardPersonalDetailsOptMarried: 'Married',
+  CreditCardPersonalDetailsOptDivorced: 'Divorced',
+  CreditCardPersonalDetailsOptWidowed: 'Widowed',
+  CreditCardPersonalDetailsOptDataAnalyst: 'Data analyst',
+  CreditCardPersonalDetailsOptSoftwareEngineer: 'Software engineer',
+  CreditCardPersonalDetailsOptDoctor: 'Doctor',
+  CreditCardPersonalDetailsOptTeacher: 'Teacher',
+  CreditCardPersonalDetailsOptDesigner: 'Designer',
+  CreditCardPersonalDetailsOptCollegeGraduate: 'Collage graduate',
+  CreditCardPersonalDetailsOptHighSchool: 'High school',
+  CreditCardPersonalDetailsOptMasters: 'Masters',
+  CreditCardPersonalDetailsOptPhD: 'PhD',
+  CreditCardPersonalDetailsOptYes: 'Yes',
+  CreditCardPersonalDetailsOptNo: 'No',
+  CreditCardPersonalDetailsOptSelfEmployed: 'Self-employed',
+  CreditCardPersonalDetailsOptFreelance: 'Freelance',
+  CreditCardPersonalDetailsOptInvestments: 'Investments',
+  CreditCardPersonalDetailsOptRentalIncome: 'Rental income',
+  CreditCardPersonalDetailsOptMonthly: 'Monthly',
+  CreditCardPersonalDetailsOptAnnual: 'Annual',
+};
+
+export const ar = {
+  CreditCardPersonalDetailsLblTitle: 'التفاصيل الشخصية',
+  CreditCardPersonalDetailsLblSubtitle: 'أخبرنا عن عملك الحالي.',
+  CreditCardPersonalDetailsPlcMaritalStatus: 'الحالة الاجتماعية',
+  CreditCardPersonalDetailsPlcFamilyMembers: 'أفراد الأسرة',
+  CreditCardPersonalDetailsPlcOccupation: 'المهنة',
+  CreditCardPersonalDetailsPlcEducationLevel: 'المستوى التعليمي',
+  CreditCardPersonalDetailsPlcAdditionalIncomeQuestion:
+    'هل لديك أي دخل إضافي آخر؟',
+  CreditCardPersonalDetailsPlcIncomeSource: 'مصدر الدخل',
+  CreditCardPersonalDetailsPlcIncomeSourceDescription: 'وصف مصدر الدخل',
+  CreditCardPersonalDetailsPlcIncomeFrequency: 'هل هذا الدخل شهري أم سنوي؟',
+  CreditCardPersonalDetailsPlcIncomeAmountRange: 'نطاق مبلغ الدخل',
+  CreditCardPersonalDetailsPlcGIBBoardMemberQuestion:
+    'هل أنت قريب أو منتسب لعضو مجلس إدارة بنك الخليج الدولي؟',
+  CreditCardPersonalDetailsPlcBoardMemberName: 'اسم عضو مجلس الإدارة',
+  CreditCardPersonalDetailsBtnSave: 'حفظ',
+
+  // Dropdown Options
+  CreditCardPersonalDetailsOptSingle: 'أعزب',
+  CreditCardPersonalDetailsOptMarried: 'متزوج',
+  CreditCardPersonalDetailsOptDivorced: 'مطلق',
+  CreditCardPersonalDetailsOptWidowed: 'أرمل',
+  CreditCardPersonalDetailsOptDataAnalyst: 'محلل بيانات',
+  CreditCardPersonalDetailsOptSoftwareEngineer: 'مهندس برمجيات',
+  CreditCardPersonalDetailsOptDoctor: 'طبيب',
+  CreditCardPersonalDetailsOptTeacher: 'معلم',
+  CreditCardPersonalDetailsOptDesigner: 'مصمم',
+  CreditCardPersonalDetailsOptCollegeGraduate: 'خريج جامعة',
+  CreditCardPersonalDetailsOptHighSchool: 'ثانوية عامة',
+  CreditCardPersonalDetailsOptMasters: 'ماجستير',
+  CreditCardPersonalDetailsOptPhD: 'دكتوراه',
+  CreditCardPersonalDetailsOptYes: 'نعم',
+  CreditCardPersonalDetailsOptNo: 'لا',
+  CreditCardPersonalDetailsOptSelfEmployed: 'عمل حر',
+  CreditCardPersonalDetailsOptFreelance: 'عمل مستقل',
+  CreditCardPersonalDetailsOptInvestments: 'استثمارات',
+  CreditCardPersonalDetailsOptRentalIncome: 'دخل إيجار',
+  CreditCardPersonalDetailsOptMonthly: 'شهري',
+  CreditCardPersonalDetailsOptAnnual: 'سنوي',
+};
+```

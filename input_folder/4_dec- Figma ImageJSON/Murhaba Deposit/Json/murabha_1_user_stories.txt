@@ -1,0 +1,34 @@
+RCM-1978 Murabaha Story Board / Promotion
+ As an existing customer
+ alid Credentials 
+AND 
+AND 
+v
+ Logged In
+ When 
+I, access Deposit from 
+Product screen 
+Then
+ OR 
+Dashboard 
+screen
+ , I should be allowed to 
+Entry Points
+ APPROVED
+ Murabaha  Story Board / Promotion
+  - Entry point to the Murabaha initiation: 
+     A. Dashboard  Explore  Products (Section)  Savings& Investment
+     B. Dashboard  Add Deposits (Option)
+  - On tapping the above options, user should be redirected to the story board view 
+initiate 'Apply for Deposit 
+Account'
+ -   
+Storyboard screen:
+   - 
+   - "Get started"
+ RCM-1977 Murabaha Profit Rates / Live Rates
+ Standard storyboard view (Storyboard template should be the same as the Mentioned User Story - RCM-1361) 
+with information regarding Murabaha deposits (fetch it from the CMS) – X (close) button on the top to go back to the 
+previous page.
+   - User should be able to able to go to the next story by swiping left/right on the screen. Information
+ button on the bottom of the page should take the user to the next page: Profit rates screen

@@ -1,0 +1,110 @@
+RCM-479 Existing Customer Details & Data Validation APPROVED
+ Existing Details Validation & Data Update - Application Forms
+ As an existing customer trying to apply 
+for new credit card 
+, When I Tap on Apply from Any of the 
+Card Product type
+ can Proceed with filling the forms Then, I 
+based on the application status 
+1. Data availability check and Application Redirection
+   - System should confirm the data availability based on the segment (Staff & Non-Staff) and salary details
+   - System should check for the fields available under each stage and provide the response to application
+      a. Personal Details
+         a1. System should check the  with all the fields applicable under personal details asset application
+ stage and provide all the values and status as "Personal Details Available - Asset"
+         a2. If data is not available in asset application, System should validate the details under contact and 
+provide all the values and status as "Personal Details Available - Contact"
+         a3. If data is not available in both asset & contact, System should pic e in k for the data's availabl
+ . contact and provide the values fetched from system and status as "Personal Details Missing"
+      b. Monthly Expenses
+         b1. System should check the asset application with all the fields applicable under Monthly and provide 
+all the values and status as "Monthly Details Available - Asset"
+         b2. If data is not available in Asset, status should be "Monthly Expense Details Missing".
+                           
+2. All Details Available
+    - Application to check the Status in Sequence "Personal Details -> Monthly Expenses -> Review screen"
+    - If all the details are available, Redirect the customer to Review screen and populate the fields based on 
+the status
+ 3. Missing Details   
+    - Application should validate the stage in which details are missing and redirect the customer to the 
+missing  details screen so that customer can fill the missing information 
+    - On completion of each stage, Data should be updated in asset application and next stage status should 
+be validated, If available - skip the stage, If not Available - Redirect the customer to the next stage
+    - Application should populate the fields applicable for the criteria and values accordingly 
+   
+4. SIMAH expired Scenario
+    -  Customer should be asked to fill the form from the beginning and Data should be updated in the system
+    -  Rules explained in the above section (If All data Not Available) is applicable 
+As an existing customer created an 
+application 
+, enter all the Missing Information When I
+ System have fetched all the details OR 
+can Proceed with reviewing the Then, I 
+details & Edit the Information 
+5. Edit Information from Review 
+     - System should allow the customer to edit the values for each stage.
+     - On tap of Edit, Application to display all the fields in the single screen, user should be allowed to edit 
+and save the changes.
+     - After Editing the stage, Customer should be landed to review screen. Customer doesn't have to view all 
+the stages again
+     - If customer have not reached the review screen, Customer should be allowed fill the details in 
+sequence based on the stages mentioned above
+ As an existing customer created 
+application filled in all the details AND 
+, review the filled details  When I AND
+ accept the consent tap on continue AND 
+can Proceed with reviewing the Then, I 
+details & proceed with automated CSR 
+4. Ensure the Data Availability 
+  - Application should ensure that all the applicable field values are filled before allowing customer to 
+proceed with SIMAH Validation 
+  - Refer the applicable fields validation sheet for the logics 
+  -   RCM-470 CC Application Fields APPROVED
+  - Alert the customer to fill the details, if any of the information is missing
+  
+5. Consent & Confirmation on the data
+   - Customer should accept the GOSI Consent and SIMAH Consent for application to enable the continue 
+CTA
+  -  Customer should have an option to contact customer care through "Contact a Financial Advisor"
+  - On Continue, Customer data should be updated in the asset and allow the customer to proceed with the 
+SIMAh Validation after adapting the below UI Status
+  - Based on the response received from the QARAR(Accept / Refer), CSR Case should be created in asset 
+application for authorization
+
+RCM-470 CC Application Fields APPROVED
+Stages Fields Applicable - Credit Card Field Rule Field Type No f / n-Staf
+ Staff 
+Personal 
+Information
+ Marital Status Mandatory Drop Down Applicable 
+Number of Dependents Mandatory Drop Down Applicable 
+Level of Education Mandatory Drop Down Applicable 
+Additional Monthly Income Mandatory - Atelease Yes / No should be selected Text Field - 
+Numeric
+ Applicable 
+Source of Additional Income Conditional - If Additional Income is Selected as 
+"Yes"
+ Drop Down Applicable 
+Is the income Monthly or annual? Conditional - If Additional Income is Selected as 
+"Yes"
+ Toggle Applicable
+ Additional Income Amount Range Conditional - If Additional Income is Selected as 
+"Yes"
+ Text Field - 
+Numeric
+ Applicable
+ Are you related or affiliated to a GIB board 
+member?
+ Mandatory  - At least Yes / No should be selected Text Field
+ Living Arrangements Mandatory Drop Down Applicable 
+Board Member name Conditional - If "Are you related...." is Selected as 
+"Yes"
+ Text Field Applicable
+ Reference Number Optional Text Field Applicable
+ Monthly Expenses Total Expenses Mandatory Text Field - 
+Numeric
+ Applicable
+ Financial Obligations Mandatory Text Field - 
+Numeric
+ Applicable
+ Consent - Check box Mandatory Check Box Applicable

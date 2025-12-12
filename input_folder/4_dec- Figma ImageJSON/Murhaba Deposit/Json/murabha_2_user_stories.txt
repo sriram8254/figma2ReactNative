@@ -1,0 +1,28 @@
+ RCM-1977 Murabaha Profit Rates / Live Rates
+As an existing customer AND 
+accessed the Murabaha 
+deposit
+ I, tap on 'Get Started' When 
+from story board view
+ , I should be able view Then
+ the profit rates applicable for 
+the supported currencies
+  - Application should fetch the Live TD rates from the system for the below supported currencies
+     A. SAR
+     B. USD
+  - System should accommodate for new currencies which might be added in the future
+  - Duration &  Amount range applicable for each currencies should be configurable and bank users should have 
+ fetched and returned from core banking system access to update the data as and when required
+  - There should be a dedicated section for SAR and USD which expands on tapping the section/dropdown icon.
+  - The expanded section should display a table of profit rates for SAR/USD across various term durations. Live profit 
+rates  based on the amount range and duration should be fetched and returned from core banking should be retrieved
+ system. It should be presented to customer as provided in the Figma.
+  - User should be allowed to select the duration(column), which highlights the profit rates, as per figma
+  - Last  exact time of update for rates (SAR and USD) should be displayed right below the table. updated E.g.: “Last 
+” updated 2 hours ago
+  - Best profit rate and the term duration should be mentioned for the selected currency (SAR). Best rate is the highest 
+ offered by the bank for Murabaha deposits across all deposit amount range and term duration profit rate
+     E.g.: “Best rate: 4.3% for 360 days”.
+   - Application should also displays the competitive rates( ) for each currencies on the title section the highest profit rate
+   - On tapping, " " button should take the user to the deposit calculator page to find the estimated Profit calculator
+ profit and maturity amount.- On tapping, “ ” button should take the user to the deposit initiation page.   Open M

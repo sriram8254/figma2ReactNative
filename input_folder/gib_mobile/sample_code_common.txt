@@ -1,0 +1,422 @@
+###FilePath: smart-sweep/get-started/index.tsx
+
+import {FC} from 'react';
+import {
+  SmartSweepGetStartedProps,
+  SmartSweepGetStartedScreenRouteProp,
+} from './types';
+import * as Components from '@app/components';
+import {Theme, translation, useNewTheme} from 'react-core';
+import {useRoute} from '@react-navigation/native';
+import {CoinsIcon} from 'app/assets/svg';
+import {NavigationService} from 'app/utils';
+import {AccountsRoutes} from 'app/constants';
+import {getStyles} from './styles';
+
+export const SmartSweepGetStarted: FC<SmartSweepGetStartedProps> = prop => {
+  const {navigation} = prop;
+  const theme: Theme = useNewTheme();
+  const styles = getStyles({theme});
+  const route = useRoute<SmartSweepGetStartedScreenRouteProp>();
+  const {accountNumber, branch, currency} = route.params;
+  const {t} = translation.useTranslation();
+
+  return (
+      <Components.GetStartedScreen
+        meemLogoSize={24}
+        headerTitle={t('SmartSweepLblScreenTitle')}
+        subTitle={t('SmartSweepLblTitle')}
+        description={t('SmartSweepLblDescription')}
+        BackGroundImage={CoinsIcon}
+        onClose={() => {
+          navigation.pop();
+        }}
+        onGetStarted={() => {
+          console.log('currency', currency);
+          NavigationService.navigate(AccountsRoutes.SmartSweepAmount, {
+            currency: currency,
+          });
+        }}
+        cancelIconStyle={styles.cancelIconStyle}
+      />
+  );
+};
+
+
+###FilePath: smart-sweep/get-started/styles.ts
+
+import {StyleSheet} from 'react-native';
+import {SmartSweepGetStarteStyle} from './types';
+
+export const getStyles = (props: SmartSweepGetStarteStyle) => {
+  const {theme} = props;
+
+  return StyleSheet.create({
+    cancelIconStyle: {
+      backgroundColor: theme.colors['surface-02'],
+      borderRadius: 999,
+      height: 24,
+      width: 24,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+  });
+};
+
+
+###FilePath: smart-sweep/get-started/types.ts
+
+import {RouteProp} from '@react-navigation/native';
+import {AccountsRootStackParamList} from 'app/navigator/accounts-section';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {Theme} from 'react-core';
+
+export type SmartSweepGetStartedProps = {
+  navigation: NativeStackNavigationProp<AccountsRootStackParamList>;
+};
+
+export type SmartSweepGetStartedScreenRouteProp = RouteProp<
+  AccountsRootStackParamList,
+  'SmartSweepGetStarted'
+>;
+
+export type SmartSweepGetStarteStyle = {
+  theme: Theme;
+};
+
+
+###FilePath: smart-sweep/smart-sweep-amount/index.tsx
+
+import {ArrowBackIcon, SaudiRiyalSAR} from 'app/assets/svg';
+import {FC, useEffect, useState} from 'react';
+import {
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  TextInput,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
+import {useToast} from 'app/components';
+import {variants} from 'app/components/label/types';
+import {ButtonVariants} from 'app/components/custom-button/types';
+import {translation, useNewTheme} from 'react-core';
+import {getStyles} from './styles';
+import {SmartSweepAmountProps, SmartSweepAmountScreenRouteProp} from './types';
+import {useRoute} from '@react-navigation/native';
+import * as Components from '@app/components';
+import {useAccounts} from 'app/features/accounts/hooks/use-accounts';
+import {ToastProps, ToastTypeProps} from 'app/components/toast/types';
+import AdminConfig from 'app/constants/admin-config';
+
+export const SmartSweepAmount: FC<SmartSweepAmountProps> = props => {
+  const {navigation} = props;
+  const route = useRoute<SmartSweepAmountScreenRouteProp>();
+  const {currency} = route.params;
+  const theme = useNewTheme();
+  const styles = getStyles({theme});
+  const toast = useToast();
+
+  const {sweepInstruction, callUpdateAutoSweep} = useAccounts();
+  const [sweepAmount, setSweepAmount] = useState('0');
+  const [focused, setFocused] = useState(false);
+  const [isConfirmButtonDisabled, setIsConfirmButtonDisabled] = useState(true);
+  const {t} = translation.useTranslation();
+
+  useEffect(() => {
+    if (sweepInstruction?.sweepAmount) {
+      const formattedAmount = Number(
+        sweepInstruction?.sweepAmount,
+      ).toLocaleString('en-US', {});
+      setSweepAmount(formattedAmount);
+    }
+  }, []);
+
+  useEffect(() => {
+    validateSweepAmount();
+  }, [sweepAmount]);
+
+  const getToastProps = (message: string): ToastProps => {
+    return {
+      id: 'toast_id',
+      toastMessage: message,
+      inverted: false,
+      toastType: ToastTypeProps.warning,
+    };
+  };
+
+  const validateSweepAmount = () => {
+    const sweepValue = Number(sweepAmount.replaceAll(',', ''));
+    // if (Number(sweepInstruction.sweepAmount) === sweepValue ) {
+    //   setIsConfirmButtonDisabled(true);
+    //   return;
+    // }
+    //behalf of 301847 //not needed
+    // if (sweepAmount === '') {
+    //   setSweepAmount('0');
+    //   setIsConfirmButtonDisabled(false);
+    //   return;
+    // }
+    if (Number(sweepValue) < Number(AdminConfig.AUTO_SWEEP_MIN_AMOUNT)) {
+      // const toastProps = getToastProps(t('SmartSweepLblErrorExceedLimit'));
+      // toast.showToast(toastProps);
+      setIsConfirmButtonDisabled(true);
+      return;
+    }
+
+    if (Number(sweepValue) > Number(AdminConfig.AUTO_SWEEP_MAX_AMOUNT)) {
+      const toastProps = getToastProps(t('SmartSweepLblErrorExceedLimit'));
+      toast.showToast(toastProps);
+      setIsConfirmButtonDisabled(true);
+      return;
+    }
+    setIsConfirmButtonDisabled(false);
+  };
+
+  return (
+    <Components.ScreenContainer
+      id="sweepAmount"
+      showCenterContent={true}
+      showGoBackIcon
+      // customBottomScreenContentStyle={styles.bottomContainer}
+      bottomScreenContent={
+        <Components.SubmitButton
+          onPress={() => {
+            Keyboard.dismiss();
+            callUpdateAutoSweep(sweepAmount.replace(',', ''), currency);
+          }}
+          label={t('SmartSweepBtnConfirm')}
+          id={t('SmartSweepBtnConfirm')}
+          variant={ButtonVariants.primary}
+          disabled={isConfirmButtonDisabled || sweepAmount === ''}
+          // style={focused ? styles.primaryButton : styles.unFocusedButton}
+        />
+      }>
+      <View style={styles.container}>
+        <View style={styles.contentContainer}>
+          <Components.Label
+            id="labelContentTitle"
+            text={t('SmartSweepLblScreenTitle')}
+            variant={variants.titleXL}
+            style={styles.labelContentTitle}
+          />
+          <Components.Label
+            id="labelContentDescription"
+            text={t('SmartSweepLblAddAmountDescription')}
+            variant={variants.bodyRegularM}
+            style={styles.labelContentDescription}
+          />
+        </View>
+        <View style={styles.amountInputContainer}>
+          <Components.AmountInput
+            id="amountInput"
+            value={sweepAmount}
+            setValue={(val: string) => {
+              setSweepAmount(val);
+            }}
+            maximumLength={10}
+            onFocus={() => {
+              setFocused(true);
+            }}
+            onBlur={() => {
+              setFocused(false);
+            }}
+          />
+        </View>
+      </View>
+    </Components.ScreenContainer>
+  );
+};
+
+
+###FilePath: smart-sweep/smart-sweep-amount/styles.ts
+
+import {StatusBar, StyleSheet} from 'react-native';
+import {SmartSweepAmountStyle} from './types';
+import {Typography} from 'app/utils';
+
+export const getStyles = (prop: SmartSweepAmountStyle) => {
+  const {theme} = prop;
+
+  return StyleSheet.create({
+    keyboardView: {
+      flex: 1,
+    },
+    container: {
+      flex: 1,
+      paddingHorizontal: 16,
+      gap: 32,
+    },
+    contentContainer: {
+      gap: 8,
+    },
+    labelContentTitle: {
+      color: theme.colors['content-primary'],
+    },
+    labelContentDescription: {
+      color: theme.colors['content-primary'],
+      fontSize: 16,
+    },
+    amountInputContainer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    textInput: {
+      fontFamily: Typography.fonts.figtree_regular,
+      fontSize: 56,
+    },
+    buttonContainer: {
+      position: 'absolute',
+      bottom: 0,
+      width: '100%',
+      alignSelf: 'center',
+    },
+    primaryButton: {
+      borderRadius: 0,
+    },
+    unFocusedButton: {
+      alignSelf: 'center',
+      width: '90%',
+    },
+    bottomContainer: {
+      paddingBottom: 24,
+    },
+  });
+};
+
+
+###FilePath: smart-sweep/smart-sweep-amount/types.ts
+
+import {AccountsRootStackParamList} from 'app/navigator/accounts-section';
+import {RouteProp} from '@react-navigation/native';
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {Theme} from 'node_modules/react-core/dist/exports';
+
+export type SmartSweepAmountStyle = {
+  theme: Theme;
+};
+
+export type SmartSweepAmountProps = {
+  navigation: NativeStackNavigationProp<AccountsRootStackParamList>;
+};
+
+export type SmartSweepAmountScreenRouteProp = RouteProp<
+  AccountsRootStackParamList,
+  'SmartSweepAmount'
+>;
+
+
+###FilePath: smart-sweep/sweep-success/index.tsx
+
+import {FC} from 'react';
+import {SmartSweepSuccessProps} from './types';
+import {Status} from 'app/features/beneficiaries/views/status';
+import {TickIcon} from 'app/assets/svg';
+import {Button} from 'app/components';
+import {ButtonSizes, ButtonVariants} from 'app/components/custom-button/types';
+import {translation, useNewTheme} from 'react-core';
+import {getStyles} from './styles';
+import {Background} from 'app/features/beneficiaries/views/status/components/background';
+import {ButtonAlignment} from 'app/features/beneficiaries/views/status/types';
+import {AccountsRoutes, TransferRoutes} from 'app/constants';
+import {NavigationService} from 'app/utils';
+
+const SmartSweepSuccess: FC<SmartSweepSuccessProps> = props => {
+  const theme = useNewTheme();
+  const styles = getStyles();
+  const {navigation} = props;
+  const {t} = translation.useTranslation();
+
+  return (
+    <Status
+      Background={Background}
+      icon={TickIcon}
+      title={t('SmartSweepLblStatusTitle').split("\\n").join('\n')}
+      inverted={true}
+      description={t('SmartSweepLblStatusDescription')}
+      backButtonVisible={false}
+      statusBarColor={theme.colors['background-03']}
+      primaryButton={
+        <Button
+          id="beneficiary_error_edit_button"
+          label={t('SmartSweepBtnHome')}
+          size={ButtonSizes.large}
+          variant={ButtonVariants.secondary}
+          inverted
+          onPress={() => navigation.pop(3)} //pop to transaction list
+          style={styles.button}
+        />
+      }
+      secondaryButton={
+        <Button
+          id="beneficiary_error_done_button"
+          label={t('SmartSweepBtnGoToAccounts')}
+          size={ButtonSizes.large}
+          style={styles.button}
+          inverted={true}
+          onPress={() => navigation.pop(3)}
+        />
+      }
+      buttonAlignment={ButtonAlignment.column}
+    />
+  );
+};
+
+export default SmartSweepSuccess;
+
+
+###FilePath: smart-sweep/sweep-success/styles.ts
+
+import {Theme} from 'react-core';
+import {StyleSheet} from 'react-native';
+
+export const getStyles = () => {
+  return StyleSheet.create({
+    container: {
+      flexGrow: 1,
+    },
+    button: {flex: 1},
+  });
+};
+
+###FilePath: smart-sweep/sweep-success/types.ts
+
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { AccountsRootStackParamList } from "app/navigator/accounts-section";
+
+export type SmartSweepSuccessProps = {
+    navigation: NativeStackNavigationProp<AccountsRootStackParamList>;
+}
+
+***************
+
+DropDown Sample Code
+
+          <Dropdown
+            id="sort_by_dropdown"
+            placeholder={translate('SortAndFilterDdSortBy')}
+            onPress={() => {
+              setShowSortByDropDown(true);
+            }}
+            inputText={SortAndFilterValidations.values.sortBy}
+            BottomSheet={
+              <BottomSheetOptions
+                visible={showSortByDropDown}
+                options={sortbyData}
+                showHeaderCloseIcon
+                headerTitle={translate('SortAndFilterDdSortBy')}
+                optionKey="categoryName"
+                optionLabelKey="categoryName"
+                optionSelected={sortBySelectedItem}
+                onBottomSheetClose={() => setShowSortByDropDown(false)}
+                onOptionSelect={data => setSortBy(data)}
+              />
+            }
+          />
+
+
+***********************
+Exact standards followed:
+

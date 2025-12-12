@@ -1,0 +1,686 @@
+# NAMING CONVENTIONS & STANDARDS
+# This file contains all code conventions for React Native generation
+
+# =============================================================================
+# 1. IMPORT ORDER & PATH ALIASES
+# =============================================================================
+
+### 1. Import Order
+**STRICT ORDER - Must follow this sequence:**
+
+**IMPORTANT: Use path aliases (@app, @features, @hooks, @components) instead of relative imports where possible.**
+
+```typescript
+// 1. React imports (always first)
+import React, {FC, useState, useEffect, useMemo} from 'react';
+import {View, Text, StyleSheet} from 'react-native';
+
+// 2. Third-party library imports
+import {useNavigation} from '@react-navigation/native';
+import {useFormik} from 'formik';
+
+// 3. Custom component imports - USE DIRECT IMPORTS (no Components.Label syntax)
+// Import each component directly by name
+import {
+  ScreenContainer,
+  Label,
+  Input,
+  SubmitButton,
+  CustomCheckbox,
+  InfoCard,
+} from '@app/components';
+
+// 4. Theme and utilities
+import {useNewTheme, Theme, translation, ContextualType} from 'react-core';
+
+// 5. Assets (SVG icons, images)
+import {IconName} from '@app/assets/svg';
+
+// 6. Feature-level imports (hooks, schemas) - USE PATH ALIASES
+import {useScreenName} from '@features/{feature}/hooks/use-screen-name';
+import {ScreenNameSchema, screenNameInitialValues} from '@features/{feature}/schemas/screen-name-schema';
+
+// 7. Local view imports (types, styles) - only these use relative paths
+import {getStyles} from './styles';
+import {ScreenNameProps} from './types';
+import {variants} from '@app/components/label/types';
+```
+
+**Path Alias Configuration (from tsconfig.json):**
+- `@app/*` → `app/*`
+- `@features/*` → `app/features/*`
+- `@hooks/*` → `app/hooks/*`
+- `@components/*` → `app/components/*`
+
+**Import Rules:**
+1. ✅ Use `@features/{feature}/hooks/use-screen-name` instead of `../../hooks/use-screen-name`
+2. ✅ Use `@features/{feature}/schemas/screen-name-schema` instead of `../../schemas/screen-name-schema`
+3. ✅ Import components directly: `<Label>` not `<Components.Label>`
+4. ✅ Use destructured imports: `import {Label, Input} from '@app/components'`
+5. ❌ Avoid namespace imports: `import * as Components from '@app/components'`
+6. ❌ Avoid relative imports for features/hooks/components
+
+
+# =============================================================================
+# 2. COMPONENT ID NAMING CONVENTION
+# =============================================================================
+
+### 2. Component ID Naming Convention
+
+**Pattern:** `<<ComponentName>><<FieldName>>`
+- Use **TitleCase** for both component name and field name
+- No spaces, no underscores, just concatenated TitleCase
+
+**Examples:**
+```typescript
+// Input components
+id="InputTotalExpenses"
+id="InputFinancialObligations"
+id="InputNickname"
+
+// Label components
+id="LabelTitle"
+id="LabelDescription"
+id="LabelScreenTitle"
+id="LabelScreenSubtitle"
+
+// Button components
+id="ButtonNext"
+id="SubmitButtonNextButton"
+
+// Checkbox components
+id="CustomCheckboxDisclosureCheckbox"
+id="CheckboxAcknowledgement"
+
+// Screen containers
+id="ScreenContainerMonthlyExpensesScreen"
+```
+
+
+# =============================================================================
+# 3. TRANSLATION KEY PATTERN
+# =============================================================================
+
+### 3. Translation Key Pattern
+
+**Pattern:** `<<Journey>><<ScreenName>><<ComponentAbbreviation>><<FieldName>>`
+- All parts in TitleCase, no separators
+- Component abbreviation must be in proper case
+
+**Component Abbreviations:**
+- `Lbl` = Label
+- `Btn` = Button
+- `Txt` = Text input value
+- `Plc` = Placeholder
+- `Chk` = Checkbox
+- `Info` = Info/help text
+- `Error` = Error message
+
+**Examples:**
+```typescript
+// Labels
+title={t('CreditCardApplicationMonthlyExpensesLblTitle')}
+text={t('OnboardingMonthlyExpensesLblSubtitle')}
+
+// Buttons
+label={t('OnboardingMonthlyExpensesNextBtnLbl')}
+
+// Placeholders
+placeholder={t('OnboardingMonthlyExpensesPlcTotalExpenses')}
+placeholder={t('OnboardingMonthlyExpensesPlcFinancialOblgn')}
+
+// Checkboxes
+title={t('OnboardingMonthlyExpensesChkTitle')}
+linkTitle={t('OnboardingMonthlyExpensesChkLinkTitle')}
+
+// Info text
+text={t('OnboardingMonthlyExpensesInfoFinancialOblgn')}
+
+// Total/Summary
+text={t('OnboardingMonthlyExpensesLblTotalAmt')}
+```
+
+
+# =============================================================================
+# 4. HOOKS & SCHEMAS PATTERNS
+# =============================================================================
+
+## CUSTOM HOOKS PATTERN
+
+### Hook File Structure: `app/features/{feature}/hooks/use-{screen-name}.ts`
+
+**Location:** At feature level, NOT inside view folder
+
+**Purpose:** Centralize all business logic, state management, form handling, and event handlers
+
+**Must Include:**
+1. All useState declarations
+2. Formik form management
+3. useMemo for computed values
+4. All event handlers (onChange, onPress, etc.)
+5. Validation logic
+6. Navigation logic
+7. API calls (if any)
+
+**Example Pattern:**
+```typescript
+###FilePath: app/features/{feature}/hooks/use-{screen-name}.ts
+
+import {useState, useMemo} from 'react';
+import {useFormik} from 'formik';
+import {useNavigation} from '@react-navigation/native';
+import {ScreenNameSchema, screenNameInitialValues} from '@features/{feature}/schemas/screen-name-schema';
+
+export const useScreenName = () => {
+  // 1. State declarations
+  const [fieldOne, setFieldOne] = useState<string>('');
+  const [fieldTwo, setFieldTwo] = useState<string>('');
+  const [isChecked, setIsChecked] = useState<boolean>(false);
+
+  const navigation = useNavigation();
+
+  // 2. Formik form management
+  const formikForm = useFormik({
+    validateOnChange: true,
+    validateOnBlur: true,
+    initialValues: screenNameInitialValues,
+    validationSchema: ScreenNameSchema,
+    onSubmit: async (values) => {
+      // Submit logic here
+      console.log('Form submitted:', values);
+    },
+  });
+
+  // 3. Helper functions (if needed)
+  const parseAmount = (amountString: string): number => {
+    return parseFloat(amountString.replace(/,/g, '') || '0');
+  };
+
+  // 4. Computed values with useMemo
+  const isFormValid = useMemo(() => {
+    // Validation logic
+    return fieldOne !== '' && fieldTwo !== '' && isChecked;
+  }, [fieldOne, fieldTwo, isChecked]);
+
+  // 5. Event handlers
+  const onChangeFieldOne = (text: string) => {
+    setFieldOne(text);
+  };
+
+  const onChangeFieldTwo = (text: string) => {
+    setFieldTwo(text);
+  };
+
+  const onCheckboxSelect = () => {
+    setIsChecked(!isChecked);
+  };
+
+  const handleNext = () => {
+    console.log('Next pressed');
+    // navigation.navigate('NextScreen');
+  };
+
+  const onBackButtonPress = () => {
+    navigation.goBack();
+  };
+
+  // 6. Return all state, handlers, and computed values
+  return {
+    // State
+    fieldOne,
+    fieldTwo,
+    isChecked,
+
+    // Form
+    formikForm,
+
+    // Computed
+    isFormValid,
+
+    // Handlers
+    onChangeFieldOne,
+    onChangeFieldTwo,
+    onCheckboxSelect,
+    handleNext,
+    onBackButtonPress,
+  };
+};
+```
+
+**Hook Development Guidelines:**
+
+**Custom Hook Must Include:**
+1. All useState declarations for form fields and UI state
+2. Formik setup with schema and initial values
+3. useMemo for computed values (isFormValid, totals, etc.)
+4. Helper functions (parseAmount, formatData, etc.)
+5. Event handlers (onChange, onPress, onSelect, etc.)
+6. Navigation handlers (onBack, onNext, etc.)
+7. API call functions (if applicable)
+8. Return object with all state, handlers, and computed values
+
+**Hook Return Pattern:**
+```typescript
+return {
+  // State values
+  field1,
+  field2,
+  isChecked,
+
+  // Form
+  formikForm,
+
+  // Computed values
+  isFormValid,
+  totalAmount,
+
+  // Handlers
+  onChangeField1,
+  onChangeField2,
+  onCheckboxSelect,
+  handleSubmit,
+  onBackPress,
+};
+```
+
+
+## VALIDATION SCHEMAS PATTERN
+
+### Schema File Structure: `app/features/{feature}/schemas/{screen-name}-schema.ts`
+
+**Location:** At feature level, NOT inside view folder
+
+**Purpose:** Define Yup validation rules, initial values, and form types
+
+**Must Include:**
+1. Yup validation schema
+2. Initial values object
+3. TypeScript type for form values
+4. Import error message keys from constants
+
+**Example Pattern:**
+```typescript
+###FilePath: app/features/{feature}/schemas/{screen-name}-schema.ts
+
+import {Errors} from '@app/constants';
+import * as yup from 'yup';
+
+// 1. Yup Validation Schema
+export const ScreenNameSchema = yup.object().shape({
+  fieldOne: yup
+    .string()
+    .min(3, Errors.FieldOneMinLength)
+    .max(50, Errors.FieldOneMaxLength)
+    .required(Errors.FieldOneRequired),
+
+  fieldTwo: yup
+    .string()
+    .matches(/^[0-9]+$/, Errors.FieldTwoInvalid)
+    .required(Errors.FieldTwoRequired),
+});
+
+// 2. Initial Values
+export const screenNameInitialValues = {
+  fieldOne: '',
+  fieldTwo: '',
+};
+
+// 3. TypeScript Type
+export type ScreenNameInitialValuesType = {
+  fieldOne: string;
+  fieldTwo: string;
+};
+```
+
+**Common Validation Patterns:**
+```typescript
+// Required field
+.required(Errors.FieldRequired)
+
+// Min/Max length
+.min(3, Errors.MinLength)
+.max(50, Errors.MaxLength)
+
+// Regex patterns
+.matches(/^[a-zA-Z0-9]+$/, Errors.AlphanumericOnly)
+.matches(/^[0-9]+$/, Errors.NumericOnly)
+
+// Email
+.email(Errors.InvalidEmail)
+
+// Number validation
+yup.number()
+  .min(0, Errors.MinValue)
+  .max(1000000, Errors.MaxValue)
+  .required(Errors.Required)
+```
+
+**Schema Development Guidelines:**
+
+**Schema Must Include:**
+1. Yup validation schema with proper rules
+2. Error message keys from Errors constant
+3. Initial values object matching schema shape
+4. TypeScript type derived from initial values
+5. Validation for all required fields
+6. Custom validation rules (regex, min/max, etc.)
+
+
+# =============================================================================
+# 5. TYPESCRIPT STYLE PROP TYPING
+# =============================================================================
+
+### TypeScript Style Prop Guidelines
+
+**CRITICAL: Proper style typing prevents circular dependencies and type errors**
+
+**DO NOT define StyleProps interface in types.ts. Components handle StyleProp conversion automatically.**
+
+### ❌ WRONG APPROACH (causes TypeScript errors):
+```typescript
+// DON'T DO THIS in types.ts
+export interface StyleProps {
+  container: StyleProp<ViewStyle>;
+  screenTitle: StyleProp<TextStyle>;
+}
+```
+
+### ✅ CORRECT APPROACH:
+
+**In types.ts - Only define component props:**
+```typescript
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+
+export interface ScreenNameProps {
+  navigation: NativeStackNavigationProp<any>;
+  // Add other props as needed (not styles)
+}
+```
+
+**In styles.ts - Return raw style types:**
+```typescript
+import {StyleSheet, ViewStyle, TextStyle, ImageStyle} from 'react-native';
+import {Theme} from 'react-core';
+
+interface Styles {
+  container: ViewStyle;
+  headerContainer: ViewStyle;
+  sectionTitle: ViewStyle;
+  datesContainer: ViewStyle;
+  dateItem: ViewStyle;
+  dateLabel: TextStyle;        // Raw TextStyle
+  screenTitle: TextStyle;      // Raw TextStyle
+  subTitle: TextStyle;         // Raw TextStyle
+  image: ImageStyle;           // Raw ImageStyle (if needed)
+}
+
+export const getStyles = ({theme}: {theme: Theme}): Styles => {
+  return StyleSheet.create<Styles>({
+    container: {
+      flex: 1,
+      paddingHorizontal: 20,
+    },
+    headerContainer: {
+      marginBottom: 16,
+    },
+    sectionTitle: {
+      marginBottom: 12,
+    },
+    datesContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    dateItem: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    dateLabel: {
+      fontSize: 14,
+      color: theme.colors.text.secondary,
+    },
+    screenTitle: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: theme.colors.text.primary,
+    },
+    subTitle: {
+      fontSize: 16,
+      color: theme.colors.text.secondary,
+      marginBottom: 20,
+    },
+  });
+};
+```
+
+**In index.tsx - Use styles directly:**
+```typescript
+const styles = getStyles({theme});
+
+// ✅ This works correctly
+<Label
+  id="LabelInstallmentFrom"
+  text={t('MeemAshalInstallmentsLblFrom')}
+  variant={variants.bodyRegularS}
+  style={styles.dateLabel}  // Label's style prop is StyleProp<TextStyle>
+/>
+
+<View style={styles.container}>  // View's style prop is StyleProp<ViewStyle>
+  {/* content */}
+</View>
+```
+
+**Why This Works:**
+1. `StyleSheet.create` returns raw style objects (`ViewStyle`, `TextStyle`, `ImageStyle`)
+2. Component props like `Label.style` are typed as `StyleProp<TextStyle>` in the component definition
+3. TypeScript accepts `TextStyle` where `StyleProp<TextStyle>` is expected
+4. `StyleProp<T>` is a union type: `T | T[] | RecursiveArray<T | null> | null`
+5. This means a raw `TextStyle` is automatically compatible with `StyleProp<TextStyle>`
+
+**Style Type Mapping:**
+- **View components** (View, ScrollView, containers) → `ViewStyle`
+- **Text components** (Text, Label) → `TextStyle`
+- **Image components** (Image) → `ImageStyle`
+- **Always** use the raw type in styles.ts
+- **Never** wrap in `StyleProp<T>` in styles.ts or types.ts
+
+**TypeScript Flow:**
+```
+getStyles() returns → {dateLabel: TextStyle}
+styles.dateLabel is type → TextStyle
+Label accepts → style: StyleProp<TextStyle>
+TypeScript accepts this → ✅ TextStyle is assignable to StyleProp<TextStyle>
+```
+
+
+# =============================================================================
+# 6. VIEW COMPONENT PATTERN WITH CORRECT IMPORTS
+# =============================================================================
+
+### View File: `app/features/{feature}/views/{screen-name}/index.tsx`
+
+**Purpose:** Pure UI component - only rendering, no business logic
+
+**Correct Pattern:**
+```typescript
+###FilePath: app/features/{feature}/views/{screen-name}/index.tsx
+
+// 1. React imports
+import React from 'react';
+import {View} from 'react-native';
+
+// 2. Third-party imports
+// (if needed)
+
+// 3. Direct component imports (NO import * as Components)
+import {
+  ScreenContainer,
+  Label,
+  Input,
+  SubmitButton,
+  CustomCheckbox,
+} from '@app/components';
+
+// 4. Theme and utilities
+import {useNewTheme, translation} from 'react-core';
+
+// 5. Assets
+import {IconName} from '@app/assets/svg';
+
+// 6. Feature-level imports with PATH ALIASES
+import {useScreenName} from '@features/{feature}/hooks/use-screen-name';
+
+// 7. Local view imports (relative paths)
+import {getStyles} from './styles';
+import {ScreenNameProps} from './types';
+import {variants} from '@app/components/label/types';
+
+const ScreenName: React.FC<ScreenNameProps> = ({navigation}) => {
+  const theme = useNewTheme();
+  const styles = getStyles({theme});
+  const {t} = translation.useTranslation();
+
+  // Get all state and handlers from custom hook
+  const {
+    fieldOne,
+    fieldTwo,
+    isChecked,
+    formikForm,
+    isFormValid,
+    onChangeFieldOne,
+    onChangeFieldTwo,
+    onCheckboxSelect,
+    handleNext,
+    onBackButtonPress,
+  } = useScreenName();
+
+  return (
+    <ScreenContainer
+      id="ScreenContainerScreenName"
+      showGoBackIcon
+      onPressLeftContent={onBackButtonPress}
+      bottomScreenContent={
+        <View style={styles.bottomContentContainer}>
+          <SubmitButton
+            id="SubmitButtonNext"
+            label={t('JourneyScreenNameBtnNext')}
+            onPress={handleNext}
+            disabled={!isFormValid}
+          />
+        </View>
+      }>
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.headerContainer}>
+          <Label
+            id="LabelScreenTitle"
+            text={t('JourneyScreenNameLblTitle')}
+            variant={variants.titleL}
+            style={styles.screenTitle}
+          />
+          <Label
+            id="LabelScreenSubtitle"
+            text={t('JourneyScreenNameLblSubtitle')}
+            variant={variants.bodyRegularM}
+            style={styles.subTitle}
+          />
+        </View>
+
+        {/* Form Section */}
+        <View style={styles.formSection}>
+          <Input
+            id="InputFieldOne"
+            placeholder={t('JourneyScreenNamePlcFieldOne')}
+            value={fieldOne}
+            setValue={onChangeFieldOne}
+            errorText={
+              formikForm.touched.fieldOne
+                ? formikForm.errors.fieldOne
+                : ''
+            }
+          />
+
+          <Input
+            id="InputFieldTwo"
+            placeholder={t('JourneyScreenNamePlcFieldTwo')}
+            value={fieldTwo}
+            setValue={onChangeFieldTwo}
+            errorText={
+              formikForm.touched.fieldTwo
+                ? formikForm.errors.fieldTwo
+                : ''
+            }
+          />
+        </View>
+
+        {/* Checkbox */}
+        <View style={styles.checkboxContainer}>
+          <CustomCheckbox
+            id="CustomCheckboxConsent"
+            isChecked={isChecked}
+            onPress={onCheckboxSelect}
+            title={t('JourneyScreenNameChkTitle')}
+          />
+        </View>
+      </View>
+    </ScreenContainer>
+  );
+};
+
+export default ScreenName;
+```
+
+**Key Points:**
+- ✅ Import components directly: `import {Label, Input} from '@app/components'`
+- ✅ Use direct JSX: `<Label>` not `<Components.Label>`
+- ✅ Use path aliases: `@features/{feature}/hooks/use-screen-name`
+- ✅ Styles are typed in styles.ts, not types.ts
+- ✅ Pass raw styles to components: `style={styles.dateLabel}`
+
+
+## STYLING REQUIREMENTS
+
+### StyleSheet Usage
+
+**ALWAYS use React Native's standard `StyleSheet.create()`:**
+
+// ✅ CORRECT
+import {StyleSheet, ViewStyle, TextStyle} from 'react-native';
+import {Theme} from 'react-core';
+
+interface Styles {
+container: ViewStyle;
+title: TextStyle;
+}
+
+export const getStyles = ({theme}: {theme: Theme}): Styles => {
+return StyleSheet.create<Styles>({
+container: {
+paddingHorizontal: 16, // ✅ Use number literals
+paddingTop: 20, // ✅ Not strings
+backgroundColor: theme.colors['background-01'],
+},
+title: {
+color: theme.colors['content-primary'],
+marginBottom: 24,
+},
+});
+};
+
+
+**❌ DO NOT use third-party styling libraries:**
+// ❌ WRONG - Do not use ScaledSheet
+import {ScaledSheet} from 'react-native-size-matters';
+
+// ❌ WRONG - Do not use string-based syntax
+paddingTop: '20@vs'
+paddingHorizontal: '16@s'
+
+// ❌ WRONG - Do not use styled-components
+import styled from 'styled-components/native';
+
+**Rules:**
+1. Always use `StyleSheet.create()` from `react-native` [web:20]
+2. All spacing values must be **numbers**, not strings [web:20]
+3. No `ScaledSheet`, `styled-components`, or CSS-in-JS libraries
+4. Keep styles in separate `styles.ts` file with typed interface [web:21][web:25]
+5. Use theme colors for all color values (no hardcoded hex)

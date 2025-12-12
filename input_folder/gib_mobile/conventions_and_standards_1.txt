@@ -1,0 +1,1019 @@
+# NAMING CONVENTIONS & STANDARDS
+# This file contains all code conventions for React Native generation
+
+# =============================================================================
+# 1. IMPORT ORDER & PATH ALIASES
+# =============================================================================
+
+### 1. Import Order
+**STRICT ORDER - Must follow this sequence:**
+
+**IMPORTANT: Use path aliases (@app/...) instead of deep relative imports where possible.**
+
+// 1. React imports (always first)
+import React, {FC, useState, useEffect, useMemo} from 'react';
+import {View, Text, StyleSheet} from 'react-native';
+
+// 2. Third-party library imports
+import {useNavigation} from '@react-navigation/native';
+import {useFormik} from 'formik';
+
+// 3. Custom component imports - USE DIRECT IMPORTS (no Components.Label syntax)
+// Import each component directly by name
+import {
+ScreenContainer,
+Label,
+Input,
+SubmitButton,
+CustomCheckbox,
+InfoCard,
+} from '@app/components';
+
+// 4. Theme and utilities
+import {useNewTheme, Theme, translation, ContextualType} from 'react-core';
+
+// 5. Assets (SVG icons, images)
+import {IconName} from '@app/assets/svg';
+
+// 6. Feature-level imports (hooks, schemas) - USE PATH ALIASES
+import {useScreenName} from '@app/features/{feature}/hooks/use-screen-name';
+import {
+ScreenNameSchema,
+screenNameInitialValues,
+} from '@app/features/{feature}/schemas/screen-name-schema';
+
+// 7. Local view imports (types, styles, constants) - only these use relative paths
+import {getStyles} from './styles';
+import {ScreenNameProps} from './types';
+import {variants} from '@app/components/label/types';
+import {PaymentStatus} from './constants';
+
+
+
+### Path Aliases Configuration (from babel.config.js)
+
+alias: {
+'@app': './app',
+}
+
+
+**Import Mapping Examples:**
+- `@app/features/...` → `app/features/...`
+- `@app/components` → `app/components`
+- `@app/assets/svg` → `app/assets/svg`
+- `@app/constants` → `app/constants`
+
+**Import Rules:**
+1. ✅ Use `@app/features/{feature}/hooks/use-screen-name` instead of `../../hooks/use-screen-name`
+2. ✅ Use `@app/features/{feature}/schemas/screen-name-schema` instead of `../../schemas/screen-name-schema`
+3. ✅ Use `@app/components` for shared UI components
+4. ✅ Use `@app/assets/svg` for SVG icons
+5. ✅ Use `@app/constants` for shared application constants (if any)
+6. ❌ Avoid namespace imports: `import * as Components from '@app/components'`
+7. ❌ Avoid deep relative imports for features/hooks/components when alias exists
+8. ✅ Use relative imports ONLY for local view-level files (`./styles`, `./types`, `./translations`, `./constants`)
+
+**Export/Import Consistency:**
+- If a component is exported as:
+export const ScreenName = () => { ... }
+
+then import with:
+import {ScreenName} from '@app/features/...';
+
+
+- If a component is exported as:
+export default ScreenName;
+
+
+then import with:
+import ScreenName from '@app/features/...';
+
+
+
+# =============================================================================
+# 2. COMPONENT ID NAMING CONVENTION
+# =============================================================================
+
+### 2. Component ID Naming Convention
+
+**Pattern:** `<<ComponentName>><<FieldName>>`
+- Use **TitleCase** for both component name and field name
+- No spaces, no underscores, just concatenated TitleCase
+
+**Examples:**
+// Input components
+id="InputTotalExpenses"
+id="InputFinancialObligations"
+id="InputNickname"
+
+// Label components
+id="LabelTitle"
+id="LabelDescription"
+id="LabelScreenTitle"
+id="LabelScreenSubtitle"
+
+// Button components
+id="ButtonNext"
+id="SubmitButtonNextButton"
+
+// Checkbox components
+id="CustomCheckboxDisclosureCheckbox"
+id="CheckboxAcknowledgement"
+
+// Screen containers
+id="ScreenContainerMonthlyExpensesScreen"
+
+
+# =============================================================================
+# 3. TRANSLATION KEY PATTERN
+# =============================================================================
+
+### 3. Translation Key Pattern
+
+**Pattern:** `<<Journey>><<ScreenName>><<ComponentAbbreviation>><<FieldName>>`
+- All parts in TitleCase, no separators
+- Component abbreviation must be in proper case
+
+**Component Abbreviations:**
+- `Lbl` = Label
+- `Btn` = Button
+- `Txt` = Text input value
+- `Plc` = Placeholder
+- `Chk` = Checkbox
+- `Info` = Info/help text
+- `Error` = Error message
+
+**Examples:**
+// Labels
+title={t('CreditCardApplicationMonthlyExpensesLblTitle')}
+text={t('OnboardingMonthlyExpensesLblSubtitle')}
+
+// Buttons
+label={t('OnboardingMonthlyExpensesNextBtnLbl')}
+
+// Placeholders
+placeholder={t('OnboardingMonthlyExpensesPlcTotalExpenses')}
+placeholder={t('OnboardingMonthlyExpensesPlcFinancialOblgn')}
+
+// Checkboxes
+title={t('OnboardingMonthlyExpensesChkTitle')}
+linkTitle={t('OnboardingMonthlyExpensesChkLinkTitle')}
+
+// Info text
+text={t('OnboardingMonthlyExpensesInfoFinancialOblgn')}
+
+// Total/Summary
+text={t('OnboardingMonthlyExpensesLblTotalAmt')}
+
+
+
+# =============================================================================
+# 4. HOOKS & SCHEMAS PATTERNS
+# =============================================================================
+
+## CUSTOM HOOKS PATTERN
+
+### Hook File Structure: `app/features/{feature}/hooks/use-{screen-name}.ts`
+
+**Location:** At feature level, NOT inside view folder.
+
+**Purpose:** Centralize all business logic, state management, form handling, and event handlers.
+
+**Must Include:**
+1. All useState declarations
+2. Formik form management
+3. useMemo for computed values
+4. All event handlers (onChange, onPress, etc.)
+5. Validation logic
+6. Navigation logic
+7. API calls (if any)
+
+**Example Pattern:**
+###FilePath: app/features/{feature}/hooks/use-{screen-name}.ts
+
+import {useState, useMemo} from 'react';
+import {useFormik} from 'formik';
+import {useNavigation} from '@react-navigation/native';
+import {
+ScreenNameSchema,
+screenNameInitialValues,
+} from '@app/features/{feature}/schemas/screen-name-schema';
+import {
+ScreenNameInitialValuesType,
+} from '@app/features/{feature}/schemas/screen-name-schema';
+import {
+CalculateTotalArgs,
+OnPaymentSelectHandler,
+} from '@app/features/{feature}/views/{screen-name}/types';
+import {PaymentStatus} from '@app/features/{feature}/views/{screen-name}/constants';
+
+export const useScreenName = () => {
+// 1. State declarations
+const [fieldOne, setFieldOne] = useState<string>('');
+const [fieldTwo, setFieldTwo] = useState<string>('');
+const [isChecked, setIsChecked] = useState<boolean>(false);
+
+const navigation = useNavigation();
+
+// 2. Formik form management
+const formikForm = useFormik<ScreenNameInitialValuesType>({
+validateOnChange: true,
+validateOnBlur: true,
+initialValues: screenNameInitialValues,
+validationSchema: ScreenNameSchema,
+onSubmit: async (values) => {
+// Submit logic here
+console.log('Form submitted:', values);
+},
+});
+
+// 3. Helper functions (if needed)
+const parseAmount = (amountString: string): number => {
+return parseFloat(amountString.replace(/,/g, '') || '0');
+};
+
+// 4. Computed values with useMemo
+const isFormValid = useMemo(() => {
+return fieldOne !== '' && fieldTwo !== '' && isChecked;
+}, [fieldOne, fieldTwo, isChecked]);
+
+// 5. Event handlers
+const onChangeFieldOne = (text: string) => {
+setFieldOne(text);
+};
+
+const onChangeFieldTwo = (text: string) => {
+setFieldTwo(text);
+};
+
+const onCheckboxSelect = () => {
+setIsChecked(!isChecked);
+};
+
+const handleNext = () => {
+formikForm.handleSubmit();
+};
+
+const onBackButtonPress = () => {
+navigation.goBack();
+};
+
+// 6. Return all state, handlers, and computed values
+return {
+// State
+fieldOne,
+fieldTwo,
+isChecked,
+
+// Form
+formikForm,
+
+// Computed
+isFormValid,
+
+// Handlers
+onChangeFieldOne,
+onChangeFieldTwo,
+onCheckboxSelect,
+handleNext,
+onBackButtonPress,
+};
+};
+
+
+**Hook Development Guidelines:**
+
+Custom hook must include:
+1. All useState declarations for form fields and UI state
+2. Formik setup with schema and initial values
+3. useMemo for computed values (isFormValid, totals, etc.)
+4. Helper functions (parseAmount, formatData, etc.)
+5. Event handlers (onChange, onPress, onSelect, etc.)
+6. Navigation handlers (onBack, onNext, etc.)
+7. API call functions (if applicable)
+8. Return object with all state, handlers, and computed values
+
+## VALIDATION SCHEMAS PATTERN
+
+### Schema File Structure: `app/features/{feature}/schemas/{screen-name}-schema.ts`
+
+**Location:** At feature level, NOT inside view folder.
+
+**Purpose:** Define Yup validation rules, initial values, and form types.
+
+**Must Include:**
+1. Yup validation schema
+2. Initial values object
+3. TypeScript type for form values
+4. Import error message keys from constants (if used).
+
+**Example Pattern:**
+###FilePath: app/features/{feature}/schemas/{screen-name}-schema.ts
+
+import * as yup from 'yup';
+// import {Errors} from '@app/constants';
+
+export const ScreenNameSchema = yup.object().shape({
+fieldOne: yup
+.string()
+.min(3)
+.max(50)
+.required(),
+
+fieldTwo: yup
+.string()
+.matches(/^[0-9]+$/)
+.required(),
+});
+
+export const screenNameInitialValues = {
+fieldOne: '',
+fieldTwo: '',
+};
+
+export type ScreenNameInitialValuesType = {
+fieldOne: string;
+fieldTwo: string;
+};
+
+
+
+# =============================================================================
+# 5. TYPESCRIPT STYLE PROP TYPING
+# =============================================================================
+
+### TypeScript Style Prop Guidelines
+
+**CRITICAL: Proper style typing prevents circular dependencies and type errors.**
+
+- Do NOT define StyleProps interface in types.ts wrapping styles in `StyleProp<T>`.
+- Styles are defined as raw React Native style types in styles.ts.
+
+### ❌ WRONG APPROACH:
+// DON'T DO THIS in types.ts
+export interface StyleProps {
+container: StyleProp<ViewStyle>;
+screenTitle: StyleProp<TextStyle>;
+}
+
+
+### ✅ CORRECT APPROACH:
+
+**In types.ts – only define component props and data types:**
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+
+export interface ScreenNameProps {
+navigation: NativeStackNavigationProp<any>;
+// Add other non-style props as needed
+}
+
+export interface CalculateArgs {
+amount: number;
+percentage: number;
+}
+
+export interface UserData {
+name: string;
+email: string;
+age: number;
+}
+
+
+**In styles.ts – return raw style types:**
+import {StyleSheet, ViewStyle, TextStyle, ImageStyle} from 'react-native';
+import {Theme} from 'react-core';
+
+interface Styles {
+container: ViewStyle;
+headerContainer: ViewStyle;
+sectionTitle: TextStyle;
+datesContainer: ViewStyle;
+dateItem: ViewStyle;
+dateLabel: TextStyle;
+screenTitle: TextStyle;
+subTitle: TextStyle;
+image: ImageStyle;
+}
+
+export const getStyles = ({theme}: {theme: Theme}): Styles => {
+return StyleSheet.create<Styles>({
+container: {
+flex: 1,
+paddingHorizontal: 20,
+},
+headerContainer: {
+marginBottom: 16,
+},
+sectionTitle: {
+marginBottom: 12,
+},
+datesContainer: {
+flexDirection: 'row',
+justifyContent: 'space-between',
+},
+dateItem: {
+flex: 1,
+alignItems: 'center',
+},
+dateLabel: {
+fontSize: 14,
+color: theme.colors['content-secondary'],
+},
+screenTitle: {
+fontSize: 24,
+fontWeight: 'bold',
+color: theme.colors['content-primary'],
+},
+subTitle: {
+fontSize: 16,
+color: theme.colors['content-secondary'],
+marginBottom: 20,
+},
+});
+};
+
+
+**In index.tsx – use styles directly:**
+const styles = getStyles({theme});
+
+<Label
+id="LabelInstallmentFrom"
+text={t('MeemAshalInstallmentsLblFrom')}
+variant={variants.bodyRegularS}
+style={styles.dateLabel}
+/>
+
+<View style={styles.container}> {/* content */} </View> ```
+=============================================================================
+6. VIEW COMPONENT PATTERN WITH CORRECT IMPORTS
+=============================================================================
+View File: app/features/{feature}/views/{screen-name}/index.tsx
+Purpose: Pure UI component – only rendering, no business logic.
+
+Component Name Rule: The component exported from index.tsx MUST use the screen name (folder name) in TitleCase.
+
+Correct Pattern:
+
+###FilePath: app/features/{feature}/views/{screen-name}/index.tsx
+
+// 1. React imports
+import React from 'react';
+import {View} from 'react-native';
+
+// 2. Third-party imports
+// (if needed)
+
+// 3. Direct component imports
+import {
+  ScreenContainer,
+  Label,
+  Input,
+  SubmitButton,
+  CustomCheckbox,
+} from '@app/components';
+
+// 4. Theme and utilities
+import {useNewTheme, translation} from 'react-core';
+
+// 5. Assets
+import {IconName} from '@app/assets/svg';
+
+// 6. Feature-level imports with PATH ALIASES
+import {useScreenName} from '@app/features/{feature}/hooks/use-screen-name';
+
+// 7. Local view imports
+import {getStyles} from './styles';
+import {ScreenNameProps} from './types';
+import {variants} from '@app/components/label/types';
+
+// Component name matches screen folder name
+const ScreenName: React.FC<ScreenNameProps> = ({navigation}) => {
+  const theme = useNewTheme();
+  const styles = getStyles({theme});
+  const {t} = translation.useTranslation();
+
+  const {
+    fieldOne,
+    fieldTwo,
+    isChecked,
+    formikForm,
+    isFormValid,
+    onChangeFieldOne,
+    onChangeFieldTwo,
+    onCheckboxSelect,
+    handleNext,
+    onBackButtonPress,
+  } = useScreenName();
+
+  return (
+    <ScreenContainer
+      id="ScreenContainerScreenName"
+      showGoBackIcon
+      onPressLeftContent={onBackButtonPress}
+      bottomScreenContent={
+        <View style={styles.bottomContentContainer}>
+          <SubmitButton
+            id="SubmitButtonNext"
+            label={t('JourneyScreenNameBtnNext')}
+            onPress={handleNext}
+            disabled={!isFormValid}
+          />
+        </View>
+      }>
+      <View style={styles.container}>
+        <View style={styles.headerContainer}>
+          <Label
+            id="LabelScreenTitle"
+            text={t('JourneyScreenNameLblTitle')}
+            variant={variants.titleL}
+            style={styles.screenTitle}
+          />
+          <Label
+            id="LabelScreenSubtitle"
+            text={t('JourneyScreenNameLblSubtitle')}
+            variant={variants.bodyRegularM}
+            style={styles.subTitle}
+          />
+        </View>
+
+        <View style={styles.formSection}>
+          <Input
+            id="InputFieldOne"
+            placeholder={t('JourneyScreenNamePlcFieldOne')}
+            value={fieldOne}
+            setValue={onChangeFieldOne}
+            errorText={
+              formikForm.touched.fieldOne ? formikForm.errors.fieldOne : ''
+            }
+          />
+          <Input
+            id="InputFieldTwo"
+            placeholder={t('JourneyScreenNamePlcFieldTwo')}
+            value={fieldTwo}
+            setValue={onChangeFieldTwo}
+            errorText={
+              formikForm.touched.fieldTwo ? formikForm.errors.fieldTwo : ''
+            }
+          />
+        </View>
+
+        <View style={styles.checkboxContainer}>
+          <CustomCheckbox
+            id="CustomCheckboxConsent"
+            isChecked={isChecked}
+            onPress={onCheckboxSelect}
+            title={t('JourneyScreenNameChkTitle')}
+          />
+        </View>
+      </View>
+    </ScreenContainer>
+  );
+};
+
+export default ScreenName;
+// or: export const ScreenName = (props: ScreenNameProps) => { ... };
+=============================================================================
+7. ENUMS AND CONSTANTS
+=============================================================================
+File: app/features/{feature}/views/{screen-name}/constants.ts
+Rule: Create this file ONLY if there are comparisons or fixed typed values (statuses, types, options, etc.).
+
+When to Create constants.ts:
+Status comparisons (e.g., 'active', 'pending', 'completed')
+
+Tag types: error/success/info
+
+Payment status values
+
+Fixed dropdown options
+
+Any repeated magic strings/numbers used in conditions
+
+Example constants.ts:
+
+###FilePath: app/features/{feature}/views/{screen-name}/constants.ts
+
+export enum PaymentStatus {
+  PAID = 'paid',
+  FAILED = 'failed',
+  PENDING = 'pending',
+}
+
+export enum InstallmentStatus {
+  ACTIVE = 'active',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+}
+
+export const PAYMENT_STATUSES = {
+  PAID: 'paid' as const,
+  FAILED: 'failed' as const,
+  PENDING: 'pending' as const,
+} as const;
+
+export type PaymentStatusType =
+  (typeof PAYMENT_STATUSES)[keyof typeof PAYMENT_STATUSES];
+Usage:
+
+import {PaymentStatus} from './constants';
+
+if (payment.status === PaymentStatus.PAID) {
+  // ...
+}
+Rule:
+
+❌ Do NOT compare against raw literals like 'paid', 'failed' directly in conditions.
+
+✅ Use enums or typed constants from constants.ts.
+
+=============================================================================
+8. TYPES.TS COVERAGE
+=============================================================================
+File: app/features/{feature}/views/{screen-name}/types.ts
+
+Rules:
+
+All function arguments used in hooks or views must have interfaces/types defined here.
+
+All data objects (e.g., PaymentItem, InstallmentData) must be defined here.
+
+Event handlers must have explicit types.
+
+Example:
+
+import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {PaymentStatus, InstallmentStatus} from './constants';
+
+export interface ScreenNameProps {
+  navigation: NativeStackNavigationProp<any>;
+}
+
+export interface PaymentItem {
+  amount: number;
+  date: string;
+  status: PaymentStatus;
+}
+
+export interface InstallmentData {
+  installmentStatus: InstallmentStatus;
+  merchantName: string;
+  merchantLogoUri: string;
+  totalAmount: number;
+  paidAmount: number;
+  remainingAmount: number;
+  startDate: string;
+  endDate: string;
+  payments: PaymentItem[];
+}
+
+export interface CalculateTotalArgs {
+  payments: PaymentItem[];
+  includeStatuses?: PaymentStatus[];
+}
+
+export type OnPaymentSelectHandler = (payment: PaymentItem) => void;
+export type OnStatusChangeHandler = (status: InstallmentStatus) => void;
+=============================================================================
+9. STYLING REQUIREMENTS & FLEX LAYOUT
+=============================================================================
+StyleSheet Usage
+ALWAYS use React Native's standard StyleSheet.create():
+
+
+import {StyleSheet, ViewStyle, TextStyle} from 'react-native';
+import {Theme} from 'react-core';
+
+interface Styles {
+  container: ViewStyle;
+  title: TextStyle;
+}
+
+export const getStyles = ({theme}: {theme: Theme}): Styles => {
+  return StyleSheet.create<Styles>({
+    container: {
+      paddingHorizontal: 16,
+      paddingTop: 20,
+      backgroundColor: theme.colors['background-01'],
+    },
+    title: {
+      color: theme.colors['content-primary'],
+      marginBottom: 24,
+    },
+  });
+};
+DO NOT use third-party styling libraries:
+
+
+// ❌ WRONG - Do not use ScaledSheet
+import {ScaledSheet} from 'react-native-size-matters';
+
+// ❌ WRONG - Do not use string-based syntax
+paddingTop: '20@vs';
+paddingHorizontal: '16@s';
+
+// ❌ WRONG - Do not use styled-components
+import styled from 'styled-components/native';
+Rules:
+
+Use StyleSheet.create() from react-native only.
+
+All spacing values must be numbers, not strings.
+
+No ScaledSheet, styled-components, or CSS-in-JS libraries.
+
+Keep styles in separate styles.ts file with a typed Styles interface.
+
+Use theme colors for all color values (no hardcoded hex).
+
+Flex Layout Alignment
+Goal: Match Figma layout structure, spacing, and alignment – especially flex-direction.
+
+Use flexDirection: 'row' when elements are visually side-by-side (horizontal).
+
+Use flexDirection: 'column' when elements are stacked vertically.
+
+Use justifyContent for main-axis spacing.
+
+Use alignItems for cross-axis alignment.
+
+Horizontal (row) example:
+
+rowContainer: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: 16,
+},
+Vertical (column) example:
+
+columnContainer: {
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  gap: 12,
+},
+Layout Checklist:
+
+Identify if a group is horizontal (row) or vertical (column) from Figma.
+
+Set flexDirection accordingly.
+
+Ensure text and icons align as per design using alignItems.
+
+Use consistent spacing (margin, padding, gap) to match the design.
+
+# =============================================================================
+# 10. VARIANT TYPE CASE AWARENESS
+# =============================================================================
+
+**CRITICAL:** Use exact variant names from the `ContextualType` enum.
+
+### Variant Format Pattern
+
+**Pattern:** `{style}{Weight}{Size}`
+- **Style:** `title` or `body` (lowercase)
+- **Weight:** `Semibold`, `Medium`, `Regular` (capitalized) - only for body
+- **Size:** `XL`, `L`, `M`, `S`, `XS` (uppercase)
+
+### Available Variants
+
+import {variants} from '@app/components/label/types';
+
+// Title variants (no weight)
+variants.titleXL
+variants.titleL
+variants.titleM
+variants.titleS
+variants.titleXS
+
+// Body variants (with weight)
+variants.bodySemiBoldL
+variants.bodyMediumL
+variants.bodyRegularL
+variants.bodySemiBoldM
+variants.bodyMediumM
+variants.bodyRegularM
+variants.bodySemiBoldS
+variants.bodyMediumS
+variants.bodyRegularS
+variants.bodySemiboldXS // Note: lowercase 'bold' in XS
+variants.bodyMediumXS
+variants.bodyRegularXS
+
+
+### ⚠️ Special Case: bodySemiboldXS
+
+// Note the lowercase 'b' in 'bold' for XS size only
+variants.bodySemiboldXS // ✅ Correct (lowercase 'b')
+variants.bodySemiBoldXS // ❌ Wrong
+
+
+### Common Usage Examples
+
+// Figma: 24px / 600 → Title L
+<Label variant={variants.titleL} />
+
+// Figma: 16px / 500 → Body Medium M
+<Label variant={variants.bodyMediumM} />
+
+// Figma: 14px / 400 → Body Regular S
+<Label variant={variants.bodyRegularS} />
+
+// Figma: 12px / 600 → Body Semibold XS (note lowercase 'b')
+<Label variant={variants.bodySemiboldXS} />
+
+### Quick Figma Mapping
+
+| Figma | Variant |
+|-------|---------|
+| 28px+ / Any | `titleXL` |
+| 24px / Any | `titleL` |
+| 20px / Any | `titleM` |
+| 16px / 600 | `bodySemiBoldM` |
+| 16px / 500 | `bodyMediumM` |
+| 16px / 400 | `bodyRegularM` |
+| 14px / 600 | `bodySemiBoldS` |
+| 14px / 500 | `bodyMediumS` |
+| 14px / 400 | `bodyRegularS` |
+| 12px / 600 | `bodySemiboldXS` ⚠️ |
+| 12px / 500 | `bodyMediumXS` |
+| 12px / 400 | `bodyRegularXS` |
+
+**Weight mapping:** 400=Regular, 500=Medium, 600=Semibold
+
+### Common Mistakes
+
+// ❌ WRONG
+variants.TitleL // Capital T
+variants.bodyRegularm // Lowercase size
+variants.bodySemiBoldXS // Should be bodySemiboldXS
+variants.body_medium_s // Underscores
+
+// ✅ CORRECT
+variants.titleL
+variants.bodyRegularM
+variants.bodySemiboldXS // Special case
+variants.bodyMediumS
+
+=============================================================================
+11. DESIGN MATCHING REQUIREMENTS
+=============================================================================
+Replicate the component hierarchy (containers, sections, cards, rows, etc.).
+
+Match margins, paddings, gaps, and spacing between elements.
+
+Preserve horizontal and vertical alignments.
+
+Respect typography styles (font size, weight, color).
+
+Use theme colors instead of hardcoded values.
+
+Match widths, heights, and flex behavior visible in Figma.
+
+Maintain visual hierarchy and grouping.
+
+# =============================================================================
+# 12. API INTEGRATION STRUCTURE
+# =============================================================================
+
+### API File Organization (Feature Level)
+
+**All API-related files at feature level, NOT inside view folder.**
+
+app/features/{feature}/
+├── queries/ # RTK Query definitions
+│ └── use-{endpoint-name}-query.ts
+├── types/ # API type definitions
+│ └── {endpoint-name}.types.ts
+└── constants/ # API constants
+└── {endpoint-name}.constants.ts
+
+text
+
+### Import Pattern for API Files
+
+// In hooks: use-screen-name.ts
+import {usePostLoginHandler} from 'app/hooks/post-login-handler';
+import {useProfitRateInquiryMutation} from '@app/features/{feature}/queries/use-profit-rate-inquiry-query';
+import {
+ProfitRateInquiryRequest,
+ProfitRateInquiryResponse,
+} from '@app/features/{feature}/types/profit-rate-inquiry.types';
+import {API_ENDPOINTS} from '@app/features/{feature}/constants/profit-rate-inquiry.constants';
+
+text
+
+### Query File Pattern
+
+**Purpose:** RTK Query API endpoint definitions
+
+###FilePath: app/features/{feature}/queries/use-{endpoint-name}-query.ts
+
+import {createApi, fetchBaseQuery} from '@reduxjs/toolkit/query/react';
+import {RequestType, ResponseType} from '@app/features/{feature}/types/{endpoint}.types';
+
+export const endpointApi = createApi({
+reducerPath: 'endpointApi',
+baseQuery: fetchBaseQuery({baseUrl: '/v1/api'}),
+endpoints: (builder) => ({
+mutationName: builder.mutation<ResponseType, RequestType>({
+query: (body) => ({
+url: '/path/to/endpoint',
+method: 'POST',
+body,
+}),
+}),
+}),
+});
+
+export const {useMutationNameMutation} = endpointApi;
+
+text
+
+### Types File Pattern
+
+**Purpose:** API request/response TypeScript interfaces
+
+###FilePath: app/features/{feature}/types/{endpoint-name}.types.ts
+
+export interface RequestTypeName {
+field1: string;
+field2: number;
+}
+
+export interface ResponseTypeName {
+isSuccess: boolean;
+data: DataType[];
+}
+
+export interface DataType {
+id: string;
+value: string;
+}
+
+text
+
+### Constants File Pattern
+
+**Purpose:** API endpoints, enums, configuration
+
+###FilePath: app/features/{feature}/constants/{endpoint-name}.constants.ts
+
+export const API_ENDPOINTS = {
+ENDPOINT_NAME: '/path/to/endpoint',
+} as const;
+
+export enum ApiStatus {
+SUCCESS = 'success',
+FAILED = 'failed',
+}
+
+text
+
+### Hook Integration Pattern
+
+**Mock API (Initial Development):**
+
+// TODO: Replace with actual API
+const mockData: ResponseType = {
+isSuccess: true,
+data: [],
+};
+
+text
+
+**Actual API Integration:**
+
+const {
+action: apiAction,
+data: apiResponse,
+error: apiError,
+} = usePostLoginHandler(useApiMutation);
+
+const callApi = () => {
+const options = {
+headers: getHeaders({screenId: 'ScreenID'}),
+request: requestBody,
+};
+apiAction(options);
+};
+
+useEffect(() => {
+if (apiResponse?.isSuccess) {
+// Handle success
+}
+}, [apiResponse, apiError]);
+
+text
+
+### Rules
+
+1. ✅ All queries in `queries/` folder at feature level
+2. ✅ All API types in `types/` folder at feature level
+3. ✅ All API constants in `constants/` folder at feature level
+4. ✅ Use mock data initially with TODO comments
+5. ✅ Use path aliases for imports (`@app/features/...`)
+6. ✅ Follow RTK Query patterns from sample code
+7. ✅ Use `usePostLoginHandler` for API calls
+8. ✅ Handle loading, success, and error states in hooks
+9. ❌ Do NOT put queries/types/constants inside view folder
+10. ❌ Do NOT use relative imports for feature-level files

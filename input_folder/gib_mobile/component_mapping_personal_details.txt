@@ -1,0 +1,11 @@
+Feature:CreditCard
+Screen Name : PersonalDetails
+Component                     Name 
+	
+Background for this screen    ScreenContainer 
+Title                         Label                     
+Subtitle                      Label                     
+user input field              Input
+user input field              Input
+user input field              Dropdown        
+Button                        SubmitButton
